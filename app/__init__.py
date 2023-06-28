@@ -5,6 +5,8 @@ import logging
 # from celery import Celery
 from flask import Flask
 from apscheduler.schedulers.background import BackgroundScheduler
+
+from app.commands import create_tables
 from config import Config
 from app.extensions import db, socketio
 
@@ -26,6 +28,8 @@ def create_app(config_class=Config):
     # Register blueprints here
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
+
+    app.cli.add_command(create_tables)
 
     return app
 
