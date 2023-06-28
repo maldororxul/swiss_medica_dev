@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Get Token</title>
+    <style>
+        body {
+            background-color: #222;
+            color: #ddd;
+            font-family: Arial, sans-serif;
+        }
+        form {
+            margin: auto;
+            width: 40%;
+            padding: 10px;
+        }
+        label, select, input {
+            display: block;
+            margin-bottom: 10px;
+        }
+        input[type="submit"] {
+            background-color: #444;
+            color: #ddd;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #555;
+        }
+    </style>
+</head>
+<body>
+    <form action="/get_token" method="post">
+        <label for="auth_code">Auth Code:</label>
+        <input type="text" id="auth_code" name="auth_code">
+        <label for="client_id">Client ID:</label>
+        <input type="text" id="client_id" name="client_id">
+        <label for="client_secret">Client Secret:</label>
+        <input type="text" id="client_secret" name="client_secret">
+        <label for="redirect_url">Redirect URL:</label>
+        <input type="text" id="redirect_url" name="redirect_url">
+        <label for="branch">Branch:</label>
+        <select id="branch" name="branch">
+            <option value="SM">SM</option>
+            <option value="CDV">CDV</option>
+        </select>
+        <input type="submit" value="Get Token">
+    </form>
+</body>
+</html>

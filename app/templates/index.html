@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Swiss Medica</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <style>
+            body {
+                background-color: #000;
+                color: #7FDBFF;
+                font-family: 'Courier New', Courier, monospace;
+            }
+            #events {
+                height: 300px;
+                overflow-y: scroll;
+                background-color: #1B1C1D;
+                color: #7FDBFF;
+                padding: 20px;
+                border: solid 2px #7FDBFF;
+                border-radius: 5px;
+            }
+            #events::-webkit-scrollbar {
+                width: 6px;
+            }
+            #events::-webkit-scrollbar-thumb {
+                background-color: #7FDBFF;
+                border-radius: 3px;
+            }
+            .header {
+                text-align: center;
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+            .btn {
+                background-color: #1B1C1D;
+                color: #7FDBFF;
+                width: 100%;
+            }
+            .btn-custom:hover, .btn-custom:active, .btn-custom:focus {
+                background-color: #2F4F4F;
+                color: #7FDBFF;
+                border-color: #2F4F4F;
+            }
+            .input-group {
+                margin-top: 20px;
+            }
+            .input-group label {
+                display: block;
+                color: #7FDBFF;
+            }
+            .input-group input {
+                width: 100%;
+                color: #000;
+                margin-bottom: 10px;
+            }
+            .input-group-text {
+                background-color: #1B1C1D;
+                color: #7FDBFF;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-12 header">
+                    <h1>Server is running</h1>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-md-10 offset-md-1">
+                    <div id="events"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12 col-md-10 offset-md-1">
+                    <div class="button-group">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text mr-3" id="inputGroup-sizing-default">{{ sm_df }} - {{ sm_dt }}</span>
+                            <input type="datetime-local" id="time1" value="{{ sm_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default">
+                        </div>
+                        <button class="btn btn-custom" id="button1">Load Amo data SM</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script type="text/javascript" charset="utf-8">
+            var socket = io.connect('http://' + document.domain + ':' + location.port);
+            socket.on('new_event', function(event) {
+                $('#events').prepend('<p>' + event.msg + '</p>');
+                if($('#events').children().length > 1000){
+                    $('#events').children().last().remove();
+                }
+            });
+
+            function attachButtonAction(buttonNum) {
+                $('#button' + buttonNum).on('click', function() {
+                    var dateTime = $('#time' + buttonNum).val();
+                    $.get('/button' + buttonNum, { time: dateTime }, function(response) {
+                        console.log(response);
+                    });
+                });
+            }
+
+            ['1'].forEach(attachButtonAction);
+        </script>
+    </body>
+</html>
