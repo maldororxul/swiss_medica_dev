@@ -32,7 +32,7 @@ def index():
     df, dt = processor.get_data_borders()
     date_from = datetime.fromtimestamp(df) if df else None
     date_to = datetime.fromtimestamp(dt) if dt else None
-    date_curr = date_from + timedelta(minutes=60) or datetime.now()
+    date_curr = date_from + timedelta(minutes=60) if date_from else datetime.now()
 
     # app = current_app._get_current_object()
     # app.scheduler.add_job(
