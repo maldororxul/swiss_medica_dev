@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient, APIClient
+from app.engine import get_engine
 from config import Config
 
 
@@ -92,12 +93,7 @@ class SyncController:
         )
 
     def __sync_data(self, collection: List[Dict], table_name: str) -> bool:
-        engine = create_engine(
-            Config.SQLALCHEMY_DATABASE_URI,
-            pool_size=20,
-            max_overflow=100,
-            pool_pre_ping=True
-        )
+        engine = get_engine()
         target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
         has_new_records = False
         with engine.begin() as connection:

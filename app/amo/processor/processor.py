@@ -16,8 +16,8 @@ from app.amo.processor.countries import CONTRY_REPLACEMENTS
 from app.amo.processor.country_codes import get_country_codes, get_country_by_code
 from app.amo.processor.functions import clear_phone
 from app.amo.processor.utm_controller import build_final_utm
+from app.engine import get_engine
 from app.models.log import CDVLog, SMLog
-from config import Config
 from app.google_api.client import GoogleAPIClient
 
 
@@ -75,6 +75,7 @@ class DataProcessor:
         self.__date_from_ts = int(date_from.timestamp()) if date_from else 0
         self.__date_to_ts = int(date_to.timestamp()) if date_to else 0
         self.lead: Lead = self.lead_models[0]()
+        self.engine = get_engine()
         # загрузка справочников
         self.pipelines_dict = {
             pipeline['id_on_source']: {
@@ -92,14 +93,8 @@ class DataProcessor:
         self.log.add(branch=branch, text=text, log_type=log_type, created_at=created_at)
 
     def get_logs(self, branch: str, log_type: int = 1, limit: int = 100) -> List[db.Model]:
-        engine = create_engine(
-            Config.SQLALCHEMY_DATABASE_URI,
-            pool_size=20,
-            max_overflow=100,
-            pool_pre_ping=True
-        )
         table = Table('Log', MetaData(), autoload_with=engine, schema=self.schema)
-        with engine.begin() as connection:
+        with self.engine.begin() as connection:
             stmt = select(table)\
                 .where(table.c['type'] == log_type, table.c['branch'] == branch)\
                 .order_by(table.c.id.desc())\
@@ -480,13 +475,7 @@ class DataProcessor:
                     line[stage.PlannedIncomeFull] = ''
 
     def __get_data(self, table_name: str, date_field: Optional[str] = 'updated_at') -> List[Dict]:
-        engine = create_engine(
-            Config.SQLALCHEMY_DATABASE_URI,
-            pool_size=20,
-            max_overflow=100,
-            pool_pre_ping=True
-        )
-        table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
+        table = Table(table_name, MetaData(), autoload_with=self.engine, schema=self.schema)
         if date_field == 'updated_at':
             dt_field = table.c.updated_at
         elif date_field == 'created_at':
@@ -526,14 +515,8 @@ class DataProcessor:
         return lowest_df, highest_dt
 
     def __get_data_borders(self, table_name: str, field: str = 'updated_at') -> Tuple[Optional[int], Optional[int]]:
-        engine = create_engine(
-            Config.SQLALCHEMY_DATABASE_URI,
-            pool_size=20,
-            max_overflow=100,
-            pool_pre_ping=True
-        )
-        table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
-        with engine.begin() as connection:
+        table = Table(table_name, MetaData(), autoload_with=self.engine, schema=self.schema)
+        with self.engine.begin() as connection:
             stmt = select(table).order_by(table.c[field].asc()).limit(1)
             first_record = [x._asdict() for x in connection.execute(stmt).fetchall() or []]
             stmt = select(table).order_by(table.c[field].desc()).limit(1)
@@ -544,14 +527,8 @@ class DataProcessor:
             )
 
     def __get_by(self, table_name: str, by_list: List[By]) -> List[Dict]:
-        engine = create_engine(
-            Config.SQLALCHEMY_DATABASE_URI,
-            pool_size=20,
-            max_overflow=100,
-            pool_pre_ping=True
-        )
-        table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
-        with engine.begin() as connection:
+        table = Table(table_name, MetaData(), autoload_with=self.engine, schema=self.schema)
+        with self.engine.begin() as connection:
             conditions = [table.c[by.Field] == by.Value for by in by_list]
             stmt = select(table).where(reduce(and_, conditions))
             return [x._asdict() for x in connection.execute(stmt).fetchall() or []]
