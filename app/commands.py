@@ -1,6 +1,7 @@
 import click
 from flask.cli import with_appcontext
 from sqlalchemy import create_engine
+from sqlalchemy import text
 from sqlalchemy.sql.ddl import CreateSchema
 
 from config import Config
@@ -22,13 +23,17 @@ from .models.log import SMLog, CDVLog
 @click.command(name='create_tables')
 @with_appcontext
 def create_tables():
-    engine = create_engine(
-        Config.SQLALCHEMY_DATABASE_URI,
-        pool_size=20,
-        max_overflow=100,
-        pool_pre_ping=True
-    )
-    for schema_name in ('sm', 'cdv'):
-        if not engine.dialect.has_schema(engine, schema_name):
-            engine.execute(CreateSchema(schema_name))
+    with db.engine.connect() as connection:
+        connection.execute(text("CREATE SCHEMA IF NOT EXISTS sm"))
+        connection.execute(text("CREATE SCHEMA IF NOT EXISTS cdv"))
+
+    # engine = create_engine(
+    #     Config.SQLALCHEMY_DATABASE_URI,
+    #     pool_size=20,
+    #     max_overflow=100,
+    #     pool_pre_ping=True
+    # )
+    # for schema_name in ('sm', 'cdv'):
+    #     if not engine.dialect.has_schema(engine, schema_name):
+    #         engine.execute(CreateSchema(schema_name))
     db.create_all()
