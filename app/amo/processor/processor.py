@@ -1,11 +1,9 @@
-import time
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from enum import Enum
 from functools import reduce
 from typing import Dict, List, Optional, Any, Type, Tuple, Union
-from sqlalchemy import Table, MetaData, create_engine, select, and_
-
+from sqlalchemy import Table, MetaData, select, and_
 from app import db
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
@@ -93,7 +91,7 @@ class DataProcessor:
         self.log.add(branch=branch, text=text, log_type=log_type, created_at=created_at)
 
     def get_logs(self, branch: str, log_type: int = 1, limit: int = 100) -> List[db.Model]:
-        table = Table('Log', MetaData(), autoload_with=engine, schema=self.schema)
+        table = Table('Log', MetaData(), autoload_with=self.engine, schema=self.schema)
         with self.engine.begin() as connection:
             stmt = select(table)\
                 .where(table.c['type'] == log_type, table.c['branch'] == branch)\
@@ -482,7 +480,7 @@ class DataProcessor:
             dt_field = table.c.created_at
         else:
             dt_field = None
-        with engine.begin() as connection:
+        with self.engine.begin() as connection:
             if date_field:
                 stmt = select(table).where(
                     self.__date_from_ts <= dt_field,
