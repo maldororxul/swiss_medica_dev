@@ -23,9 +23,10 @@ from .models.log import SMLog, CDVLog
 @click.command(name='create_tables')
 @with_appcontext
 def create_tables():
-    with db.engine.connect() as connection:
-        connection.execute(text("CREATE SCHEMA IF NOT EXISTS sm"))
-        connection.execute(text("CREATE SCHEMA IF NOT EXISTS cdv"))
+    # with db.engine.connect() as connection:
+    #     connection.execute(text("CREATE SCHEMA IF NOT EXISTS sm"))
+    #     connection.execute(text("CREATE SCHEMA IF NOT EXISTS cdv"))
+    #     connection.execute(text("CREATE SCHEMA IF NOT EXISTS test_schema"))
 
     # engine = create_engine(
     #     Config.SQLALCHEMY_DATABASE_URI,
