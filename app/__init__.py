@@ -20,7 +20,7 @@ def create_app(config_class=Config):
 
     # Initialize Flask extensions here
     db.init_app(app)
-    socketio.init_app(app)
+    socketio.init_app(app, async_mode='eventlet')
 
     app.scheduler = BackgroundScheduler()
     app.scheduler.start()
