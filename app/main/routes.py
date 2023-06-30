@@ -165,9 +165,8 @@ def data_to_csv():
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
     data = request.get_json()
-    app = current_app._get_current_object()
-    app.logger.info(data)  # or do something else with the data
-    return jsonify({'status': 'ok', 'data': data}), 200
+    current_app.logger.info(data)  # or do something else with the data
+    return jsonify({'status': 'ok'}), 200
 
 
 @socketio.on('connect')
