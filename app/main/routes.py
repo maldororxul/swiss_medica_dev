@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timedelta
 from apscheduler.jobstores.base import JobLookupError
@@ -5,12 +6,14 @@ from flask import render_template, jsonify, current_app, redirect, url_for, requ
     send_file
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
+from app.logger import DBLogger
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
 from app.models.data import SMData
 from app.models.event import SMEvent
 from app.models.lead import SMLead
+from app.models.log import SMLog
 from app.utils.excel import ExcelClient
 
 
@@ -165,7 +168,11 @@ def data_to_csv():
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
     data = request.get_json()
-    current_app.logger.info(data)  # or do something else with the data
+    db_logger = DBLogger(branch='sm', log_model=SMLog)
+    db_logger.add(text='test 666 webhook', log_type=1)
+    socketio.emit('new_event', {'msg': f'test 666 webhook {data}'})
+    current_app.logger.setLevel(logging.INFO)
+    current_app.logger.info('test 666 webhook')  # or do something else with the data
     return jsonify({'status': 'ok'}), 200
 
 
