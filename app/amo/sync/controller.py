@@ -7,6 +7,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient, APIClient
 from app.engine import get_engine
+from app.logger import DBLogger
+from app.models.log import SMLog
 from config import Config
 
 
@@ -144,6 +146,10 @@ class SyncController:
 class SMSyncController(SyncController):
     schema = 'sm'
     api_client: APIClient = SwissmedicaAPIClient
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.log = DBLogger(log_model=SMLog, branch='sm')
 
 
 class CDVSyncController(SyncController):

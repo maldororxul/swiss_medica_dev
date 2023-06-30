@@ -61,7 +61,7 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             repeated_iteration = "" if has_new else f" :: R{empty_steps}"
             msg = f'reading {branch} data :: {df} - {dt}{repeated_iteration}'
             # запись лога в БД
-            processor.add_log(branch=branch, text=msg, log_type=1)
+            processor.log.add(text=msg, log_type=1)
             # отправка данных клиенту
             socketio.emit('new_event', {'msg': f'{curr} :: {msg}'})
             if empty_steps_limit == empty_steps:

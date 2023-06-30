@@ -166,25 +166,18 @@ def data_to_csv():
 def handle_webhook():
     data = request.get_json()
     print(data)  # or do something else with the data
-    return jsonify({'status': 'ok'}), 200
+    return jsonify({'status': 'ok', 'data': data}), 200
 
 
 @socketio.on('connect')
 def pre_load_from_socket():
     """ Предзагрузка данных через сокет в момент установки соединения """
     processor = DATA_PROCESSOR.get('sm')()
-    logs = processor.get_logs(branch='sm') or []
+    logs = processor.log.get(branch='sm') or []
     logs.reverse()
     for log in logs:
         dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
         socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
-
-
-# @bp.route('/button1')
-# def handle_button1():
-#
-#     # Do something with time
-#     return 'Button 1 was clicked. Time: ' + str(time)
 
 
 @bp.route('/button1')

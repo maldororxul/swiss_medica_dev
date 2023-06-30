@@ -4,7 +4,6 @@ from enum import Enum
 from functools import reduce
 from typing import Dict, List, Optional, Any, Type, Tuple, Union
 from sqlalchemy import Table, MetaData, select, and_
-from app import db
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
 from app.amo.data.cdv.data_schema import LeadCDV, LeadMT
@@ -15,7 +14,8 @@ from app.amo.processor.country_codes import get_country_codes, get_country_by_co
 from app.amo.processor.functions import clear_phone
 from app.amo.processor.utm_controller import build_final_utm
 from app.engine import get_engine
-from app.models.log import CDVLog, SMLog
+from app.logger import DBLogger
+from app.models.log import SMLog
 from app.google_api.client import GoogleAPIClient
 
 
@@ -54,7 +54,6 @@ class DataProcessor:
     time_shift: int = NotImplemented
     check_by_stages: bool = False
     utm_rules_book_id: str = NotImplemented
-    log: db.Model = NotImplemented
 
     @dataclass
     class By:
@@ -86,18 +85,6 @@ class DataProcessor:
             for pipeline in self.pipelines()
         }
         self.users_dict = {x['id_on_source']: x for x in self.users()}
-
-    def add_log(self, branch: str, text: str, log_type: int, created_at: Optional[int] = None):
-        self.log.add(branch=branch, text=text, log_type=log_type, created_at=created_at)
-
-    def get_logs(self, branch: str, log_type: int = 1, limit: int = 100) -> List[db.Model]:
-        table = Table('Log', MetaData(), autoload_with=self.engine, schema=self.schema)
-        with self.engine.begin() as connection:
-            stmt = select(table)\
-                .where(table.c['type'] == log_type, table.c['branch'] == branch)\
-                .order_by(table.c.id.desc())\
-                .limit(limit=limit)
-            return connection.execute(stmt).fetchall()
 
     def update(self):
         return self._build_leads_data()
@@ -626,7 +613,10 @@ class SMDataProcessor(DataProcessor):
     lead_models = [LeadSM, LeadHA, LeadDiabetes]
     time_shift: int = 3
     utm_rules_book_id = GoogleSheets.UtmRulesSM.value
-    log: db.Model = SMLog
+
+    def __init__(self):
+        super().__init__()
+        self.log = DBLogger(log_model=SMLog, branch='sm')
 
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
         # строим словарь с дефолтными значениями полей лида
@@ -844,4 +834,3 @@ class CDVDataProcessor(DataProcessor):
     schema = 'cdv'
     lead_models = [LeadCDV, LeadMT]
     time_shift: int = 2
-    log: db.Model = CDVLog
