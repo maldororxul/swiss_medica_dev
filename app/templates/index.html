@@ -86,7 +86,7 @@
             </div>
         </div>
         <script type="text/javascript" charset="utf-8">
-            var socket = io.connect('http://' + document.domain + ':' + location.port);
+            var socket = io.connect('https://' + document.domain + ':' + location.port);
             socket.on('new_event', function(event) {
                 $('#events').prepend('<p>' + event.msg + '</p>');
                 if($('#events').children().length > 1000){
