@@ -25,23 +25,24 @@ API_CLIENT = {
 @socketio.on('connect')
 def pre_load_from_socket():
     """ Предзагрузка данных через сокет в момент установки соединения """
-    processor = DATA_PROCESSOR.get('sm')()
-    logs = processor.log.get() or []
-    logs.reverse()
-    for log in logs:
-        dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-        socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
+    pass
+    # processor = DATA_PROCESSOR.get('sm')()
+    # logs = processor.log.get() or []
+    # logs.reverse()
+    # for log in logs:
+    #     dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
+    #     socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
 
 
 @bp.route('/')
 def index():
-    socketio.emit('new_event', {'msg': f'test'})
     processor = DATA_PROCESSOR.get('sm')()
     logs = processor.log.get() or []
     logs.reverse()
     for log in logs:
         dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
         socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
+    # processor.log.add(text='test')
     # границы данных
     df, dt = processor.get_data_borders()
     date_from = datetime.fromtimestamp(df) if df else None
@@ -95,9 +96,11 @@ def handle_webhook():
     data = request.get_json()
     # db_logger = DBLogger(branch='sm', log_model=SMLog)
     # db_logger.add(text='test 666 webhook', log_type=1)
-    socketio.emit('new_event', {'msg': f'test 666 webhook {data}'})
-    app.logger.info('test 666 webhook')  # or do something else with the data
-    app.logger.info(f'test 666 webhook {data}')  # or do something else with the data
+    processor = DATA_PROCESSOR.get('sm')()
+    processor.log.add(text=f'test 666 webhook {data}')
+    # socketio.emit('new_event', {'msg': f'test 666 webhook {data}'})
+    # app.logger.info('test 666 webhook')  # or do something else with the data
+    # app.logger.info(f'test 666 webhook {data}')  # or do something else with the data
     return jsonify({'status': 'ok'}), 200
 
 
