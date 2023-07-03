@@ -23,7 +23,7 @@ def create_app(config_class=Config):
 
     # Initialize Flask extensions here
     db.init_app(app)
-    socketio.init_app(app, async_mode='eventlet')
+    socketio.init_app(app, async_mode='eventlet', cors_allowed_origins="*")
 
     app.scheduler = BackgroundScheduler()
     app.scheduler.start()
@@ -35,9 +35,3 @@ def create_app(config_class=Config):
     app.cli.add_command(create_tables)
 
     return app
-
-
-app = create_app()
-
-if __name__ == '__main__':
-    socketio.run(app)

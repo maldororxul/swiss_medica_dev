@@ -22,31 +22,32 @@ API_CLIENT = {
 }
 
 
-@socketio.on('connect')
-def pre_load_from_socket():
-    """ Предзагрузка данных через сокет в момент установки соединения """
-    processor = DATA_PROCESSOR.get('sm')()
-    logs = processor.log.get() or []
-    logs.reverse()
-    for log in logs:
-        dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-        socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
-
-
 @bp.route('/')
 def index():
-    socketio.emit('new_event', {'msg': f'test'})
     processor = DATA_PROCESSOR.get('sm')()
-    logs = processor.log.get() or []
-    logs.reverse()
-    for log in logs:
-        dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-        socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
+    # processor.add_log(branch='sm', text='test', log_type=1)
+    # # тащим лог
+    # for log in processor.get_logs(branch='sm') or []:
+    #     dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
+    #     socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
     # границы данных
     df, dt = processor.get_data_borders()
     date_from = datetime.fromtimestamp(df) if df else None
     date_to = datetime.fromtimestamp(dt) if dt else None
     date_curr = date_from + timedelta(minutes=60) if date_from else datetime.now()
+
+    # app = current_app._get_current_object()
+    # app.scheduler.add_job(
+    #     id='get_logs',
+    #     func=socketio.start_background_task,
+    #     args=[get_logs, app, 'sm'],
+    #     trigger='interval',
+    #     seconds=5,
+    #     max_instances=1
+    # )
+    # if not app.scheduler.running:
+    #     app.scheduler.start()
+
     return render_template(
         'index.html',
         sm_df=date_from,
@@ -79,14 +80,77 @@ def send_auth_code():
     return redirect(url_for('main.get_token'))
 
 
+@bp.route('/leads')
+def get_leads():
+    leads = SMLead.query.all()
+    return jsonify([{"id": lead.id, "name": lead.name} for lead in leads])
+
+
+@bp.route('/events')
+def get_events():
+    collection = SMEvent.query.all()
+    return jsonify([x.to_dict() for x in collection])
+
+
+@bp.route('/sm_data')
+def get_data():
+    collection = SMData.query.all()
+    return jsonify([x.to_dict() for x in collection])
+
+
 @bp.route('/sm_data_excel')
 def data_to_excel():
     collection = SMData.query.all()
     data = [(x.to_dict() or {}).get('data') for x in collection]
+    # print(type(data[0]['created_at']))
     ExcelClient(file_path=os.path.join('app', 'data'), file_name='sm_data').write(data=[
         ExcelClient.Data(data=data)
     ])
     return send_file(os.path.join('data', 'sm_data.xlsx'), as_attachment=True)
+
+
+@bp.route('/sm_data_csv')
+def data_to_csv():
+    # conn = psycopg2.connect(database="your_database", user="your_username", password="your_password", host="127.0.0.1", port="5432")
+    # cursor = conn.cursor()
+    #
+    # query = "SELECT * FROM your_table"
+    # cursor.execute(query)
+
+    def generate():
+        # data = ['data']
+        # print(data)
+        # yield f'data\n'
+        collection = SMData.query.all()
+        for row in collection[:-1]:
+            yield f"{row.data};"
+        yield collection[-1].data
+
+    # string = ''.join(generate())
+    # result = ''
+    # for num, c in enumerate(string, 1):
+    #     if num > 13000 and num < 14200:
+    #         result += c
+    # print(result)
+
+    return Response(stream_with_context(generate()), mimetype='text/csv')
+
+
+# @bp.route('/build')
+# def build():
+#     date_from = datetime(2023, 6, 20, 0, 0, 0)
+#     date_to = datetime(2023, 6, 20, 23, 59, 59)
+#     with current_app.app_context():
+#         collection = []
+#         for line in SMDataProcessor(date_from=date_from, date_to=date_to).update() or []:
+#             item = {key.split('_(')[0]: value for key, value in line.items()}
+#             collection.append({
+#                 'id': line['id'],
+#                 'updated_at': line['updated_at_ts'],
+#                 'data': json.dumps(item, cls=DateTimeEncoder)
+#             })
+#         SMSyncController(date_from=date_from, date_to=date_to).update_data(collection=collection)
+#     return ''
 
 
 @bp.route('/webhook', methods=['POST'])
@@ -99,6 +163,17 @@ def handle_webhook():
     app.logger.info('test 666 webhook')  # or do something else with the data
     app.logger.info(f'test 666 webhook {data}')  # or do something else with the data
     return jsonify({'status': 'ok'}), 200
+
+
+@socketio.on('connect')
+def pre_load_from_socket():
+    """ Предзагрузка данных через сокет в момент установки соединения """
+    processor = DATA_PROCESSOR.get('sm')()
+    logs = processor.log.get(branch='sm') or []
+    logs.reverse()
+    for log in logs:
+        dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
+        socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
 
 
 @bp.route('/button1')
