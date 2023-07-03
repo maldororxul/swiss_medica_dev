@@ -10,13 +10,16 @@ from app.commands import create_tables
 from config import Config
 from app.extensions import db, socketio
 
-# Get the logger for 'apscheduler' and set its level to ERROR
-logging.getLogger('apscheduler').setLevel(logging.ERROR)
-
 
 def create_app(config_class=Config):
+
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # logging
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
     # Initialize Flask extensions here
     db.init_app(app)
