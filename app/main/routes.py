@@ -102,10 +102,11 @@ def data_to_excel():
 def handle_webhook():
     processor = DATA_PROCESSOR.get('sm')()
     if request.content_type == 'application/json':
-        try:
-            data = request.json
-        except:
-            data = request.get_data(as_text=True)
+        data = request.json
+        processor.log.add(text=f'Data: {str(data)}'[:999])
+        return 'success', 200
+    elif request.content_type == 'application/x-www-form-urlencoded':
+        data = request.form.to_dict()  # Convert the form data to a Python dictionary
         processor.log.add(text=f'Data: {str(data)}'[:999])
         return 'success', 200
     else:
