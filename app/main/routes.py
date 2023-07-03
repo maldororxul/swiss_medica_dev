@@ -109,7 +109,9 @@ def handle_webhook():
         processor.log.add(text=f'Data: {str(data)}'[:999])
         return 'success', 200
     else:
-        processor.log.add(text=f'Unsupported response: {request.content_type}')
+        processor.log.add(
+            text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'[:999]
+        )
         return 'Unsupported Media Type', 415
 
 
