@@ -25,23 +25,23 @@ API_CLIENT = {
 @socketio.on('connect')
 def pre_load_from_socket():
     """ Предзагрузка данных через сокет в момент установки соединения """
-    pass
-    # processor = DATA_PROCESSOR.get('sm')()
-    # logs = processor.log.get() or []
-    # logs.reverse()
-    # for log in logs:
-    #     dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-    #     socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
-
-
-@bp.route('/')
-def index():
+    # pass
     processor = DATA_PROCESSOR.get('sm')()
     logs = processor.log.get() or []
     logs.reverse()
     for log in logs:
         dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
         socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
+
+
+@bp.route('/')
+def index():
+    processor = DATA_PROCESSOR.get('sm')()
+    # logs = processor.log.get() or []
+    # logs.reverse()
+    # for log in logs:
+    #     dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
+    #     socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
     # processor.log.add(text='test')
     # границы данных
     df, dt = processor.get_data_borders()
@@ -92,7 +92,7 @@ def data_to_excel():
 
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
-    app = current_app._get_current_object()
+    # app = current_app._get_current_object()
     data = request.get_json()
     # db_logger = DBLogger(branch='sm', log_model=SMLog)
     # db_logger.add(text='test 666 webhook', log_type=1)

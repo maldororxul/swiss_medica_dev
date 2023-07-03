@@ -100,7 +100,7 @@
             });
 
             // Send an event to the server
-            socket.emit('my_event', {data: 'Hello, server!'});
+            // socket.emit('my_event', {data: 'Hello, server!'});
 
             socket.on('new_event', function(event) {
                 $('#events').prepend('<p>' + event.msg + '</p>');
