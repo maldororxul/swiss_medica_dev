@@ -100,16 +100,13 @@ def data_to_excel():
 
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
-    processor = DATA_PROCESSOR.get('sm')()
-    processor.log.add(text=f'Data: {str(request.json)}'[:999])
-    return 'success', 200
-    # app = current_app._get_current_object()
-    # db_logger = DBLogger(branch='sm', log_model=SMLog)
-    # db_logger.add(text='test 666 webhook', log_type=1)
-    # socketio.emit('new_event', {'msg': f'test 666 webhook {data}'})
-    # app.logger.info('test 666 webhook')  # or do something else with the data
-    # app.logger.info(f'test 666 webhook {data}')  # or do something else with the data
-    # return jsonify({'status': 'ok'}), 200
+    if request.content_type == 'application/json':
+        data = request.get_data(as_text=True)
+        processor = DATA_PROCESSOR.get('sm')()
+        processor.log.add(text=f'Data: {str(data)}'[:999])
+        return 'success', 200
+    else:
+        return 'Unsupported Media Type', 415
 
 
 @bp.route('/button1')
