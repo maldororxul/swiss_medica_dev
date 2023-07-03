@@ -1,7 +1,9 @@
 import os
-
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from config import Config
+
+load_dotenv()
 
 CONNECTIONS_LIMIT = os.environ.get('CONNETIONS_LIMIT')
 
