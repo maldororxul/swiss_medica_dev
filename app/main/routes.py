@@ -100,11 +100,8 @@ def data_to_excel():
 
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
-    # data = request.json
-    # app = current_app._get_current_object()
-    # app.logger.info('Data: %s', 'test')
     processor = DATA_PROCESSOR.get('sm')()
-    processor.log.add(text=f'Data from webhook {str(request.json)}')
+    processor.log.add(text=f'Data: {str(request.json)}'[:999])
     return 'success', 200
     # app = current_app._get_current_object()
     # db_logger = DBLogger(branch='sm', log_model=SMLog)
