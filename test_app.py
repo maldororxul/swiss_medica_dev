@@ -3,6 +3,12 @@ from flask_socketio import SocketIO, emit
 
 
 def create_app():
+    # костыль на MutableMapping, т.к. не хочу менять версию интерпретатора
+    import sys
+    if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+        import collections
+        setattr(collections, "MutableMapping", collections.abc.MutableMapping)
+
     app = Flask(__name__)
     socketio = SocketIO(app, async_mode='eventlet')
 
