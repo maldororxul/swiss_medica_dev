@@ -1,4 +1,3 @@
-import logging
 import os
 from datetime import datetime, timedelta
 from apscheduler.jobstores.base import JobLookupError
@@ -167,12 +166,13 @@ def data_to_csv():
 
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
+    app = current_app._get_current_object()
     data = request.get_json()
-    db_logger = DBLogger(branch='sm', log_model=SMLog)
-    db_logger.add(text='test 666 webhook', log_type=1)
+    # db_logger = DBLogger(branch='sm', log_model=SMLog)
+    # db_logger.add(text='test 666 webhook', log_type=1)
     socketio.emit('new_event', {'msg': f'test 666 webhook {data}'})
-    current_app.logger.setLevel(logging.INFO)
-    current_app.logger.info('test 666 webhook')  # or do something else with the data
+    app.logger.info('test 666 webhook')  # or do something else with the data
+    app.logger.info(f'test 666 webhook {data}')  # or do something else with the data
     return jsonify({'status': 'ok'}), 200
 
 
