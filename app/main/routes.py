@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timedelta
 from apscheduler.jobstores.base import JobLookupError
@@ -56,6 +57,13 @@ def index():
     )
 
 
+@bp.route('/add_log')
+def add_test_log():
+    processor = DATA_PROCESSOR.get('sm')()
+    processor.log.add(text='does it work?')
+    return redirect(url_for('main.index'))
+
+
 @bp.route('/get_token', methods=['GET'])
 def get_token():
     return render_template('get_token.html')
@@ -93,8 +101,10 @@ def data_to_excel():
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
     # data = request.json
-    processor = DATA_PROCESSOR.get('sm')()
-    processor.log.add(text=f'test 666 webhook')
+    app = current_app._get_current_object()
+    app.logger.info('Data: %s', 'test')
+    # processor = DATA_PROCESSOR.get('sm')()
+    # processor.log.add(text=f'test 666 webhook')
     return 'success', 200
     # app = current_app._get_current_object()
     # db_logger = DBLogger(branch='sm', log_model=SMLog)
