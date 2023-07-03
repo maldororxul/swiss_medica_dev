@@ -179,13 +179,12 @@ def handle_webhook():
 @socketio.on('connect')
 def pre_load_from_socket():
     """ Предзагрузка данных через сокет в момент установки соединения """
-    pass
-    # processor = DATA_PROCESSOR.get('sm')()
-    # logs = processor.log.get(branch='sm') or []
-    # logs.reverse()
-    # for log in logs:
-    #     dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-    #     socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
+    processor = DATA_PROCESSOR.get('sm')()
+    logs = processor.log.get(branch='sm') or []
+    logs.reverse()
+    for log in logs:
+        dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
+        socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
 
 
 @bp.route('/button1')
