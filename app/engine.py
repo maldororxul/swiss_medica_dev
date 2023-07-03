@@ -1,11 +1,5 @@
-import os
-from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from config import Config
-
-load_dotenv()
-
-CONNECTIONS_LIMIT = os.environ.get('CONNETIONS_LIMIT')
 
 engine = None
 
@@ -15,8 +9,8 @@ def get_engine():
     if engine is None:
         engine = create_engine(
             Config.SQLALCHEMY_DATABASE_URI,
-            pool_size=CONNECTIONS_LIMIT,
-            max_overflow=CONNECTIONS_LIMIT,
+            pool_size=Config.CONNECTIONS_LIMIT,
+            max_overflow=Config.CONNECTIONS_LIMIT,
             pool_pre_ping=True
         )
     return engine
