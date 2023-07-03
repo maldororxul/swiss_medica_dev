@@ -104,7 +104,7 @@ def handle_webhook():
     # app = current_app._get_current_object()
     # app.logger.info('Data: %s', 'test')
     processor = DATA_PROCESSOR.get('sm')()
-    processor.log.add(text=f'webhook writes data in log')
+    processor.log.add(text=f'Data from webhook {str(request.json)}')
     return 'success', 200
     # app = current_app._get_current_object()
     # db_logger = DBLogger(branch='sm', log_model=SMLog)
