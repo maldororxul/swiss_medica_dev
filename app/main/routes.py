@@ -100,12 +100,16 @@ def data_to_excel():
 
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
+    processor = DATA_PROCESSOR.get('sm')()
     if request.content_type == 'application/json':
-        data = request.get_data(as_text=True)
-        processor = DATA_PROCESSOR.get('sm')()
+        try:
+            data = request.json
+        except:
+            data = request.get_data(as_text=True)
         processor.log.add(text=f'Data: {str(data)}'[:999])
         return 'success', 200
     else:
+        processor.log.add(text=f'Unsupported response: {request.content_type}')
         return 'Unsupported Media Type', 415
 
 
