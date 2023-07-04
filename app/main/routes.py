@@ -56,7 +56,7 @@ def add_to_autocall():
     return redirect(url_for('main.index'))
 
 
-@bp.route('/autocall_handler_cdv')
+@bp.route('/autocall_handler_cdv', methods=['POST'])
 def autocall_handler_cdv():
     processor = DATA_PROCESSOR.get('cdv')()
     if request.content_type == 'application/json':
