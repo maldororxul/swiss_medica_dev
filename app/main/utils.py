@@ -36,7 +36,7 @@ def parse_webhook_data(data: Dict):
     client = API_CLIENT.get(branch)()
     try:
         lead_data = client.get_lead_by_id(lead_id=data.get('leads[status][0][id]'))
-        processor.log.add(text=f'Lead data: {type(lead_data)} {lead_data}'[:999])
+        # processor.log.add(text=f'Lead data: {type(lead_data)} {lead_data}'[:999])
         phones = processor.get_lead_phones(lead=lead_data, forced_contacts_update=True)
         processor.log.add(text=f'Phones: {phones}'[:999])
     except Exception as exc:
