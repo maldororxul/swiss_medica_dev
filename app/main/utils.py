@@ -35,9 +35,17 @@ def parse_webhook_data(data: Dict):
         return
     client = API_CLIENT.get(branch)()
     try:
-        lead_data = client.get_lead_by_id(lead_id=data.get('leads[status][0][id]'))
-        # processor.log.add(text=f'Lead data: {type(lead_data)} {lead_data}'[:999])
-        phones = processor.get_lead_phones(lead=lead_data, forced_contacts_update=True)
+        # читаем данные лида и контактов с источника
+        lead = client.get_lead_by_id(lead_id=data.get('leads[status][0][id]'))
+        _embedded = lead.get('_embedded') or {}
+        contacts = _embedded.get('contacts')
+        if not contacts:
+            return
+        # дописываем контакты в лид
+        lead.update({
+            'contacts': client.get_contact_by_id(contact_id=contacts[0]['id'])
+        })
+        phones = processor.get_lead_phones(lead=lead)
         processor.log.add(text=f'Phones: {phones}'[:999])
     except Exception as exc:
         processor.log.add(text=f'Error 2: {exc}'[:999])

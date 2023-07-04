@@ -531,7 +531,6 @@ class DataProcessor:
                     by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
                 ) if contacts else [],
             })
-        return lead.get('contacts')
         # из контактов тащим телефоны
         for contact in lead.get('contacts') or []:
             for contact_field in contact.get('custom_fields_values') or []:

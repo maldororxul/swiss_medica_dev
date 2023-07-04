@@ -519,6 +519,11 @@ class APIClient:
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
 
+    def get_contact_by_id(self, contact_id: Union[int, str]) -> Dict:
+        """ Получение контакта по идентификатору  """
+        response = self.__execute(endpoint='contacts', entity_id=contact_id)
+        return response.json()
+
     def get_lead_by_id(self, lead_id: Union[int, str]) -> Dict:
         """ Получение лида по идентификатору  """
         params = 'with=contacts,loss_reason'
