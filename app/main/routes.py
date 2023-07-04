@@ -26,7 +26,7 @@ def pre_load_from_socket():
     for processor_entity in DATA_PROCESSOR.values():
         processor = processor_entity()
         logs.extend(processor.log.get() or [])
-    logs.reverse()
+    logs = sorted(logs, key=lambda x: x['created_at'], reverse=True)
     for log in logs:
         dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
         socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
