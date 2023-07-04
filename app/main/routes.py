@@ -56,8 +56,26 @@ def add_to_autocall():
     return redirect(url_for('main.index'))
 
 
+@bp.route('/start_autocall')
+def start_autocall():
+    # client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+    # client.start_autocall(autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
+    return redirect(url_for('main.index'))
+
+
 @bp.route('/autocall_handler_cdv', methods=['POST'])
 def autocall_handler_cdv():
+    """
+    Call data:
+    {
+        'number': '995591058618',
+        'dateTime': '2023-07-04 14:44:17',
+        'status': 'Исходящие, отвеченные',
+        'operator': '',
+        'record': 'https://sipuni.com/api/callback/record/05578a253f510b1840c67016426218c1',
+        'callId': '1688471056.154959'
+    }
+    """
     processor = DATA_PROCESSOR.get('cdv')()
     if request.content_type == 'application/json':
         processor.log.add(text=f'Call data: {request.json}'[:999])

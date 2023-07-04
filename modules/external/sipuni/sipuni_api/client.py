@@ -78,6 +78,21 @@ class Sipuni(object):
         url = f'{self.API_URL}autocall/add_number?{query_params}'
         return self._send_api_request('post', url)
 
+    def start_autocall(self, autocall_id: int) -> dict:
+        """
+        :param autocall_id: int
+        :return: dict
+        """
+        # fixme решить "в лоб" не удается - пробовать через selenium?
+        params = {
+            'autocallId': autocall_id,
+            'user': self.user,
+            'secret': self.token
+        }
+        query_params = self._create_query_params(params)
+        url = f'{self.API_URL}autocall/start?{query_params}'
+        return self._send_api_request('post', url)
+
     def make_call(self, phone: str, sipnumber: str, reverse: int = 0, antion: int = 0) -> dict:
         """
         :param phone: str
