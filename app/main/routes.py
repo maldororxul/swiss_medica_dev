@@ -57,7 +57,7 @@ def add_to_autocall():
 
 
 @bp.route('/autocall_handler_cdv')
-def add_to_autocall():
+def autocall_handler_cdv():
     processor = DATA_PROCESSOR.get('cdv')()
     if request.content_type == 'application/json':
         processor.log.add(text=f'Call data: {request.json}'[:999])
