@@ -27,8 +27,13 @@ DATA_PROCESSOR = {
 
 
 def parse_webhook_data(data: Dict):
-    branch = data.get('account[subdomain]')
-    processor = DATA_PROCESSOR.get(branch)()
+    sm_processor = SMDataProcessor()
+    try:
+        branch = data.get('account[subdomain]')
+        processor = DATA_PROCESSOR.get(branch)()
+    except Exception as exc:
+        sm_processor.log.add(text=f'Error 1: {exc}'[:999])
+        return
     # реагируем только на изменение статусов
     if 'leads[status][0][old_status_id]' not in data and 'leads[status][0][status_id]' not in data:
         processor.log.add(text=f'Wrong event')
@@ -41,4 +46,4 @@ def parse_webhook_data(data: Dict):
         phones = processor.get_lead_phones(lead=lead_data, forced_contacts_update=True)
         processor.log.add(text=f'Phones: {phones}'[:999])
     except Exception as exc:
-        processor.log.add(text=f'Error: {exc}'[:999])
+        processor.log.add(text=f'Error 2: {exc}'[:999])
