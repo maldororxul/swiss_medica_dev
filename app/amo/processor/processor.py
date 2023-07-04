@@ -522,9 +522,9 @@ class DataProcessor:
         """ Получить список телефонов из контактов лида """
         result = []
         # вычитываем контакты при необходимости
-        _embedded = lead.get('_embedded') or {}
-        contacts = _embedded.get('contacts')
         if forced_contacts_update or (not lead.get('contacts')):
+            _embedded = lead.get('_embedded') or {}
+            contacts = _embedded.get('contacts')
             lead.update({
                 'contacts': self.__get_by(
                     table_name='Contact',

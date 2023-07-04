@@ -42,8 +42,10 @@ def parse_webhook_data(data: Dict):
         if not contacts:
             return
         # дописываем контакты в лид
+        tmp = client.get_contact_by_id(contact_id=contacts[0]['id'])
+        processor.log.add(text=f'Contacts: {tmp}'[:999])
         lead.update({
-            'contacts': client.get_contact_by_id(contact_id=contacts[0]['id'])
+            'contacts': tmp
         })
         phones = processor.get_lead_phones(lead=lead)
         processor.log.add(text=f'Phones: {phones}'[:999])
