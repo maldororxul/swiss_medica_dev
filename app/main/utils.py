@@ -15,6 +15,8 @@ from typing import Dict
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.functions import clear_phone
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
+from config import Config
+from modules.external.sipuni.sipuni_api import Sipuni
 
 API_CLIENT = {
     'swissmedica': SwissmedicaAPIClient,
@@ -46,10 +48,14 @@ def parse_webhook_data(data: Dict):
         # вытаскиваем из контакта телефоны
         phones = []
         for contact_field in contact.get('custom_fields_values') or []:
-            if contact_field['field_code'] != 'PHONE':  # todo хардкод
+            if contact_field['field_code'] != 'PHONE':
                 continue
             for phone in contact_field['values']:
                 phones.append(clear_phone(phone['value']))
         processor.log.add(text=f'Phones: {phones}'[:999])
+        if not phones:
+            return
+        client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+        client.add_number_to_autocall(number=phones[0], autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
     except Exception as exc:
-        processor.log.add(text=f'Error 2: {exc}'[:999])
+        processor.log.add(text=f'Error [parse_webhook_data]: {exc}'[:999])

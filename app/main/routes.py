@@ -10,7 +10,8 @@ from app.main.tasks import get_data_from_amo, update_pivot_data
 from app.main.utils import parse_webhook_data
 from app.models.data import SMData
 from app.utils.excel import ExcelClient
-
+from config import Config
+from modules.external.sipuni.sipuni_api import Sipuni
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
@@ -48,11 +49,27 @@ def index():
     )
 
 
-@bp.route('/add_log')
-def add_test_log():
-    processor = DATA_PROCESSOR.get('sm')()
-    processor.log.add(text='does it work?')
+@bp.route('/add_to_autocall')
+def add_to_autocall():
+    client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+    client.add_number_to_autocall(number='995591058618', autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
     return redirect(url_for('main.index'))
+
+
+@bp.route('/autocall_handler_cdv')
+def add_to_autocall():
+    processor = DATA_PROCESSOR.get('cdv')()
+    if request.content_type == 'application/json':
+        processor.log.add(text=f'Call data: {request.json}'[:999])
+        return 'success', 200
+    elif request.content_type == 'application/x-www-form-urlencoded':
+        processor.log.add(text=f'Call data: {request.form.to_dict()}'[:999])
+        return 'success', 200
+    else:
+        processor.log.add(
+            text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'[:999]
+        )
+        return 'Unsupported Media Type', 415
 
 
 @bp.route('/get_token', methods=['GET'])
