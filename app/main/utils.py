@@ -13,6 +13,7 @@
 """
 from typing import Dict
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
+from app.amo.processor.functions import clear_phone
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
 
 API_CLIENT = {
@@ -35,19 +36,20 @@ def parse_webhook_data(data: Dict):
         return
     client = API_CLIENT.get(branch)()
     try:
-        # читаем данные лида и контактов с источника
+        # читаем данные лида и контакта с источника
         lead = client.get_lead_by_id(lead_id=data.get('leads[status][0][id]'))
         _embedded = lead.get('_embedded') or {}
         contacts = _embedded.get('contacts')
         if not contacts:
             return
-        # дописываем контакты в лид
-        tmp = client.get_contact_by_id(contact_id=contacts[0]['id'])
-        processor.log.add(text=f'Contacts: {tmp}'[:999])
-        lead.update({
-            'contacts': tmp
-        })
-        phones = processor.get_lead_phones(lead=lead)
+        contact = client.get_contact_by_id(contact_id=contacts[0]['id'])
+        # вытаскиваем из контакта телефоны
+        phones = []
+        for contact_field in contact.get('custom_fields_values') or []:
+            if contact_field['field_code'] != 'PHONE':  # todo хардкод
+                continue
+            for phone in contact_field['values']:
+                phones.append(clear_phone(phone['value']))
         processor.log.add(text=f'Phones: {phones}'[:999])
     except Exception as exc:
         processor.log.add(text=f'Error 2: {exc}'[:999])
