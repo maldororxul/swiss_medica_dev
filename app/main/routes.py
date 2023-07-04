@@ -22,8 +22,10 @@ API_CLIENT = {
 def pre_load_from_socket():
     """ Предзагрузка данных через сокет в момент установки соединения """
     # вытаскиваем логи
-    processor = DATA_PROCESSOR.get('sm')()
-    logs = processor.log.get() or []
+    logs = []
+    for processor_entity in DATA_PROCESSOR.values():
+        processor = processor_entity()
+        logs.extend(processor.log.get() or [])
     logs.reverse()
     for log in logs:
         dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
@@ -89,7 +91,6 @@ def data_to_excel():
 
 @bp.route('/webhook', methods=['POST'])
 def handle_webhook():
-    processor = DATA_PROCESSOR.get('sm')()
     if request.content_type == 'application/json':
         parse_webhook_data(data=request.json)
         return 'success', 200
@@ -97,6 +98,7 @@ def handle_webhook():
         parse_webhook_data(data=request.form.to_dict())
         return 'success', 200
     else:
+        processor = DATA_PROCESSOR.get('sm')()
         processor.log.add(
             text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'[:999]
         )
