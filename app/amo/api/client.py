@@ -519,6 +519,12 @@ class APIClient:
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
 
+    def get_lead_by_id(self, lead_id: Union[int, str]) -> Dict:
+        """ Получение лида по идентификатору  """
+        params = 'with=contacts,loss_reason'
+        response = self.__execute(endpoint='leads', params=params, entity_id=lead_id)
+        return response.json()
+
     def find_leads(self, query: str) -> List[Dict]:
         """ Поиск сделок по запросу
 

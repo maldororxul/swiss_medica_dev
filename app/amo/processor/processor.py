@@ -15,7 +15,7 @@ from app.amo.processor.functions import clear_phone
 from app.amo.processor.utm_controller import build_final_utm
 from app.engine import get_engine
 from app.logger import DBLogger
-from app.models.log import SMLog
+from app.models.log import SMLog, CDVLog
 from app.google_api.client import GoogleAPIClient
 
 
@@ -518,6 +518,28 @@ class DataProcessor:
             stmt = select(table).where(reduce(and_, conditions))
             return [x._asdict() for x in connection.execute(stmt).fetchall() or []]
 
+    def get_lead_phones(self, lead: Dict, forced_contacts_update: bool = False) -> List[str]:
+        """ Получить список телефонов из контактов лида """
+        result = []
+        # вычитываем контакты при необходимости
+        _embedded = lead.get('_embedded') or {}
+        contacts = _embedded.get('contacts')
+        if forced_contacts_update or not lead.get('contacts'):
+            lead.update({
+                'contacts': self.__get_by(
+                    table_name='Contact',
+                    by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
+                ) if contacts else [],
+            })
+        # из контактов тащим телефоны
+        for contact in lead.get('contacts') or []:
+            for contact_field in contact.get('custom_fields_values') or []:
+                if contact_field['field_code'] != 'PHONE':  # todo хардкод
+                    continue
+                for phone in contact_field['values']:
+                    result.append(clear_phone(phone['value']))
+        return result
+
     @staticmethod
     def _check_stages_priority(line: Dict, stages_priority: Tuple, exclude: Tuple = ('long_negotiations',)):
         """ Дозаполнение предыдущих этапов воронки, если заполнены последующие """
@@ -646,7 +668,7 @@ class SMDataProcessor(DataProcessor):
             line[self.lead.PurchaseExtended.Key] = line[stage_instance.Treatment.Key]
             line[self.lead.PurchaseExtendedPrice.Key] = line[stage_instance.Treatment.Price]
         # телефоны
-        line[self.lead.Phone.Key] = self._get_lead_phones(lead)
+        line[self.lead.Phone.Key] = self.get_lead_phones(lead)
         # сортировка по ключам
         return line
 
@@ -803,18 +825,6 @@ class SMDataProcessor(DataProcessor):
         line[self.lead.Country.Key] = country
 
     @staticmethod
-    def _get_lead_phones(lead: Dict) -> List[str]:
-        """ Получить список телефонов из контактов лида """
-        result = []
-        for contact in lead.get('contacts') or []:
-            for contact_field in contact.get('custom_fields_values') or []:
-                if contact_field['field_code'] != 'PHONE':  # todo хардкод
-                    continue
-                for phone in contact_field['values']:
-                    result.append(clear_phone(phone['value']))
-        return result
-
-    @staticmethod
     def _is_lead(loss_reason: str) -> bool:
         """ Возвращает кортеж причин закрытия, которые не соответствуют лидам """
         return loss_reason not in (
@@ -832,5 +842,34 @@ class SMDataProcessor(DataProcessor):
 
 class CDVDataProcessor(DataProcessor):
     schema = 'cdv'
+    sub_domain: str = 'drvorobjev'
     lead_models = [LeadCDV, LeadMT]
-    time_shift: int = 2
+    time_shift: int = 3
+    utm_rules_book_id = GoogleSheets.UtmRulesCDV.value
+
+    def __init__(self):
+        super().__init__()
+        self.log = DBLogger(log_model=CDVLog, branch='cdv')
+
+    def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
+        pass
+
+    def _freeze_stages(self, line: Dict):
+        pass
+
+    def _freeze_stages_italy(self, line: Dict):
+        pass
+
+    def _process_custom_fields(self, line: Dict, lead: Dict, pre_data: Dict):
+        pass
+
+    def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):
+        pass
+
+    def _clear_country(self, line: Dict):
+        pass
+
+    @staticmethod
+    def _is_lead(loss_reason: str) -> bool:
+        """ Возвращает кортеж причин закрытия, которые не соответствуют лидам """
+        pass

@@ -1,19 +1,14 @@
-import logging
 import os
 from datetime import datetime, timedelta
 from apscheduler.jobstores.base import JobLookupError
-from flask import render_template, jsonify, current_app, redirect, url_for, request, stream_with_context, Response, \
-    send_file
+from flask import render_template, current_app, redirect, url_for, request, send_file
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
-from app.logger import DBLogger
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
+from app.main.utils import parse_webhook_data
 from app.models.data import SMData
-from app.models.event import SMEvent
-from app.models.lead import SMLead
-from app.models.log import SMLog
 from app.utils.excel import ExcelClient
 
 
@@ -26,7 +21,7 @@ API_CLIENT = {
 @socketio.on('connect')
 def pre_load_from_socket():
     """ Предзагрузка данных через сокет в момент установки соединения """
-    # pass
+    # вытаскиваем логи
     processor = DATA_PROCESSOR.get('sm')()
     logs = processor.log.get() or []
     logs.reverse()
@@ -38,12 +33,6 @@ def pre_load_from_socket():
 @bp.route('/')
 def index():
     processor = DATA_PROCESSOR.get('sm')()
-    # logs = processor.log.get() or []
-    # logs.reverse()
-    # for log in logs:
-    #     dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-    #     socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
-    # processor.log.add(text='test')
     # границы данных
     df, dt = processor.get_data_borders()
     date_from = datetime.fromtimestamp(df) if df else None
@@ -102,12 +91,10 @@ def data_to_excel():
 def handle_webhook():
     processor = DATA_PROCESSOR.get('sm')()
     if request.content_type == 'application/json':
-        data = request.json
-        processor.log.add(text=f'Data: {str(data)}'[:999])
+        parse_webhook_data(data=request.json)
         return 'success', 200
     elif request.content_type == 'application/x-www-form-urlencoded':
-        data = request.form.to_dict()  # Convert the form data to a Python dictionary
-        processor.log.add(text=f'Data: {str(data)}'[:999])
+        parse_webhook_data(data=request.form.to_dict())
         return 'success', 200
     else:
         processor.log.add(
