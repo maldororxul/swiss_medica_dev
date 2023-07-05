@@ -7,7 +7,7 @@ from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
-from app.main.utils import parse_webhook_data
+from app.main.utils import handle_lead_status_changed, handle_autocall_result
 from app.models.data import SMData
 from app.utils.excel import ExcelClient
 from config import Config
@@ -68,27 +68,28 @@ def start_autocall():
 def autocall_handler_cdv():
     """
     Call data:
-    {
-        'number': '995591058618',
-        'dateTime': '2023-07-04 14:44:17',
-        'status': 'Исходящие, отвеченные',
-        'operator': '',
-        'record': 'https://sipuni.com/api/callback/record/05578a253f510b1840c67016426218c1',
-        'callId': '1688471056.154959'
-    }
+        {
+            'number': '995591058618',
+            'dateTime': '2023-07-04 14:44:17',
+            'status': 'Исходящие, отвеченные',
+            'operator': '',
+            'record': 'https://sipuni.com/api/callback/record/05578a253f510b1840c67016426218c1',
+            'callId': '1688471056.154959'
+        }
     """
-    processor = DATA_PROCESSOR.get('cdv')()
+    branch = 'drvorobjev'
     if request.content_type == 'application/json':
-        processor.log.add(text=f'Call data: {request.json}'[:999])
+        handle_autocall_result(data=request.json, branch=branch)
         return 'success', 200
     elif request.content_type == 'application/x-www-form-urlencoded':
-        processor.log.add(text=f'Call data: {request.form.to_dict()}'[:999])
+        handle_autocall_result(data=request.form.to_dict(), branch=branch)
         return 'success', 200
-    else:
-        processor.log.add(
-            text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'[:999]
-        )
-        return 'Unsupported Media Type', 415
+    # else:
+        # processor = DATA_PROCESSOR.get(branch)()
+        # processor.log.add(
+        #     text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'
+        # )
+    return 'Unsupported Media Type', 415
 
 
 @bp.route('/get_token', methods=['GET'])
@@ -125,20 +126,20 @@ def data_to_excel():
     return send_file(os.path.join('data', 'sm_data.xlsx'), as_attachment=True)
 
 
-@bp.route('/webhook', methods=['POST'])
-def handle_webhook():
+@bp.route('/init_autocall_cdv', methods=['POST'])
+def init_autocall_cdv():
     if request.content_type == 'application/json':
-        parse_webhook_data(data=request.json)
+        handle_lead_status_changed(data=request.json)
         return 'success', 200
     elif request.content_type == 'application/x-www-form-urlencoded':
-        parse_webhook_data(data=request.form.to_dict())
+        handle_lead_status_changed(data=request.form.to_dict())
         return 'success', 200
-    else:
-        processor = DATA_PROCESSOR.get('sm')()
-        processor.log.add(
-            text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'[:999]
-        )
-        return 'Unsupported Media Type', 415
+    # else:
+    #     processor = DATA_PROCESSOR.get('sm')()
+    #     processor.log.add(
+    #         text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'
+    #     )
+    return 'Unsupported Media Type', 415
 
 
 @bp.route('/button1')

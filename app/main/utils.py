@@ -13,10 +13,13 @@
 """
 import time
 from typing import Dict
+from flask import current_app
+from app import db
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.functions import clear_phone
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
 from app.main.browser import KmBrowser
+from app.models.autocall import SMAutocallNumber, CDVAutocallNumber
 from config import Config
 from modules.external.sipuni.sipuni_api import Sipuni
 
@@ -28,6 +31,11 @@ API_CLIENT = {
 DATA_PROCESSOR = {
     'swissmedica': SMDataProcessor,
     'drvorobjev': CDVDataProcessor,
+}
+
+AUTOCALL_NUMBER = {
+    'swissmedica': SMAutocallNumber,
+    'drvorobjev': CDVAutocallNumber,
 }
 
 
@@ -49,7 +57,7 @@ def start_autocall():
     browser.close()
 
 
-def parse_webhook_data(data: Dict):
+def handle_lead_status_changed(data: Dict):
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     # реагируем только на изменение статусов
@@ -58,8 +66,9 @@ def parse_webhook_data(data: Dict):
         return
     client = API_CLIENT.get(branch)()
     try:
+        lead_id = data.get('leads[status][0][id]')
         # читаем данные лида и контакта с источника
-        lead = client.get_lead_by_id(lead_id=data.get('leads[status][0][id]'))
+        lead = client.get_lead_by_id(lead_id=lead_id)
         _embedded = lead.get('_embedded') or {}
         contacts = _embedded.get('contacts')
         if not contacts:
@@ -72,13 +81,48 @@ def parse_webhook_data(data: Dict):
                 continue
             for phone in contact_field['values']:
                 phones.append(clear_phone(phone['value']))
-        processor.log.add(text=f'Phones: {phones}'[:999])
+        processor.log.add(text=f'Phones: {phones}')
         if not phones:
             return
+        # добавляем номер в автообзвон
+        number = phones[0]
         client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
-        client.add_number_to_autocall(number=phones[0], autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
+        client.add_number_to_autocall(number=number, autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
+        # записываем номер и идентификатор лида в БД
+        app = current_app._get_current_object()
+        with app.app_context():
+            autocall_number = AUTOCALL_NUMBER.get(branch)
+            lead = autocall_number(
+                lead_id=lead_id,
+                number=number
+            )
+            db.session.add(lead)
+            db.session.commit()
         # запуск обзвона (временно!)
         start_autocall()
 
     except Exception as exc:
-        processor.log.add(text=f'Error [parse_webhook_data]: {exc}'[:999])
+        processor.log.add(text=f'Error [parse_webhook_data]: {exc}')
+
+
+def handle_autocall_result(data: Dict, branch: str):
+    processor = DATA_PROCESSOR.get(branch)()
+    processor.log.add(text=f'Call data: {data}')
+    status = data.get('status')
+    if status == 'Исходящий, неотвеченный':
+        pass
+    elif status == 'Исходящие, отвеченные':
+        # клиент ответил на звонок
+        # удаляем номер из автообзвона Sipuni
+        sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+        sipuni_client.delete_number_from_autocall(number=data.get('number'), autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
+        # удаляем запись об автообзвоне из БД, перемещаем лид
+        app = current_app._get_current_object()
+        with app.app_context():
+            autocall_number = AUTOCALL_NUMBER.get(branch)
+            autocall_record = autocall_number.query.where(autocall_number.number == data.get('number')).first()
+            lead_id = autocall_record.lead_id
+            db.session.delete(autocall_record)
+            db.session.commit()
+        amo_client = API_CLIENT.get(branch)()
+        amo_client.update_lead(lead_id=lead_id, data={'status_id': 47888833})

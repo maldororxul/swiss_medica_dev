@@ -78,6 +78,22 @@ class Sipuni(object):
         url = f'{self.API_URL}autocall/add_number?{query_params}'
         return self._send_api_request('post', url)
 
+    def delete_number_from_autocall(self, number: str, autocall_id: int) -> dict:
+        """
+        :param number: str
+        :param autocall_id: int
+        :return: dict
+        """
+        params = {
+            'autocallId': autocall_id,
+            'number': number,
+            'user': self.user,
+            'secret': self.token
+        }
+        query_params = self._create_query_params(params)
+        url = f'{self.API_URL}autocall/delete_number?{query_params}'
+        return self._send_api_request('post', url)
+
     def start_autocall(self, autocall_id: int) -> dict:
         """
         :param autocall_id: int

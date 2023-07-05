@@ -12,7 +12,7 @@ class DBLogger:
         self.engine = get_engine()
 
     def add(self, text: str, log_type: int = 1, created_at: Optional[int] = None):
-        self.log.add(branch=self.branch, text=text, log_type=log_type, created_at=created_at)
+        self.log.add(branch=self.branch, text=text[:1000], log_type=log_type, created_at=created_at)
 
     def get(self, log_type: int = 1, limit: int = 100) -> List[db.Model]:
         table = Table('Log', MetaData(), autoload_with=self.engine, schema=self.branch)
