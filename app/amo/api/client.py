@@ -333,18 +333,16 @@ class APIClient:
         token_data = self.__get_token_data()
         if not token_data:
             return
-        data = {
-            'client_id': self._client_id,
-            'client_secret': self._client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': token_data.refresh_token,
-            'redirect_uri': self._redirect_url
-        }
         response = requests.post(
             url=f'https://{self.sub_domain}.amocrm.ru/oauth2/access_token',
-            data=data
+            data={
+                'client_id': self._client_id,
+                'client_secret': self._client_secret,
+                'grant_type': 'refresh_token',
+                'refresh_token': token_data.refresh_token,
+                'redirect_uri': self._redirect_url
+            }
         )
-        print(response.text)
         response_json = response.json()
         if 'access_token' in response_json:
             token = self.token(
