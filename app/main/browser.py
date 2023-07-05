@@ -12,6 +12,9 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
+
+from config import Config
+
 # from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -164,7 +167,7 @@ class KmBrowser:
         capabilities = DesiredCapabilities.CHROME
         capabilities['goog:loggingPrefs'] = {'performance': 'ALL'}
         # инициализируем экземпляр браузера
-        service = Service(executable_path=os.environ.get("CHROMEDRIVER_PATH"))
+        service = Service(executable_path=Config.CHROMEDRIVER_PATH)
         driver = webdriver.Chrome(
             service=service,
             options=options,

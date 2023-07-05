@@ -21,3 +21,4 @@ class Config:
     SIPUNI_AUTOCALL_ID_CDV = os.environ.get('SIPUNI_AUTOCALL_ID_CDV')
     SUPUNI_LOGIN_CDV = os.environ.get('SUPUNI_LOGIN_CDV')
     SUPUNI_PASSWORD_CDV = os.environ.get('SUPUNI_PASSWORD_CDV')
+    CHROMEDRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH")
