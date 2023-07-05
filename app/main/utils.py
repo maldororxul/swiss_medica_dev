@@ -126,4 +126,10 @@ def handle_autocall_result(data: Dict, branch: str):
             db.session.commit()
         amo_client = API_CLIENT.get(branch)()
         processor.log.add(text=f'Moving lead {lead_id} to stage {Config.AUTOCALL_SUCCESS_STATUS_ID_CDV}')
-        amo_client.update_lead(lead_id=lead_id, data={'status_id': Config.AUTOCALL_SUCCESS_STATUS_ID_CDV})
+        amo_client.update_lead(
+            lead_id=lead_id,
+            data={
+                'pipeline_id': int(Config.AUTOCALL_SUCCESS_PIPELINE_ID_CDV),
+                'status_id': int(Config.AUTOCALL_SUCCESS_STATUS_ID_CDV)
+            }
+        )
