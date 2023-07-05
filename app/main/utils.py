@@ -69,6 +69,7 @@ def handle_lead_status_changed(data: Dict):
         lead_id = data.get('leads[status][0][id]')
         # читаем данные лида и контакта с источника
         lead = client.get_lead_by_id(lead_id=lead_id)
+        processor.log.add(text=f'Lead data {lead}')
         _embedded = lead.get('_embedded') or {}
         contacts = _embedded.get('contacts')
         if not contacts:
@@ -105,7 +106,7 @@ def handle_lead_status_changed(data: Dict):
 
 
 def handle_autocall_result(data: Dict, branch: str):
-    # processor = DATA_PROCESSOR.get(branch)()
+    processor = DATA_PROCESSOR.get(branch)()
     # processor.log.add(text=f'Call data: {data}')
     status = data.get('status')
     if status == 'Исходящий, неотвеченный':
@@ -124,4 +125,5 @@ def handle_autocall_result(data: Dict, branch: str):
             db.session.delete(autocall_record)
             db.session.commit()
         amo_client = API_CLIENT.get(branch)()
+        processor.log.add(text=f'Moving lead {lead_id} to stage {Config.AUTOCALL_SUCCESS_STATUS_ID_CDV}')
         amo_client.update_lead(lead_id=lead_id, data={'status_id': Config.AUTOCALL_SUCCESS_STATUS_ID_CDV})
