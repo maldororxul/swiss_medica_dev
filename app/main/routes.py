@@ -53,6 +53,7 @@ def index():
 def add_to_autocall():
     client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
     client.add_number_to_autocall(number='995591058618', autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
+    start_autocall()
     return redirect(url_for('main.index'))
 
 
