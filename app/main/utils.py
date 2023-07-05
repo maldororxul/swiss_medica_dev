@@ -93,7 +93,7 @@ def handle_lead_status_changed(data: Dict):
         with app.app_context():
             autocall_number = AUTOCALL_NUMBER.get(branch)
             lead = autocall_number(
-                lead_id=lead_id,
+                lead_id=int(lead_id),
                 number=number
             )
             db.session.add(lead)
