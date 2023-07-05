@@ -207,6 +207,7 @@ def create_all():
     from app.models.company import SMCompany, CDVCompany
     from app.models.data import SMData, CDVData
     from app.models.log import SMLog, CDVLog
+    from app.models.autocall import SMAutocallNumber, CDVAutocallNumber
     with current_app.app_context():
         db.create_all()
     return 'tables created'

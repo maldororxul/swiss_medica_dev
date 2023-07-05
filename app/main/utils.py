@@ -81,7 +81,7 @@ def handle_lead_status_changed(data: Dict):
                 continue
             for phone in contact_field['values']:
                 phones.append(clear_phone(phone['value']))
-        processor.log.add(text=f'Phones: {phones}')
+        # processor.log.add(text=f'Phones: {phones}')
         if not phones:
             return
         # добавляем номер в автообзвон
@@ -100,14 +100,13 @@ def handle_lead_status_changed(data: Dict):
             db.session.commit()
         # запуск обзвона (временно!)
         start_autocall()
-
     except Exception as exc:
         processor.log.add(text=f'Error [parse_webhook_data]: {exc}')
 
 
 def handle_autocall_result(data: Dict, branch: str):
-    processor = DATA_PROCESSOR.get(branch)()
-    processor.log.add(text=f'Call data: {data}')
+    # processor = DATA_PROCESSOR.get(branch)()
+    # processor.log.add(text=f'Call data: {data}')
     status = data.get('status')
     if status == 'Исходящий, неотвеченный':
         pass
@@ -125,4 +124,4 @@ def handle_autocall_result(data: Dict, branch: str):
             db.session.delete(autocall_record)
             db.session.commit()
         amo_client = API_CLIENT.get(branch)()
-        amo_client.update_lead(lead_id=lead_id, data={'status_id': 47888833})
+        amo_client.update_lead(lead_id=lead_id, data={'status_id': Config.AUTOCALL_SUCCESS_STATUS_ID_CDV})
