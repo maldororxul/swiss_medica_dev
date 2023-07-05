@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 from selenium.webdriver import DesiredCapabilities
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
@@ -163,8 +164,9 @@ class KmBrowser:
         capabilities = DesiredCapabilities.CHROME
         capabilities['goog:loggingPrefs'] = {'performance': 'ALL'}
         # инициализируем экземпляр браузера
+        service = Service(executable_path=os.environ.get("CHROMEDRIVER_PATH"))
         driver = webdriver.Chrome(
-            executable_path=os.environ.get("CHROMEDRIVER_PATH"),
+            service=service,
             options=options,
             desired_capabilities=capabilities
         )
