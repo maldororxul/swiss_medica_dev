@@ -112,7 +112,11 @@ def handle_autocall_result(data: Dict, branch: str):
         # клиент ответил на звонок
         # удаляем номер из автообзвона Sipuni
         sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
-        sipuni_client.delete_number_from_autocall(number=data.get('number'), autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
+        tmp = sipuni_client.delete_number_from_autocall(
+            number=data.get('number'),
+            autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV
+        )
+        print(f'Number deleted: {tmp}')
         # удаляем запись об автообзвоне из БД, перемещаем лид
         app = current_app._get_current_object()
         with app.app_context():
