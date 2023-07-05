@@ -168,7 +168,7 @@ class KmBrowser:
         driver = webdriver.Chrome(
             service=service,
             options=options,
-            desired_capabilities=capabilities
+            # desired_capabilities=capabilities
         )
         # driver = webdriver.Chrome(
         #     ChromeDriverManager(path='/chrome').install(),
