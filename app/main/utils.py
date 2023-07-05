@@ -84,20 +84,23 @@ def handle_lead_status_changed(data: Dict):
         # processor.log.add(text=f'Phones: {phones}')
         if not phones:
             return
-        # добавляем номер в автообзвон
-        number = phones[0]
-        client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
-        client.add_number_to_autocall(number=number, autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
         # записываем номер и идентификатор лида в БД
+        number = phones[0]
         app = current_app._get_current_object()
         with app.app_context():
             autocall_number = AUTOCALL_NUMBER.get(branch)
-            lead = autocall_number(
-                lead_id=int(lead_id),
-                number=number
-            )
-            db.session.add(lead)
-            db.session.commit()
+            number_entity = autocall_number.query.filter_by(number=number).first()
+            if number_entity is None:
+                number_entity = autocall_number(
+                    lead_id=int(lead_id),
+                    number=number,
+                    success=0,
+                )
+                db.session.add(number_entity)
+                db.session.commit()
+        # добавляем номер в автообзвон Sipuni
+        client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+        client.add_number_to_autocall(number=number, autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
         # запуск обзвона (временно!)
         start_autocall()
     except Exception as exc:
@@ -111,19 +114,22 @@ def handle_autocall_result(data: Dict, branch: str):
     elif status == 'Исходящие, отвеченные':
         # клиент ответил на звонок
         # удаляем номер из автообзвона Sipuni
-        sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
-        tmp = sipuni_client.delete_number_from_autocall(
-            number=data.get('number'),
-            autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV
-        )
-        print(f'Number deleted: {tmp}')
-        # удаляем запись об автообзвоне из БД, перемещаем лид
+        # fixme sipuni позволяет удалить только те номера, на которые не удалось дозвониться
+        # sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+        # tmp = sipuni_client.delete_number_from_autocall(
+        #     number=data.get('number'),
+        #     autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV
+        # )
+        # print(f'Number deleted: {tmp}')
+        # изменяем запись об автообзвоне в БД, перемещаем лид
         app = current_app._get_current_object()
         with app.app_context():
             autocall_number = AUTOCALL_NUMBER.get(branch)
-            autocall_record = autocall_number.query.where(autocall_number.number == data.get('number')).first()
-            lead_id = autocall_record.lead_id
-            db.session.delete(autocall_record)
+            number_entity = autocall_number.query.filter_by(number=data.get('number')).first()
+            # autocall_record = autocall_number.query.where(autocall_number.number == data.get('number')).first()
+            lead_id = number_entity.lead_id
+            # db.session.delete(number_entity)
+            number_entity.success = 1
             db.session.commit()
         amo_client = API_CLIENT.get(branch)()
         amo_client.update_lead(
