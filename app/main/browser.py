@@ -1,6 +1,7 @@
 """ Selenium и все, что связано с управлением браузером """
 __author__ = 'ke.mizonov'
 import json
+import os
 from typing import Optional, List, Dict
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -10,7 +11,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager
 
 
 WAIT_TIME = 60
@@ -147,6 +148,7 @@ class KmBrowser:
             экземпляр браузера
         """
         options = webdriver.ChromeOptions()
+        options.binary_location = os.environ.get("GOOGLE_CHROME_BIN")
         options.add_argument("--no-sandbox")
         if proxy:
             options.add_argument(f'--proxy-server={proxy}')
@@ -162,9 +164,14 @@ class KmBrowser:
         capabilities['goog:loggingPrefs'] = {'performance': 'ALL'}
         # инициализируем экземпляр браузера
         driver = webdriver.Chrome(
-            ChromeDriverManager(path='/chrome').install(),
+            executable_path=os.environ.get("CHROMEDRIVER_PATH"),
             options=options,
             desired_capabilities=capabilities
         )
+        # driver = webdriver.Chrome(
+        #     ChromeDriverManager(path='/chrome').install(),
+        #     options=options,
+        #     desired_capabilities=capabilities
+        # )
         driver.set_page_load_timeout(WAIT_TIME)
         return driver
