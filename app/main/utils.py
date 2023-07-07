@@ -123,6 +123,7 @@ def handle_autocall_result(data: Dict, branch: str):
     processor.log.add(text=f'{number} :: {status}')
     if status == 'Исходящий, неотвеченный':
         # удаляем номер и снова добавляем
+        time.sleep(5)
         sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
         delete_response = sipuni_client.delete_number_from_autocall(
             number=number,
