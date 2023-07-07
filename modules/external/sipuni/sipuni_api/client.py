@@ -92,6 +92,7 @@ class Sipuni(object):
         }
         query_params = self._create_query_params(params)
         url = f'{self.API_URL}autocall/delete_number?{query_params}'
+        print(url)
         return self._send_api_request('post', url)
 
     def start_autocall(self, autocall_id: int) -> dict:
