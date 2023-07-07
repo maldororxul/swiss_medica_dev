@@ -118,8 +118,15 @@ def handle_new_lead(data: Dict) -> str:
 
 def handle_autocall_result(data: Dict, branch: str):
     status = data.get('status')
+    number = data.get('number')
     if status == 'Исходящий, неотвеченный':
-        pass
+        # удаляем номер и снова добавляем
+        sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+        sipuni_client.delete_number_from_autocall(
+            number=number,
+            autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV
+        )
+        sipuni_client.add_number_to_autocall(number=number, autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
     elif status == 'Исходящие, отвеченные':
 
         # fixme delete_number через браузер?
