@@ -122,14 +122,15 @@ def handle_autocall_result(data: Dict, branch: str):
     processor = DATA_PROCESSOR.get(branch)()
     processor.log.add(text=f'{number} :: {status}')
     if status == 'Исходящий, неотвеченный':
-        # удаляем номер и снова добавляем
-        sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
-        delete_response = sipuni_client.delete_number_from_autocall(
-            number=number,
-            autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV
-        )
-        processor.log.add(text=str(delete_response))
-        sipuni_client.add_number_to_autocall(number=number, autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
+        pass
+        # # удаляем все номера и снова добавляем те, до которых не удалось дозвониться
+        # sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+        # delete_response = sipuni_client.delete_number_from_autocall(
+        #     number=number,
+        #     autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV
+        # )
+        # processor.log.add(text=str(delete_response))
+        # sipuni_client.add_number_to_autocall(number=number, autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
     elif status == 'Исходящие, отвеченные':
 
         # fixme delete_number через браузер?
@@ -154,9 +155,10 @@ def handle_autocall_result(data: Dict, branch: str):
             number_entity = autocall_number.query.filter_by(number=data.get('number')).first()
             # autocall_record = autocall_number.query.where(autocall_number.number == data.get('number')).first()
             lead_id = number_entity.lead_id
-            # db.session.delete(number_entity)
-            number_entity.success = 1
+            db.session.delete(number_entity)
+            # number_entity.success = 1
             db.session.commit()
+            all_numbers = autocall_number.query.all()
         amo_client = API_CLIENT.get(branch)()
         amo_client.update_lead(
             lead_id=lead_id,
@@ -165,3 +167,12 @@ def handle_autocall_result(data: Dict, branch: str):
                 'status_id': int(Config.AUTOCALL_SUCCESS_STATUS_ID_CDV)
             }
         )
+        # удаляем все номера из автообзвона (через браузер)
+        browser: KmBrowser = get_sipuni_browser()
+        browser.open(url='https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/21774')
+        time.sleep(10)
+        browser.close()
+        # снова добавляем в автообзвон номера, записанные в БД
+        sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
+        for line in all_numbers:
+            sipuni_client.add_number_to_autocall(number=line.number, autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
