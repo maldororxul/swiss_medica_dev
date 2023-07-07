@@ -39,7 +39,7 @@ AUTOCALL_NUMBER = {
 }
 
 
-def start_autocall():
+def get_sipuni_browser() -> KmBrowser:
     browser = KmBrowser()
     browser.open(url='https://sipuni.com/ru_RU/login')
     login, password = Config.SUPUNI_LOGIN_CDV, Config.SUPUNI_PASSWORD_CDV
@@ -52,7 +52,12 @@ def start_autocall():
     browser.wait(
         selector='body > header > div.navigation.row-fluid > div.pull-left.menu-top > ul > li:nth-child(1) > a'
     )
-    browser.open(url='https://sipuni.com/ru_RU/settings/autocall/restart/21774')
+    return browser
+
+
+def start_autocall():
+    browser: KmBrowser = get_sipuni_browser()
+    browser.open(url='https://sipuni.com/ru_RU/settings/autocall/start/21774')
     time.sleep(10)
     browser.close()
 
@@ -116,6 +121,13 @@ def handle_autocall_result(data: Dict, branch: str):
     if status == 'Исходящий, неотвеченный':
         pass
     elif status == 'Исходящие, отвеченные':
+
+        # fixme delete_number через браузер?
+        # browser: KmBrowser = get_sipuni_browser()
+        # browser.open(url='https://sipuni.com/ru_RU/settings/autocall/start/21774')
+        # time.sleep(10)
+        # browser.close()
+
         # клиент ответил на звонок
         # удаляем номер из автообзвона Sipuni
         # fixme sipuni позволяет удалить только те номера, на которые не удалось дозвониться
