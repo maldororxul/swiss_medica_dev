@@ -88,7 +88,7 @@ def start_autocall():
 @bp.route('/new_lead_sm', methods=['POST'])
 def new_lead_sm():
     chat_id = Config.NEW_LEADS_CHAT_ID_SM
-    endpoint = 'send_message_sm'
+    endpoint = 'main.send_message_sm'
     if request.content_type == 'application/json':
         msg = handle_new_lead(data=request.json)
         return redirect(url_for(endpoint, chat_id=chat_id, message=msg))
