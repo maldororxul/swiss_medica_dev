@@ -119,6 +119,8 @@ def handle_new_lead(data: Dict) -> str:
 def handle_autocall_result(data: Dict, branch: str):
     status = data.get('status')
     number = data.get('number')
+    processor = DATA_PROCESSOR.get(branch)()
+    processor.log.add(text=f'{number} :: {status}')
     if status == 'Исходящий, неотвеченный':
         # удаляем номер и снова добавляем
         sipuni_client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
