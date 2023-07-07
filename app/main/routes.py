@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta
+import telebot
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, send_file
 from app import db, socketio
@@ -7,7 +8,7 @@ from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
-from app.main.utils import handle_lead_status_changed, handle_autocall_result
+from app.main.utils import handle_lead_status_changed, handle_autocall_result, handle_new_lead
 from app.models.data import SMData
 from app.utils.excel import ExcelClient
 from config import Config
@@ -17,6 +18,8 @@ API_CLIENT = {
     'SM': SwissmedicaAPIClient,
     'CDV': DrvorobjevAPIClient,
 }
+
+sm_telegram_bot = telebot.TeleBot(Config.SM_TELEGRAM_BOT_TOKEN)
 
 
 @socketio.on('connect')
@@ -49,6 +52,19 @@ def index():
     )
 
 
+@bp.route("/send_message/<chat_id>/<message>")
+def send_message_sm(chat_id, message):
+    sm_telegram_bot.send_message(chat_id, message)
+    return 'success', 200
+
+
+@bp.route('/set_telegram_webhooks')
+def set_telegram_webhooks():
+    sm_telegram_bot.remove_webhook()
+    sm_telegram_bot.set_webhook(url=Config.HEROKU_URL + Config.SM_TELEGRAM_BOT_TOKEN)
+    return "!", 200
+
+
 @bp.route('/add_to_autocall')
 def add_to_autocall():
     client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
@@ -57,11 +73,35 @@ def add_to_autocall():
     return redirect(url_for('main.index'))
 
 
+@sm_telegram_bot.message_handler(commands=['start', 'help'])
+def send_welcome(message):
+    sm_telegram_bot.reply_to(message, f'CHAT_ID={message.chat.id}')
+
+
 @bp.route('/start_autocall')
 def start_autocall():
     # client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
     # client.start_autocall(autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
     return redirect(url_for('main.index'))
+
+
+@bp.route('/new_lead_sm', methods=['POST'])
+def new_lead_sm():
+    chat_id = Config.NEW_LEADS_CHAT_ID_SM
+    endpoint = 'send_message_sm'
+    if request.content_type == 'application/json':
+        msg = handle_new_lead(data=request.json)
+        return redirect(url_for(endpoint, chat_id=chat_id, message=msg))
+    elif request.content_type == 'application/x-www-form-urlencoded':
+        msg = handle_new_lead(data=request.form.to_dict())
+        return redirect(url_for(endpoint, chat_id=chat_id, message=msg))
+    return 'Unsupported Media Type', 415
+
+
+@bp.route('/' + Config.SM_TELEGRAM_BOT_TOKEN, methods=['POST'])
+def get_message_sm():
+    sm_telegram_bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    return "!", 200
 
 
 @bp.route('/autocall_handler_cdv', methods=['POST'])
@@ -84,11 +124,6 @@ def autocall_handler_cdv():
     elif request.content_type == 'application/x-www-form-urlencoded':
         handle_autocall_result(data=request.form.to_dict(), branch=branch)
         return 'success', 200
-    # else:
-        # processor = DATA_PROCESSOR.get(branch)()
-        # processor.log.add(
-        #     text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'
-        # )
     return 'Unsupported Media Type', 415
 
 
@@ -124,6 +159,17 @@ def data_to_excel():
         ExcelClient.Data(data=data)
     ])
     return send_file(os.path.join('data', 'sm_data.xlsx'), as_attachment=True)
+
+
+@bp.route('/handle_new_leads_cdv', methods=['POST'])
+def handle_new_leads_cdv():
+    if request.content_type == 'application/json':
+        handle_lead_status_changed(data=request.json)
+        return 'success', 200
+    elif request.content_type == 'application/x-www-form-urlencoded':
+        handle_lead_status_changed(data=request.form.to_dict())
+        return 'success', 200
+    return 'Unsupported Media Type', 415
 
 
 @bp.route('/init_autocall_cdv', methods=['POST'])

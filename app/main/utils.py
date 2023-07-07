@@ -107,6 +107,10 @@ def handle_lead_status_changed(data: Dict):
         processor.log.add(text=f'Error [parse_webhook_data]: {exc}')
 
 
+def handle_new_lead(data: Dict) -> str:
+    return '\n'.join([f'{key} :: {value}' for key, value in data.items()])
+
+
 def handle_autocall_result(data: Dict, branch: str):
     status = data.get('status')
     if status == 'Исходящий, неотвеченный':
