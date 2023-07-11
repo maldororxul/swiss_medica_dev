@@ -44,7 +44,7 @@ class Autocall:
         return current_app._get_current_object()
 
     @property
-    def __sipuni_branch_config(self):
+    def __sipuni_branch_config(self) -> Dict:
         return self.__sipuni_config.get(self.__branch)
 
     @property
@@ -82,8 +82,7 @@ class Autocall:
             )
         # получаем список автообзвона из БД
         with self.__app.app_context():
-            autocall_number = AUTOCALL_NUMBER.get(self.__branch)
-            all_numbers = autocall_number.query.all() or []
+            all_numbers = number_entity.query.all() or []
         # удаляем все номера из автообзвона (через браузер)
         browser: KmBrowser = self.__get_sipuni_browser()
         browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
