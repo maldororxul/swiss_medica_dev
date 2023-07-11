@@ -120,8 +120,8 @@ class Autocall:
             return
         # проверяем, что для данной стадии и воронки настроен автообзвон (см. глоабльную переменную SIPUNI)
         autocall_id = self.__get_autocall_id(
-            pipeline_id=data.get('leads[status][0][old_pipeline_id]'),
-            status_id=data.get('leads[status][0][old_status_id]'),
+            pipeline_id=data.get('leads[status][0][pipeline_id]'),
+            status_id=data.get('leads[status][0][status_id]'),
         )
         if not autocall_id:
             return
