@@ -53,17 +53,16 @@ class Autocall:
 
     def handle_autocall_result(self, data: Dict):
         status = data.get('status')
+        # получаем экземпляр номера автообзвона из нашей БД
+        with self.__app.app_context():
+            number_entity = self.__get_autocall_number_entity(number=data.get('number'))
+            if not number_entity:
+                return
         if status == 'Исходящий, неотвеченный':
             pass
         elif status == 'Исходящие, отвеченные':
             # изменяем запись об автообзвоне в БД, перемещаем лид
             with self.__app.app_context():
-                for autocall_model in AUTOCALL_NUMBER.values():
-                    number_entity = autocall_model.query.filter_by(number=data.get('number')).first()
-                    if number_entity:
-                        break
-                else:
-                    return
                 # получаем идентификаторы обзвона и лида, а также филиал, связанный с этим номером
                 self.__branch = number_entity.branch
                 autocall_id = number_entity.autocall_id
@@ -192,6 +191,14 @@ class Autocall:
             if str(data.get('pipeline_id')) == pipeline_id and str(data.get('status_id')) == status_id:
                 return int(autocall_id)
         return None
+
+    def __get_autocall_number_entity(self, number: str) -> Optional[db.Model]:
+        for autocall_model in AUTOCALL_NUMBER.values():
+            number_entity = autocall_model.query.filter_by(number=number).first()
+            if number_entity:
+                return number_entity
+        else:
+            return None
 
     def __get_sipuni_browser(self) -> KmBrowser:
         """ Получить экземпляр браузера с авторизацией в личном кабинете Sipuni """
