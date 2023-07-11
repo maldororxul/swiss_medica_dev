@@ -1,4 +1,5 @@
 """ Данные для подключения к Amo """
+__author__ = 'ke.mizonov'
 from app.extensions import db
 
 

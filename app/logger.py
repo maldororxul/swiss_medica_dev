@@ -1,3 +1,5 @@
+""" Ведение логов в БД """
+__author__ = 'ke.mizonov'
 from typing import Optional, List
 from sqlalchemy import Table, MetaData, select
 from app import db

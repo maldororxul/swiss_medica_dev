@@ -1,3 +1,5 @@
+""" Глобальные настройки Flask-приложения """
+__author__ = 'ke.mizonov'
 import os
 from dotenv import load_dotenv
 
@@ -9,21 +11,12 @@ if uri and uri.startswith("postgres://"):
 
 
 class Config:
-    # SECRET_KEY = os.environ.get('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = uri
     CONNECTIONS_LIMIT = int(os.environ.get('CONNECTIONS_LIMIT'))
     SQLALCHEMY_TRACK_MODIFICATIONS = os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS')
-    CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL')
-    CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND')
-    GOOGLE_CREDENTIALS = os.environ.get('GOOGLE_CREDENTIALS')
-    SUPUNI_ID_CDV = os.environ.get('SUPUNI_ID_CDV')
-    SIPUNI_KEY_CDV = os.environ.get('SIPUNI_KEY_CDV')
-    SIPUNI_AUTOCALL_ID_CDV = os.environ.get('SIPUNI_AUTOCALL_ID_CDV')
-    SUPUNI_LOGIN_CDV = os.environ.get('SUPUNI_LOGIN_CDV')
-    SUPUNI_PASSWORD_CDV = os.environ.get('SUPUNI_PASSWORD_CDV')
     CHROMEDRIVER_PATH = os.environ.get("CHROMEDRIVER_PATH")
-    AUTOCALL_SUCCESS_STATUS_ID_CDV = os.environ.get("AUTOCALL_SUCCESS_STATUS_ID_CDV")
-    AUTOCALL_SUCCESS_PIPELINE_ID_CDV = os.environ.get("AUTOCALL_SUCCESS_PIPELINE_ID_CDV")
-    SM_TELEGRAM_BOT_TOKEN = os.environ.get("SM_TELEGRAM_BOT_TOKEN")
+    GOOGLE_CREDENTIALS = os.environ.get('GOOGLE_CREDENTIALS')
     HEROKU_URL = os.environ.get("HEROKU_URL")
+    SIPUNI = os.environ.get("SIPUNI")
+    SM_TELEGRAM_BOT_TOKEN = os.environ.get("SM_TELEGRAM_BOT_TOKEN")
     NEW_LEADS_CHAT_ID_SM = os.environ.get("NEW_LEADS_CHAT_ID_SM")

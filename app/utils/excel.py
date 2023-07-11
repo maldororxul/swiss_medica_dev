@@ -21,7 +21,6 @@ class DataBase:
     data_table: Optional[str] = field(init=True, default=None)
     overwrite: bool = field(init=True, default=True)
     outer_file: Optional[str] = field(init=True, default=None)
-    # pivot: Optional[List[PivotDataBase]] = field(init=True, default=None)
 
 
 @dataclass()
@@ -58,7 +57,6 @@ class ExcelClient:
         if ext == '.csv':
             # это нормально работает с чистым csv
             df = read_csv(file, skiprows=skip_rows, encoding=encoding, keep_default_na=False)
-            # df = df.fillna(' --')
         else:
             df = read_excel(file, sheet_name=sheet_name, skiprows=skip_rows)
         df = df.fillna('')
@@ -175,9 +173,6 @@ class ExcelClient:
                 'bar_color': '#63C384',
             }
             worksheet.conditional_format(first_row, first_col, last_row, last_col, params)
-        # if not sheet_data.overwrite:
-        #     self.to_excel(df=df, writer=writer, sheet_data=sheet_data)
-        #     writer.save()
 
     @staticmethod
     def to_excel(df: DataFrame, writer: ExcelWriter, sheet_data: Data):

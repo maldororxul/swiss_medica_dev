@@ -1,4 +1,5 @@
 """ Список автообзвона """
+__author__ = 'ke.mizonov'
 from app.extensions import db
 
 
@@ -6,9 +7,12 @@ class AutocallNumberBase(db.Model):
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
+    autocall_id = db.Column(db.Integer, nullable=False)
     lead_id = db.Column(db.Integer, nullable=False)
     number = db.Column(db.String, nullable=False, unique=True)
+    branch = db.Column(db.String, nullable=False, unique=True)
     success = db.Column(db.Integer, nullable=False)
+    calls = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
         return f'<Autocall Number "{self.number}">'

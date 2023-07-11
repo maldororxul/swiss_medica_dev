@@ -1,9 +1,7 @@
+""" Кастомные команды для командной строки """
+__author__ = 'ke.mizonov'
 import click
 from flask.cli import with_appcontext
-from sqlalchemy import create_engine
-from sqlalchemy import text
-from sqlalchemy.sql.ddl import CreateSchema
-
 from config import Config
 from .extensions import db
 from .models.amo_credentials import CDVAmoCredentials, SMAmoCredentials
@@ -18,23 +16,11 @@ from .models.task import SMTask, CDVTask
 from .models.company import SMCompany, CDVCompany
 from .models.data import SMData, CDVData
 from .models.log import SMLog, CDVLog
+from .models.autocall import SMAutocallNumber, CDVAutocallNumber
 
 
 @click.command(name='create_tables')
 @with_appcontext
 def create_tables():
-    # with db.engine.connect() as connection:
-    #     connection.execute(text("CREATE SCHEMA IF NOT EXISTS sm"))
-    #     connection.execute(text("CREATE SCHEMA IF NOT EXISTS cdv"))
-    #     connection.execute(text("CREATE SCHEMA IF NOT EXISTS test_schema"))
-
-    # engine = create_engine(
-    #     Config.SQLALCHEMY_DATABASE_URI,
-    #     pool_size=20,
-    #     max_overflow=100,
-    #     pool_pre_ping=True
-    # )
-    # for schema_name in ('sm', 'cdv'):
-    #     if not engine.dialect.has_schema(engine, schema_name):
-    #         engine.execute(CreateSchema(schema_name))
+    """ Создание всех таблиц БД """
     db.create_all()

@@ -2,8 +2,7 @@
 __author__ = 'ke.mizonov'
 from dataclasses import field, dataclass
 from typing import Tuple, Optional, List, Dict, Callable, Union
-from app.amo import StageItem, LeadField
-
+from app.amo.data.base.data_schema import LeadField, StageItem
 
 IMG_EXT = '.png'
 TO = ' -> '

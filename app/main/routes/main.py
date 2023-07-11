@@ -1,6 +1,7 @@
+""" Общие маршруты """
+__author__ = 'ke.mizonov'
 import os
 from datetime import datetime, timedelta
-import telebot
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, send_file
 from app import db, socketio
@@ -8,32 +9,14 @@ from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
-from app.main.utils import handle_lead_status_changed, handle_autocall_result, handle_new_lead
+from app.main.utils import handle_lead_status_changed
 from app.models.data import SMData
 from app.utils.excel import ExcelClient
-from config import Config
-from modules.external.sipuni.sipuni_api import Sipuni
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
     'CDV': DrvorobjevAPIClient,
 }
-
-sm_telegram_bot = telebot.TeleBot(Config.SM_TELEGRAM_BOT_TOKEN)
-
-
-@socketio.on('connect')
-def pre_load_from_socket():
-    """ Предзагрузка данных через сокет в момент установки соединения """
-    # вытаскиваем логи
-    logs = []
-    for processor_entity in DATA_PROCESSOR.values():
-        processor = processor_entity()
-        logs.extend(processor.log.get() or [])
-    logs = sorted([log for log in logs], key=lambda x: x.created_at)
-    for log in logs:
-        dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-        socketio.emit('new_event', {'msg': f"{dt} :: {log.text}"})
 
 
 @bp.route('/')
@@ -50,81 +33,6 @@ def index():
         sm_dt=date_to,
         sm_curr=date_curr.strftime("%Y-%m-%dT%H:%M")
     )
-
-
-@bp.route("/send_message/<chat_id>/<message>")
-def send_message_sm(chat_id, message):
-    sm_telegram_bot.send_message(chat_id, message)
-    return 'success', 200
-
-
-@bp.route('/set_telegram_webhooks')
-def set_telegram_webhooks():
-    sm_telegram_bot.remove_webhook()
-    sm_telegram_bot.set_webhook(url=Config.HEROKU_URL + Config.SM_TELEGRAM_BOT_TOKEN)
-    return "!", 200
-
-
-@bp.route('/add_to_autocall')
-def add_to_autocall():
-    client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
-    client.add_number_to_autocall(number='995591058618', autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
-    start_autocall()
-    return redirect(url_for('main.index'))
-
-
-@sm_telegram_bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-    sm_telegram_bot.reply_to(message, f'CHAT_ID={message.chat.id}')
-
-
-@bp.route('/start_autocall')
-def start_autocall():
-    # client = Sipuni(Config.SUPUNI_ID_CDV, Config.SIPUNI_KEY_CDV)
-    # client.start_autocall(autocall_id=Config.SIPUNI_AUTOCALL_ID_CDV)
-    return redirect(url_for('main.index'))
-
-
-@bp.route('/new_lead_sm', methods=['POST'])
-def new_lead_sm():
-    chat_id = Config.NEW_LEADS_CHAT_ID_SM
-    endpoint = 'main.send_message_sm'
-    if request.content_type == 'application/json':
-        msg = handle_new_lead(data=request.json)
-        return redirect(url_for(endpoint, chat_id=chat_id, message=msg))
-    elif request.content_type == 'application/x-www-form-urlencoded':
-        msg = handle_new_lead(data=request.form.to_dict())
-        return redirect(url_for(endpoint, chat_id=chat_id, message=msg))
-    return 'Unsupported Media Type', 415
-
-
-@bp.route('/' + Config.SM_TELEGRAM_BOT_TOKEN, methods=['POST'])
-def get_message_sm():
-    sm_telegram_bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
-    return "!", 200
-
-
-@bp.route('/autocall_handler_cdv', methods=['POST'])
-def autocall_handler_cdv():
-    """
-    Call data:
-        {
-            'number': '995591058618',
-            'dateTime': '2023-07-04 14:44:17',
-            'status': 'Исходящие, отвеченные',
-            'operator': '',
-            'record': 'https://sipuni.com/api/callback/record/05578a253f510b1840c67016426218c1',
-            'callId': '1688471056.154959'
-        }
-    """
-    branch = 'drvorobjev'
-    if request.content_type == 'application/json':
-        handle_autocall_result(data=request.json, branch=branch)
-        return 'success', 200
-    elif request.content_type == 'application/x-www-form-urlencoded':
-        handle_autocall_result(data=request.form.to_dict(), branch=branch)
-        return 'success', 200
-    return 'Unsupported Media Type', 415
 
 
 @bp.route('/get_token', methods=['GET'])
@@ -172,22 +80,6 @@ def handle_new_leads_cdv():
     return 'Unsupported Media Type', 415
 
 
-@bp.route('/init_autocall_cdv', methods=['POST'])
-def init_autocall_cdv():
-    if request.content_type == 'application/json':
-        handle_lead_status_changed(data=request.json)
-        return 'success', 200
-    elif request.content_type == 'application/x-www-form-urlencoded':
-        handle_lead_status_changed(data=request.form.to_dict())
-        return 'success', 200
-    # else:
-    #     processor = DATA_PROCESSOR.get('sm')()
-    #     processor.log.add(
-    #         text=f'Unsupported response: {request.content_type}. Data: {request.get_data(as_text=True)}'
-    #     )
-    return 'Unsupported Media Type', 415
-
-
 @bp.route('/button1')
 def start_sm():
     lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
@@ -220,7 +112,6 @@ def start_sm():
     #     max_instances=1
     # )
     return render_template('index.html')
-    # return 'started scheduler "get data from amo"'
 
 
 @bp.route('/start_update_pivot_data')
@@ -240,7 +131,7 @@ def start_update_pivot_data():
 
 @bp.route('/create_all')
 def create_all():
-    # ипорты нужны для создания структуры БД!
+    # импорты нужны для создания структуры БД!
     from app.models.amo_credentials import CDVAmoCredentials, SMAmoCredentials
     from app.models.amo_token import SMAmoToken, CDVAmoToken
     from app.models.contact import SMContact, CDVContact

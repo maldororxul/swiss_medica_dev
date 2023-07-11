@@ -2,12 +2,6 @@
 __author__ = 'ke.mizonov'
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Callable, Tuple
-# from amo.api.client import DrvorobjevAPIClient, SwissmedicaAPIClient
-from utils.functions import get_current_timeshift
-from utils.serializer import PklSerializer
-from worker.worker import Worker
-
-# TApiClient = Union[DrvorobjevAPIClient, SwissmedicaAPIClient]
 
 
 class Client:
@@ -27,32 +21,32 @@ class Client:
     def leads_file_name(self) -> str:
         return f'{self.api_client.sub_domain}_leads'
 
-    def get_deleted_leads(self, worker: Optional[Worker] = None) -> List[Dict]:
-        """ Получить список удаленных сделок + Обновить инфу об удалении в сделках """
-        result = []
-        # считываем сделки из файла
-        serializer = PklSerializer(file_name=self.leads_file_name)
-        leads = serializer.load()
-        # получаем события удаления
-        events = self.api_client().get_deleted_events(worker=worker)
-        events_dict = {
-            event['entity_id']: {'user': event['user'], 'date': event['created_at'] + self.time_shift}
-            for event in events
-        }
-        # ищем подходящие под события лиды
-        has_changes = False
-        for lead in leads:
-            event: Dict = events_dict.get(lead['id'])
-            if not event:
-                # нет события удаления
-                continue
-            has_changes = True
-            lead['deleted'] = event
-            result.append(lead)
-        # сохраняем список лидов
-        if has_changes:
-            serializer.save(leads)
-        return result
+    # def get_deleted_leads(self, worker: Optional[Worker] = None) -> List[Dict]:
+    #     """ Получить список удаленных сделок + Обновить инфу об удалении в сделках """
+    #     result = []
+    #     # считываем сделки из файла
+    #     serializer = PklSerializer(file_name=self.leads_file_name)
+    #     leads = serializer.load()
+    #     # получаем события удаления
+    #     events = self.api_client().get_deleted_events(worker=worker)
+    #     events_dict = {
+    #         event['entity_id']: {'user': event['user'], 'date': event['created_at'] + self.time_shift}
+    #         for event in events
+    #     }
+    #     # ищем подходящие под события лиды
+    #     has_changes = False
+    #     for lead in leads:
+    #         event: Dict = events_dict.get(lead['id'])
+    #         if not event:
+    #             # нет события удаления
+    #             continue
+    #         has_changes = True
+    #         lead['deleted'] = event
+    #         result.append(lead)
+    #     # сохраняем список лидов
+    #     if has_changes:
+    #         serializer.save(leads)
+    #     return result
 
     @classmethod
     def get_lead_url_by_id(cls, lead_id: int) -> str:

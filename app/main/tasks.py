@@ -1,13 +1,11 @@
+""" Фоновые задачи: загрузка данных с источников, обновление pivot data и проч. """
+__author__ = 'ke.mizonov'
 import json
-import string
-import random
 from datetime import datetime, timedelta, date
 from flask import Flask
-from app import db, socketio
+from app import socketio
 from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
-from app.models.lead import SMLead
-
 
 is_running = False
 
@@ -16,22 +14,6 @@ class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, (date, datetime)):
             return obj.isoformat()
-
-
-def add_random_lead(app: Flask):
-    with app.app_context():
-        lead = SMLead(name=''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))
-        db.session.add(lead)
-        db.session.commit()
-
-
-# def get_logs(app: Flask, branch: str):
-#     processor = DATA_PROCESSOR.get('sm')()
-#     with app.app_context():
-#         # тащим лог
-#         for log in processor.get_logs(branch=branch) or []:
-#             dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-#             socketio.emit('new_event', {'msg': f'{dt} :: {log.text}'})
 
 
 def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):

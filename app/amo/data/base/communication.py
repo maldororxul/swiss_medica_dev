@@ -2,9 +2,8 @@
 __author__ = 'ke.mizonov'
 from enum import Enum
 from typing import Dict, List, Optional, Callable, Tuple
-from amo.api.constants import AmoEvent, AmoNote
-from amo.data.base.data_schema import Lead
-from utils.serializer import PklSerializer
+from app.amo.api.constants import AmoEvent, AmoNote
+from app.amo.data.base.data_schema import Lead
 
 
 class CommunicationBase:

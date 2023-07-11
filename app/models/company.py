@@ -1,4 +1,5 @@
 """ Компания """
+__author__ = 'ke.mizonov'
 from sqlalchemy.dialects.postgresql import JSON
 from app.extensions import db
 

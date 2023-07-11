@@ -1,24 +1,18 @@
+""" Контроллеры синхронизации данных Amo """
+__author__ = 'ke.mizonov'
 from datetime import datetime
 from typing import Dict, List, Callable
-from sqlalchemy import Table, MetaData, create_engine, select
+from sqlalchemy import Table, MetaData, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
-
-from app import db
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient, APIClient
 from app.engine import get_engine
 from app.logger import DBLogger
 from app.models.log import SMLog
-from config import Config
-
-
-# API_CLIENT = {
-#     'SM': SwissmedicaAPIClient,
-#     'CDV': DrvorobjevAPIClient,
-# }
 
 
 class SyncController:
+    """ Контроллер синхронизации данных Amo """
     schema: str = NotImplemented
     api_client: Callable = NotImplemented
 
@@ -103,18 +97,11 @@ class SyncController:
                 try:
                     if record.get('_links'):
                         record.pop('_links')
-                    # record.pop('is_unsorted')
-                    # for k, v in record.items():
-                    #     print(k, v)
-                    # print()
                     is_new = self.__sync_record(target_table=target_table, record=record, connection=connection)
                     if is_new:
                         has_new_records = True
                 except SQLAlchemyError as exc:
                     print(f"Error occurred during database operation: {exc}")
-                    # for k, v in record.items():
-                    #     print(k, v)
-                    # print()
         return has_new_records
 
     @staticmethod
@@ -144,6 +131,7 @@ class SyncController:
 
 
 class SMSyncController(SyncController):
+    """ Контроллер синхронизации данных Amo: SM """
     schema = 'sm'
     api_client: APIClient = SwissmedicaAPIClient
 
@@ -153,5 +141,6 @@ class SMSyncController(SyncController):
 
 
 class CDVSyncController(SyncController):
+    """ Контроллер синхронизации данных Amo: CDV """
     schema = 'cdv'
     api_client: APIClient = DrvorobjevAPIClient

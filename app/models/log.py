@@ -1,8 +1,8 @@
 """ Лог """
+__author__ = 'ke.mizonov'
 import time
 from datetime import datetime
 from typing import Optional
-
 from app.extensions import db
 
 LIMIT = 300_000

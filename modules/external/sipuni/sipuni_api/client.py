@@ -1,3 +1,5 @@
+from typing import Dict
+
 import requests
 from json import JSONDecodeError
 from datetime import datetime
@@ -10,13 +12,25 @@ from .exceptions import SipuniException
 class Sipuni(object):
     API_URL = 'https://sipuni.com/api/'
 
-    def __init__(self, user: str, token: str = '') -> None:
+    def __init__(self, sipuni_config: Dict) -> None:
         """
-        :param user: str (user id)
-        :param token: str (api key)
+        :param sipuni_config: см. переменную окружения SIPUNI = {
+            "drvorobjev": {
+                "id": str,
+                "key": str,
+                "login": str,
+                "password": str,
+                "autocall": {
+                    <autocall_id>: {
+                        "success_status_id": int,
+                        "success_pipeline_id": int,
+                    }
+                }
+            }
+        }
         """
-        self.user = user
-        self.token = token
+        self.user = sipuni_config.get('id')
+        self.token = sipuni_config.get('key')
         self._session = requests.session()
 
     def _generate_hash(self, query_params: list) -> str:

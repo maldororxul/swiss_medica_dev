@@ -2,5 +2,8 @@ from flask import Blueprint
 
 bp = Blueprint('main', __name__)
 
-# from .tasks import add_random_lead
-from app.main import routes
+# маршрутизаторы
+from app.main.routes import autocall
+from app.main.routes import main
+from app.main.routes import socket
+from app.main.routes import telegram

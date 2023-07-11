@@ -1,4 +1,5 @@
 """ Задача """
+__author__ = 'ke.mizonov'
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSON
 from app.extensions import db

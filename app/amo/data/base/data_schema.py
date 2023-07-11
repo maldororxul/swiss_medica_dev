@@ -1,7 +1,5 @@
 """ Константы данных AMO """
 __author__ = 'ke.mizonov'
-
-import re
 from dataclasses import dataclass, field, fields
 from typing import Optional, List, Tuple, Union
 

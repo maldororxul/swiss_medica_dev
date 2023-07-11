@@ -12,11 +12,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-
 from config import Config
-
-# from webdriver_manager.chrome import ChromeDriverManager
-
 
 WAIT_TIME = 60
 
@@ -173,10 +169,5 @@ class KmBrowser:
             options=options,
             # desired_capabilities=capabilities
         )
-        # driver = webdriver.Chrome(
-        #     ChromeDriverManager(path='/chrome').install(),
-        #     options=options,
-        #     desired_capabilities=capabilities
-        # )
         driver.set_page_load_timeout(WAIT_TIME)
         return driver
