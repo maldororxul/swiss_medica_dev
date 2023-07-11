@@ -9,7 +9,6 @@ from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
-from app.main.utils import handle_lead_status_changed
 from app.models.data import SMData
 from app.utils.excel import ExcelClient
 
@@ -69,15 +68,15 @@ def data_to_excel():
     return send_file(os.path.join('data', 'sm_data.xlsx'), as_attachment=True)
 
 
-@bp.route('/handle_new_leads_cdv', methods=['POST'])
-def handle_new_leads_cdv():
-    if request.content_type == 'application/json':
-        handle_lead_status_changed(data=request.json)
-        return 'success', 200
-    elif request.content_type == 'application/x-www-form-urlencoded':
-        handle_lead_status_changed(data=request.form.to_dict())
-        return 'success', 200
-    return 'Unsupported Media Type', 415
+# @bp.route('/handle_new_leads_cdv', methods=['POST'])
+# def handle_new_leads_cdv():
+#     if request.content_type == 'application/json':
+#         handle_lead_status_changed(data=request.json)
+#         return 'success', 200
+#     elif request.content_type == 'application/x-www-form-urlencoded':
+#         handle_lead_status_changed(data=request.form.to_dict())
+#         return 'success', 200
+#     return 'Unsupported Media Type', 415
 
 
 @bp.route('/button1')
