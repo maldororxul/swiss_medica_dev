@@ -58,14 +58,14 @@ class Autocall:
             number_entity = self.__get_autocall_number_entity(number=data.get('number'))
             if not number_entity:
                 return
+            # получаем идентификаторы обзвона и лида, связанные с этим номером
+            autocall_id = number_entity.autocall_id
+            autocall_config = self.__sipuni_branch_config.get(autocall_id)
         if status == 'Исходящий, неотвеченный':
             pass
         elif status == 'Исходящие, отвеченные':
             # изменяем запись об автообзвоне в БД, перемещаем лид
             with self.__app.app_context():
-                # получаем идентификаторы обзвона и лида, связанные с этим номером
-                autocall_id = number_entity.autocall_id
-                autocall_config = self.__sipuni_branch_config.get(autocall_id)
                 lead_id = number_entity.lead_id
                 # удаляем номер из нашей базы
                 db.session.delete(number_entity)
