@@ -63,8 +63,7 @@ class Autocall:
         elif status == 'Исходящие, отвеченные':
             # изменяем запись об автообзвоне в БД, перемещаем лид
             with self.__app.app_context():
-                # получаем идентификаторы обзвона и лида, а также филиал, связанный с этим номером
-                self.__branch = number_entity.branch
+                # получаем идентификаторы обзвона и лида, связанные с этим номером
                 autocall_id = number_entity.autocall_id
                 autocall_config = self.__sipuni_branch_config.get(autocall_id)
                 lead_id = number_entity.lead_id
@@ -193,9 +192,19 @@ class Autocall:
         return None
 
     def __get_autocall_number_entity(self, number: str) -> Optional[db.Model]:
+        """ Перебирает таблицы БД в поисках экземпляра номера автодозвона
+
+        Args:
+            number: номер, который следует найти в БД
+
+        Returns:
+            экземпляр номера автодозвона из БД
+        """
         for autocall_model in AUTOCALL_NUMBER.values():
             number_entity = autocall_model.query.filter_by(number=number).first()
             if number_entity:
+                # по найденному номеру определяем филиал
+                self.__branch = number_entity.branch
                 return number_entity
         else:
             return None
@@ -204,7 +213,7 @@ class Autocall:
         """ Получить экземпляр браузера с авторизацией в личном кабинете Sipuni """
         browser = KmBrowser()
         browser.open(url='https://sipuni.com/ru_RU/login')
-        sipuni_config = self.__sipuni_config.get(self.__branch)
+        sipuni_config = self.__sipuni_branch_config
         login_line = browser.find_element_by_selector(selector='#login_username_email')
         login_line.send_keys(sipuni_config.get('login'))
         password_line = browser.find_element_by_selector(selector='#login_password')
