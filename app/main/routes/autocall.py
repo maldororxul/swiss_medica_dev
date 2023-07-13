@@ -12,20 +12,21 @@ from config import Config
 @bp.route('/start_autocalls')
 def start_autocalls():
     app = current_app._get_current_object()
-    try:
-        app.scheduler.remove_job('autocalls')
-    except JobLookupError:
-        pass
-    app.scheduler.add_job(
-        id='autocalls',
-        func=socketio.start_background_task,
-        args=[Autocall().start_autocalls],
-        trigger='interval',
-        seconds=int(Config.AUTOCALL_INTERVAL),
-        max_instances=1
-    )
-    if not app.scheduler.running:
-        app.scheduler.start()
+    for branch in ('drvorobjev', 'swissmedica'):
+        try:
+            app.scheduler.remove_job(f'autocalls_{branch}')
+        except JobLookupError:
+            pass
+        app.scheduler.add_job(
+            id=f'autocalls_{branch}',
+            func=socketio.start_background_task,
+            args=[Autocall(branch='swissmedica').start_autocalls],
+            trigger='interval',
+            seconds=int(Config.AUTOCALL_INTERVAL),
+            max_instances=1
+        )
+        if not app.scheduler.running:
+            app.scheduler.start()
     return 'started scheduler "autocalls"'
 
 
