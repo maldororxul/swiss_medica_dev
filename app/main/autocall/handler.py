@@ -52,10 +52,6 @@ class Autocall:
         self.__branch = branch
 
     @property
-    def __app(self):
-        return current_app._get_current_object()
-
-    @property
     def __sipuni_branch_config(self) -> Dict:
         return self.__sipuni_config.get(self.__branch)
 
@@ -66,7 +62,8 @@ class Autocall:
     def handle_autocall_result(self, data: Dict):
         status = data.get('status')
         # получаем экземпляр номера автообзвона из нашей БД
-        with self.__app.app_context():
+        app = current_app._get_current_object()
+        with app.app_context():
             number_entity = self.__get_autocall_number_entity(number=data.get('number'))
             number_entity.calls += 1
             number_entity.last_call_timestamp = int(time.time())
@@ -75,24 +72,22 @@ class Autocall:
             # получаем идентификаторы обзвона и лида, связанные с этим номером
             autocall_id = number_entity.autocall_id
             autocall_config = self.__sipuni_branch_config.get(autocall_id)
-        if status == 'Исходящий, неотвеченный':
-            with self.__app.app_context():
+            if status == 'Исходящий, неотвеченный':
                 db.session.commit()
-        elif status == 'Исходящие, отвеченные':
-            # изменяем запись об автообзвоне в БД, перемещаем лид
-            with self.__app.app_context():
+            elif status == 'Исходящие, отвеченные':
+                # изменяем запись об автообзвоне в БД, перемещаем лид
                 lead_id = number_entity.lead_id
                 # удаляем номер из нашей базы
                 db.session.delete(number_entity)
                 db.session.commit()
-            amo_client = API_CLIENT.get(self.__branch)()
-            amo_client.update_lead(
-                lead_id=lead_id,
-                data={
-                    'pipeline_id': int(autocall_config.get('success_pipeline_id')),
-                    'status_id': int(autocall_config.get('success_status_id'))
-                }
-            )
+                amo_client = API_CLIENT.get(self.__branch)()
+                amo_client.update_lead(
+                    lead_id=lead_id,
+                    data={
+                        'pipeline_id': int(autocall_config.get('success_pipeline_id')),
+                        'status_id': int(autocall_config.get('success_status_id'))
+                    }
+                )
         # # получаем список автообзвона из БД
         # with self.__app.app_context():
         #     all_numbers = number_entity.query.all() or []
@@ -158,7 +153,8 @@ class Autocall:
                 return
             # записываем номер и идентификатор лида в БД
             number = phones[0]
-            with self.__app.app_context():
+            app = current_app._get_current_object()
+            with app.app_context():
                 autocall_number = AUTOCALL_NUMBER.get(self.__branch)
                 number_entity = autocall_number.query.filter_by(number=number).first()
                 if number_entity is None:
@@ -200,7 +196,8 @@ class Autocall:
         for autocall_id in autocall_ids:
             browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
             time.sleep(10)
-        with self.__app.app_context():
+        app = current_app._get_current_object()
+        with app.app_context():
             # читаем номера из БД и добавляем в автообзвон те, которые удовлетворяют условию
             # for branch in self.__sipuni_config.keys():
             autocall_model = AUTOCALL_NUMBER.get(self.__branch)
