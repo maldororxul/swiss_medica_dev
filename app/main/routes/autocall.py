@@ -20,7 +20,7 @@ def start_autocalls():
         app.scheduler.add_job(
             id=f'autocalls_{branch}',
             func=socketio.start_background_task,
-            args=[Autocall(branch=branch).start_autocalls],
+            args=[Autocall(branch=branch).start_autocalls, app],
             trigger='interval',
             seconds=int(Config.AUTOCALL_INTERVAL),
             max_instances=1

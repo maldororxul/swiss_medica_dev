@@ -8,7 +8,7 @@ import json
 import time
 from datetime import datetime
 from typing import Dict, Optional
-from flask import current_app
+from flask import current_app, Flask
 from app import db
 from app.amo.processor.functions import clear_phone
 from app.main.autocall.error import SipuniConfigError
@@ -185,7 +185,7 @@ class Autocall:
         time.sleep(10)
         browser.close()
 
-    def start_autocalls(self):
+    def start_autocalls(self, app: Flask):
         """ Перезапускает все автообзвоны """
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
@@ -196,7 +196,6 @@ class Autocall:
         for autocall_id in autocall_ids:
             browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
             time.sleep(10)
-        app = current_app._get_current_object()
         with app.app_context():
             # читаем номера из БД и добавляем в автообзвон те, которые удовлетворяют условию
             # for branch in self.__sipuni_config.keys():
