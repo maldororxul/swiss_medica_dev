@@ -20,3 +20,4 @@ class Config:
     SIPUNI = os.environ.get("SIPUNI")
     SM_TELEGRAM_BOT_TOKEN = os.environ.get("SM_TELEGRAM_BOT_TOKEN")
     NEW_LEADS_CHAT_ID_SM = os.environ.get("NEW_LEADS_CHAT_ID_SM")
+    AUTOCALL_INTERVAL = os.environ.get("AUTOCALL_INTERVAL")

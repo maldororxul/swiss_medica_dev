@@ -11,8 +11,8 @@ class AutocallNumberBase(db.Model):
     lead_id = db.Column(db.Integer, nullable=False)
     number = db.Column(db.String, nullable=False, unique=True)
     branch = db.Column(db.String, nullable=False, unique=True)
-    success = db.Column(db.Integer, nullable=False)
     calls = db.Column(db.Integer, nullable=False)
+    last_call_timestamp = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
         return f'<Autocall Number "{self.number}">'

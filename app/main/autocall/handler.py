@@ -6,6 +6,7 @@ Notes:
 __author__ = 'ke.mizonov'
 import json
 import time
+from datetime import datetime
 from typing import Dict, Optional
 from flask import current_app
 from app import db
@@ -33,6 +34,16 @@ AUTOCALL_NUMBER = {
     'drvorobjev': CDVAutocallNumber,
 }
 
+WEEKDAY = {
+    1: "Monday",
+    2: "Tuesday",
+    3: "Wednesday",
+    4: "Thursday",
+    5: "Friday",
+    6: "Saturday",
+    0: "Sunday"
+}
+
 
 class Autocall:
     """ Класс, управляющий автообзвоном """
@@ -56,13 +67,16 @@ class Autocall:
         # получаем экземпляр номера автообзвона из нашей БД
         with self.__app.app_context():
             number_entity = self.__get_autocall_number_entity(number=data.get('number'))
+            number_entity.calls += 1
+            number_entity.last_call_timestamp = int(time.time())
             if not number_entity:
                 return
             # получаем идентификаторы обзвона и лида, связанные с этим номером
             autocall_id = number_entity.autocall_id
             autocall_config = self.__sipuni_branch_config.get(autocall_id)
         if status == 'Исходящий, неотвеченный':
-            pass
+            with self.__app.app_context():
+                db.session.commit()
         elif status == 'Исходящие, отвеченные':
             # изменяем запись об автообзвоне в БД, перемещаем лид
             with self.__app.app_context():
@@ -78,18 +92,18 @@ class Autocall:
                     'status_id': int(autocall_config.get('success_status_id'))
                 }
             )
-        # получаем список автообзвона из БД
-        with self.__app.app_context():
-            all_numbers = number_entity.query.all() or []
-        # удаляем все номера из автообзвона (через браузер)
-        browser: KmBrowser = self.__get_sipuni_browser()
-        browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
-        time.sleep(10)
-        browser.close()
-        # снова добавляем в автообзвон номера, записанные в БД
-        sipuni_client = Sipuni(sipuni_config=self.__sipuni_branch_config)
-        for line in all_numbers:
-            sipuni_client.add_number_to_autocall(number=line.number, autocall_id=autocall_id)
+        # # получаем список автообзвона из БД
+        # with self.__app.app_context():
+        #     all_numbers = number_entity.query.all() or []
+        # # удаляем все номера из автообзвона (через браузер)
+        # browser: KmBrowser = self.__get_sipuni_browser()
+        # browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
+        # time.sleep(10)
+        # browser.close()
+        # # снова добавляем в автообзвон номера, записанные в БД
+        # sipuni_client = Sipuni(sipuni_config=self.__sipuni_branch_config)
+        # for line in all_numbers:
+        #     sipuni_client.add_number_to_autocall(number=line.number, autocall_id=autocall_id)
 
     def handle_lead_status_changed(self, data: Dict) -> None:
         """ Обработка смены статуса лида
@@ -151,17 +165,12 @@ class Autocall:
                         autocall_id=autocall_id,
                         lead_id=int(lead_id),
                         number=number,
-                        success=0,
                         calls=0,
-                        branch=self.__branch
+                        branch=self.__branch,
+                        last_call_timestamp=int(time.time())
                     )
                     db.session.add(number_entity)
                     db.session.commit()
-            # добавляем номер в автообзвон Sipuni
-            sipuni_client = Sipuni(sipuni_config=self.__sipuni_branch_config)
-            sipuni_client.add_number_to_autocall(number=number, autocall_id=autocall_id)
-            # запуск обзвона (временно!)
-            self.start_autocall(autocall_id=autocall_id)
         except Exception as exc:
             processor.log.add(text=f'Error [parse_webhook_data]: {exc}')
 
@@ -174,6 +183,60 @@ class Autocall:
         browser: KmBrowser = self.__get_sipuni_browser()
         browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
         time.sleep(10)
+        browser.close()
+
+    def start_autocalls(self):
+        """ Перезапускает все автообзвоны """
+        browser: KmBrowser = self.__get_sipuni_browser()
+        # удаляем все номера из всех автообзвонов Sipuni (через браузер)
+        for data in self.__sipuni_config.values():
+            for autocall_id in (data.get('autocall') or {}).keys():
+                browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
+                time.sleep(10)
+        with self.__app.app_context():
+            # читаем номера из БД и добавляем в автообзвон те, которые удовлетворяют условию
+            for branch in self.__sipuni_config.keys():
+                autocall_model = AUTOCALL_NUMBER.get(branch)
+                all_numbers = autocall_model.query.all()
+                branch_config = self.__sipuni_config.get(branch)
+                sipuni_client = Sipuni(sipuni_config=branch_config)
+                for line in all_numbers:
+                    # fixme с момента last_call_timestamp должно пройти не менее 24 часов
+                    # if line.last_call_timestamp + 24 * 3600 > time.time():
+                    #     continue
+                    # конфиг SIPUNI существует
+                    autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
+                    if not autocall_config:
+                        continue
+                    # лимит звонков еще не достигнут
+                    if line.calls >= int(autocall_config.get('calls_limit')):
+                        continue
+                    schedule = autocall_config.get('schedule')
+                    # существует расписание для данного автообзвона
+                    if not schedule:
+                        continue
+                    # сегодня день, подходящий под расписание
+                    curr_dt = datetime.now()
+                    weekday_schedule = schedule.get(
+                        WEEKDAY.get(curr_dt.weekday())
+                    )
+                    if not weekday_schedule:
+                        continue
+                    # сейчас время, подходящее для звонка
+                    for period in weekday_schedule:
+                        _from, _to = period.split(' - ')
+                        _from = self.__build_datetime_from_timestring(timestring=_from)
+                        _to = self.__build_datetime_from_timestring(timestring=_to)
+                        if _from <= curr_dt <= _to:
+                            break
+                    else:
+                        continue
+                    sipuni_client.add_number_to_autocall(number=line.number, autocall_id=line.autocall_id)
+        # запускаем все автообзвоны Sipuni
+        for data in self.__sipuni_config.values():
+            for autocall_id in (data.get('autocall') or {}).keys():
+                browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
+                time.sleep(10)
         browser.close()
 
     def __get_autocall_id(self, pipeline_id: str, status_id: str) -> Optional[int]:
@@ -224,3 +287,18 @@ class Autocall:
             selector='body > header > div.navigation.row-fluid > div.pull-left.menu-top > ul > li:nth-child(1) > a'
         )
         return browser
+
+    @staticmethod
+    def __build_datetime_from_timestring(timestring: str) -> datetime:
+        """ Строит дату-время на основе переданной строки в формате "%H:%M"
+
+        Args:
+            timestring: строка, содержащее время в формате "%H:%M"
+
+        Returns:
+            дата-время
+        """
+        return datetime.combine(
+            datetime.today(),
+            datetime.strptime(timestring, "%H:%M").time()
+        )
