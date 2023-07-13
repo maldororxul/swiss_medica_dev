@@ -21,7 +21,7 @@ def start_autocalls():
         func=socketio.start_background_task,
         args=[Autocall().start_autocalls],
         trigger='interval',
-        seconds=Config.AUTOCALL_INTERVAL,
+        seconds=int(Config.AUTOCALL_INTERVAL),
         max_instances=1
     )
     if not app.scheduler.running:
