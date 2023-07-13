@@ -125,6 +125,7 @@ class Autocall:
         """
         self.__branch = data.get('account[subdomain]')
         processor = DATA_PROCESSOR.get(self.__branch)()
+        processor.log.add(text=f'''Branch: "{self.__branch}" Pipeline: {data.get('leads[status][0][pipeline_id]')} Status: {data.get('leads[status][0][status_id]')}''')
         # реагируем только на изменение статусов
         if 'leads[status][0][old_status_id]' not in data and 'leads[status][0][status_id]' not in data:
             processor.log.add(text=f'Wrong event')
