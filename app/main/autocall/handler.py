@@ -11,6 +11,7 @@ from typing import Dict, Optional
 from flask import current_app
 from app import db
 from app.amo.processor.functions import clear_phone
+from app.main.autocall.error import SipuniConfigError
 from app.main.browser import KmBrowser
 from config import Config
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
@@ -125,7 +126,6 @@ class Autocall:
         """
         self.__branch = data.get('account[subdomain]')
         processor = DATA_PROCESSOR.get(self.__branch)()
-        processor.log.add(text=str(json.loads(Config.SIPUNI)))
         # реагируем только на изменение статусов
         if 'leads[status][0][old_status_id]' not in data and 'leads[status][0][status_id]' not in data:
             processor.log.add(text=f'Wrong event')
@@ -181,63 +181,68 @@ class Autocall:
         Args:
             autocall_id: идентификатор автообзвона в Sipuni
         """
-        browser: KmBrowser = self.__get_sipuni_browser()
+        try:
+            browser: KmBrowser = self.__get_sipuni_browser()
+        except SipuniConfigError:
+            return
         browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
         time.sleep(10)
         browser.close()
 
     def start_autocalls(self):
         """ Перезапускает все автообзвоны """
-        browser: KmBrowser = self.__get_sipuni_browser()
+        try:
+            browser: KmBrowser = self.__get_sipuni_browser()
+        except SipuniConfigError:
+            return
+        autocall_ids = list(self.__sipuni_branch_config.get('autocall').keys())
         # удаляем все номера из всех автообзвонов Sipuni (через браузер)
-        for data in self.__sipuni_config.values():
-            for autocall_id in (data.get('autocall') or {}).keys():
-                browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
-                time.sleep(10)
+        for autocall_id in autocall_ids:
+            browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
+            time.sleep(10)
         with self.__app.app_context():
             # читаем номера из БД и добавляем в автообзвон те, которые удовлетворяют условию
-            for branch in self.__sipuni_config.keys():
-                autocall_model = AUTOCALL_NUMBER.get(branch)
-                all_numbers = autocall_model.query.all()
-                branch_config = self.__sipuni_config.get(branch)
-                sipuni_client = Sipuni(sipuni_config=branch_config)
-                for line in all_numbers:
-                    # fixme с момента last_call_timestamp должно пройти не менее 24 часов
-                    # if line.last_call_timestamp + 24 * 3600 > time.time():
-                    #     continue
-                    # конфиг SIPUNI существует
-                    autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
-                    if not autocall_config:
-                        continue
-                    # лимит звонков еще не достигнут
-                    if line.calls >= int(autocall_config.get('calls_limit')):
-                        continue
-                    schedule = autocall_config.get('schedule')
-                    # существует расписание для данного автообзвона
-                    if not schedule:
-                        continue
-                    # сегодня день, подходящий под расписание
-                    curr_dt = datetime.now()
-                    weekday_schedule = schedule.get(
-                        WEEKDAY.get(curr_dt.weekday())
-                    )
-                    if not weekday_schedule:
-                        continue
-                    # сейчас время, подходящее для звонка
-                    for period in weekday_schedule:
-                        _from, _to = period.split(' - ')
-                        _from = self.__build_datetime_from_timestring(timestring=_from)
-                        _to = self.__build_datetime_from_timestring(timestring=_to)
-                        if _from <= curr_dt <= _to:
-                            break
-                    else:
-                        continue
-                    sipuni_client.add_number_to_autocall(number=line.number, autocall_id=line.autocall_id)
+            # for branch in self.__sipuni_config.keys():
+            autocall_model = AUTOCALL_NUMBER.get(self.__branch)
+            all_numbers = autocall_model.query.all()
+            branch_config = self.__sipuni_branch_config
+            sipuni_client = Sipuni(sipuni_config=branch_config)
+            for line in all_numbers:
+                # fixme с момента last_call_timestamp должно пройти не менее 24 часов
+                # if line.last_call_timestamp + 24 * 3600 > time.time():
+                #     continue
+                # конфиг SIPUNI существует
+                autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
+                if not autocall_config:
+                    continue
+                # лимит звонков еще не достигнут
+                if line.calls >= int(autocall_config.get('calls_limit')):
+                    continue
+                schedule = autocall_config.get('schedule')
+                # существует расписание для данного автообзвона
+                if not schedule:
+                    continue
+                # сегодня день, подходящий под расписание
+                curr_dt = datetime.now()
+                weekday_schedule = schedule.get(
+                    WEEKDAY.get(curr_dt.weekday())
+                )
+                if not weekday_schedule:
+                    continue
+                # сейчас время, подходящее для звонка
+                for period in weekday_schedule:
+                    _from, _to = period.split(' - ')
+                    _from = self.__build_datetime_from_timestring(timestring=_from)
+                    _to = self.__build_datetime_from_timestring(timestring=_to)
+                    if _from <= curr_dt <= _to:
+                        break
+                else:
+                    continue
+                sipuni_client.add_number_to_autocall(number=line.number, autocall_id=line.autocall_id)
         # запускаем все автообзвоны Sipuni
-        for data in self.__sipuni_config.values():
-            for autocall_id in (data.get('autocall') or {}).keys():
-                browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
-                time.sleep(10)
+        for autocall_id in autocall_ids:
+            browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
+            time.sleep(10)
         browser.close()
 
     def __get_autocall_id(self, pipeline_id: str, status_id: str) -> Optional[int]:
@@ -278,6 +283,8 @@ class Autocall:
         browser = KmBrowser()
         browser.open(url='https://sipuni.com/ru_RU/login')
         sipuni_config = self.__sipuni_branch_config
+        if not sipuni_config:
+            raise SipuniConfigError(f'Sipuni Config for branch {self.__branch} is absent')
         login_line = browser.find_element_by_selector(selector='#login_username_email')
         login_line.send_keys(sipuni_config.get('login'))
         password_line = browser.find_element_by_selector(selector='#login_password')
