@@ -81,6 +81,7 @@ class Autocall:
                 db.session.delete(number_entity)
                 db.session.commit()
                 amo_client = API_CLIENT.get(self.__branch)()
+                print(f"Moving lead {autocall_config.get('success_pipeline_id')} {autocall_config.get('success_status_id')}")
                 amo_client.update_lead(
                     lead_id=lead_id,
                     data={
@@ -88,18 +89,6 @@ class Autocall:
                         'status_id': int(autocall_config.get('success_status_id'))
                     }
                 )
-        # # получаем список автообзвона из БД
-        # with self.__app.app_context():
-        #     all_numbers = number_entity.query.all() or []
-        # # удаляем все номера из автообзвона (через браузер)
-        # browser: KmBrowser = self.__get_sipuni_browser()
-        # browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
-        # time.sleep(10)
-        # browser.close()
-        # # снова добавляем в автообзвон номера, записанные в БД
-        # sipuni_client = Sipuni(sipuni_config=self.__sipuni_branch_config)
-        # for line in all_numbers:
-        #     sipuni_client.add_number_to_autocall(number=line.number, autocall_id=autocall_id)
 
     def handle_lead_status_changed(self, data: Dict) -> None:
         """ Обработка смены статуса лида
@@ -213,6 +202,7 @@ class Autocall:
                     continue
                 # лимит звонков еще не достигнут
                 if line.calls >= int(autocall_config.get('calls_limit')):
+                    db.session.delete(line)
                     continue
                 schedule = autocall_config.get('schedule')
                 # существует расписание для данного автообзвона
