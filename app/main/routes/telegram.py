@@ -2,9 +2,9 @@
 __author__ = 'ke.mizonov'
 from typing import Optional, Dict, Callable
 import telebot
-from flask import redirect, url_for, request
+from flask import request
 from app.main import bp
-from app.main.utils import handle_new_lead, handle_autocall_success
+from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch
 from config import Config
 
 BOTS = {
@@ -23,12 +23,15 @@ def get_data_from_post_request(_request) -> Optional[Dict]:
         return None
 
 
-def reply_on_new_lead(_request, msg_builder: Callable):
+def reply_on_lead_event(_request, msg_builder: Callable):
     data = get_data_from_post_request(_request=_request)
     if not data:
         return 'Unsupported Media Type', 415
     branch = data.get('account[subdomain]')
     pipeline_id, message = msg_builder(data=data)
+    if not message:
+        # если сообщения нет, ничего не делаем
+        return 'Ok', 200
     # в параметрах содержится идентификатор чата; вероятно, есть параметры конкретной воронки (по дефолту - филиала)
     params = Config.NEW_LEAD_TELEGRAM.get(pipeline_id)
     if params:
@@ -53,27 +56,6 @@ for bot in BOTS.values():
     make_send_welcome_handler(bot)
 
 
-# @bp.route('/test_telegram')
-# def test_telegram():
-#     return redirect(url_for(
-#         'main.send_message',
-#         bot_key="drvorobjev",
-#         chat_id="-983109006",
-#         message='test cdv'
-#     ))
-
-
-# @bp.route("/<bot_key>/send_message/<chat_id>/<message>")
-# def send_message(bot_key, chat_id, message):
-#     print('>>>', bot_key, chat_id, message)
-#     if bot_key not in BOTS:
-#         return 'Bot not found', 404
-#     print('bot', BOTS[bot_key])
-#     BOTS[bot_key].send_message(chat_id, 'test')
-#     BOTS[bot_key].send_message(chat_id, message)
-#     return 'success', 200
-
-
 @bp.route('/set_telegram_webhooks')
 def set_telegram_webhooks():
     for pipeline_or_branch, _bot in BOTS.items():
@@ -85,12 +67,17 @@ def set_telegram_webhooks():
 
 @bp.route('/new_lead', methods=['POST'])
 def new_lead():
-    return reply_on_new_lead(_request=request, msg_builder=handle_new_lead)
+    return reply_on_lead_event(_request=request, msg_builder=handle_new_lead)
 
 
 @bp.route('/autocall_success', methods=['POST'])
 def autocall_success():
-    return reply_on_new_lead(_request=request, msg_builder=handle_autocall_success)
+    return reply_on_lead_event(_request=request, msg_builder=handle_autocall_success)
+
+
+@bp.route('/get_in_touch', methods=['POST'])
+def get_in_touch():
+    return reply_on_lead_event(_request=request, msg_builder=handle_get_in_touch)
 
 
 @bp.route('/<bot_token>', methods=['POST'])

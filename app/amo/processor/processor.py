@@ -498,6 +498,17 @@ class DataProcessor:
                 'status': status
             }
 
+    def get_user_by_id(self, user_id: int) -> Dict:
+        table = Table('User', MetaData(), autoload_with=self.engine, schema=self.schema)
+        with self.engine.begin() as connection:
+            stmt = select(table).where(
+                table.c.id_on_source == user_id
+            )
+            user = connection.execute(stmt).fetchone()
+            if not user:
+                return {}
+            return user.to_dict()
+
     def get_data_borders(self) -> Tuple[Optional[int], Optional[int]]:
         lowest_df = None
         highest_dt = None
