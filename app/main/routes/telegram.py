@@ -46,11 +46,15 @@ def reply_on_new_lead(_request, msg_builder: Callable):
     ))
 
 
-for bot in BOTS.values():
-    @bot.message_handler(commands=['start', 'help'])
+def make_send_welcome_handler(tg_bot):
+    @tg_bot.message_handler(commands=['start', 'help'])
     def send_welcome(message):
-        print('>>', bot, message.chat.id)
         bot.reply_to(message, f'CHAT_ID={message.chat.id}')
+    return send_welcome
+
+
+for bot in BOTS.values():
+    make_send_welcome_handler(bot)
 
 
 @bp.route("/<bot_key>/send_message/<chat_id>/<message>")
