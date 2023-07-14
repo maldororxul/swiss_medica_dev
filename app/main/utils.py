@@ -44,8 +44,8 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str]:
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
-        f"URGENT! Lead answered (autocall): "
-        f"https://swissmedica.amocrm.ru/leads/detail/{data.get('leads[status][0][id]')}".strip()
+        f"URGENT! Answered autocall: "
+        f"https://{branch}.amocrm.ru/leads/detail/{data.get('leads[status][0][id]')}".strip()
     )
 
 
@@ -60,5 +60,5 @@ def handle_new_lead(data: Dict) -> Tuple[str, str]:
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
-        f"New lead: https://swissmedica.amocrm.ru/leads/detail/{data.get('leads[add][0][id]')}".strip()
+        f"New lead: https://{branch}.amocrm.ru/leads/detail/{data.get('leads[add][0][id]')}".strip()
     )

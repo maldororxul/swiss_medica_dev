@@ -36,20 +36,10 @@ def reply_on_new_lead(_request, msg_builder: Callable):
     else:
         params = Config.NEW_LEAD_TELEGRAM.get(branch)
         bot_key = branch
-    """
-    >>> {'CHAT_ID': '-983109006', 'TOKEN': '6084021150:AAGEiGhrLHgeS0kATbkxDCbW8Iyb-Tc65hc'}
-    bot_key drvorobjev
-    """
     if not params:
         return 'Bot not found', 404
     BOTS[bot_key].send_message(params.get('CHAT_ID'), message)
     return 'Ok', 200
-    # return redirect(url_for(
-    #     'main.send_message',
-    #     bot_key=bot_key,
-    #     chat_id=params.get('CHAT_ID'),
-    #     message=message
-    # ))
 
 
 def make_send_welcome_handler(tg_bot):

@@ -80,6 +80,7 @@ class Autocall:
                 # удаляем номер из нашей базы
                 db.session.delete(number_entity)
                 db.session.commit()
+                # перемещаем лид (факт перемещения вручную игнорируются, ошибки игнорируются)
                 amo_client = API_CLIENT.get(self.__branch)()
                 amo_client.update_lead(
                     lead_id=lead_id,
@@ -192,9 +193,9 @@ class Autocall:
             branch_config = self.__sipuni_branch_config
             sipuni_client = Sipuni(sipuni_config=branch_config)
             for line in all_numbers:
-                # fixme с момента last_call_timestamp должно пройти не менее 24 часов
-                # if line.last_call_timestamp + 24 * 3600 > time.time():
-                #     continue
+                # с момента last_call_timestamp должно пройти не менее 24 часов
+                if line.last_call_timestamp + 24 * 3600 > time.time():
+                    continue
                 # конфиг SIPUNI существует
                 autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
                 if not autocall_config:
