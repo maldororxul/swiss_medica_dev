@@ -74,7 +74,7 @@ class Autocall:
             print('Autocall id', number_entity.autocall_id)
             print('Branch', number_entity.branch)
             print('Branch config', self.__sipuni_config.get(number_entity.branch).get('autocall'))
-            autocall_config = self.__sipuni_config.get(number_entity.branch).get('autocall').get(autocall_id)
+            autocall_config = self.__sipuni_config.get(number_entity.branch).get('autocall').get(str(autocall_id))
             if status == 'Исходящий, неотвеченный':
                 db.session.commit()
             elif status == 'Исходящие, отвеченные':
