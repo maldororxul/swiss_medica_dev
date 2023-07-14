@@ -61,6 +61,7 @@ for bot in BOTS.values():
 def send_message(bot_key, chat_id, message):
     if bot_key not in BOTS:
         return 'Bot not found', 404
+    print(f'Bot key: {bot_key}, Chat id: {chat_id}, msg: {message}')
     BOTS[bot_key].send_message(chat_id, message)
     return 'success', 200
 
