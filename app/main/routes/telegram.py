@@ -42,12 +42,14 @@ def reply_on_new_lead(_request, msg_builder: Callable):
     """
     if not params:
         return 'Bot not found', 404
-    return redirect(url_for(
-        'main.send_message',
-        bot_key=bot_key,
-        chat_id=params.get('CHAT_ID'),
-        message=message
-    ))
+    BOTS[bot_key].send_message(params.get('CHAT_ID'), message)
+    return 'Ok', 200
+    # return redirect(url_for(
+    #     'main.send_message',
+    #     bot_key=bot_key,
+    #     chat_id=params.get('CHAT_ID'),
+    #     message=message
+    # ))
 
 
 def make_send_welcome_handler(tg_bot):
@@ -61,25 +63,25 @@ for bot in BOTS.values():
     make_send_welcome_handler(bot)
 
 
-@bp.route('/test_telegram')
-def test_telegram():
-    return redirect(url_for(
-        'main.send_message',
-        bot_key="drvorobjev",
-        chat_id="-983109006",
-        message='test cdv'
-    ))
+# @bp.route('/test_telegram')
+# def test_telegram():
+#     return redirect(url_for(
+#         'main.send_message',
+#         bot_key="drvorobjev",
+#         chat_id="-983109006",
+#         message='test cdv'
+#     ))
 
 
-@bp.route("/<bot_key>/send_message/<chat_id>/<message>")
-def send_message(bot_key, chat_id, message):
-    print('>>>', bot_key, chat_id, message)
-    if bot_key not in BOTS:
-        return 'Bot not found', 404
-    print('bot', BOTS[bot_key])
-    BOTS[bot_key].send_message(chat_id, 'test')
-    BOTS[bot_key].send_message(chat_id, message)
-    return 'success', 200
+# @bp.route("/<bot_key>/send_message/<chat_id>/<message>")
+# def send_message(bot_key, chat_id, message):
+#     print('>>>', bot_key, chat_id, message)
+#     if bot_key not in BOTS:
+#         return 'Bot not found', 404
+#     print('bot', BOTS[bot_key])
+#     BOTS[bot_key].send_message(chat_id, 'test')
+#     BOTS[bot_key].send_message(chat_id, message)
+#     return 'success', 200
 
 
 @bp.route('/set_telegram_webhooks')
