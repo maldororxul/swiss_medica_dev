@@ -71,6 +71,9 @@ class Autocall:
             number_entity.last_call_timestamp = int(time.time())
             # получаем идентификаторы обзвона и лида, связанные с этим номером
             autocall_id = number_entity.autocall_id
+            print('Autocall id', number_entity.autocall_id)
+            print('Branch', number_entity.branch)
+            print('Branch config', self.__sipuni_config.get(number_entity.branch).get('autocall'))
             autocall_config = self.__sipuni_config.get(number_entity.branch).get('autocall').get(autocall_id)
             if status == 'Исходящий, неотвеченный':
                 db.session.commit()
