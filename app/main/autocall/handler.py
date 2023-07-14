@@ -57,7 +57,7 @@ class Autocall:
 
     @property
     def __sipuni_config(self) -> Dict:
-        return json.loads(Config.SIPUNI)
+        return Config.SIPUNI
 
     def handle_autocall_result(self, data: Dict):
         status = data.get('status')

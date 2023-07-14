@@ -226,7 +226,7 @@ class GoogleAPIClient:
             объект для обращения к гуглу по API
         """
         creds = service_account.Credentials.from_service_account_info(
-            json.loads(Config.GOOGLE_CREDENTIALS),
+            Config.GOOGLE_CREDENTIALS,
             scopes=SCOPES
         )
         return build('sheets', 'v4', credentials=creds)
