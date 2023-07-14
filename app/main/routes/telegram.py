@@ -37,6 +37,7 @@ def reply_on_new_lead(_request, msg_builder: Callable):
         params = Config.NEW_LEAD_TELEGRAM.get(branch)
         bot_key = branch
     print('>>>', params)
+    print('bot_key', bot_key)
     if not params:
         return 'Bot not found', 404
     return redirect(url_for(
