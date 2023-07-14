@@ -27,6 +27,8 @@ def get_data_from_external_api(handler_func: Callable, request, **args):
 
 
 def handle_autocall_success(data: Dict) -> Tuple[str, str]:
+    for k, v in data.items():
+        print(f'{k} :: {v}')
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get('leads[add][0][pipeline_id]')
