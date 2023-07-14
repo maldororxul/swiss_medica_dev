@@ -57,6 +57,16 @@ for bot in BOTS.values():
     make_send_welcome_handler(bot)
 
 
+@bp.route('/test_telegram')
+def test_telegram():
+    return redirect(url_for(
+        'main.send_message',
+        bot_key="drvorobjev",
+        chat_id="-983109006",
+        message='test cdv'
+    ))
+
+
 @bp.route("/<bot_key>/send_message/<chat_id>/<message>")
 def send_message(bot_key, chat_id, message):
     if bot_key not in BOTS:
