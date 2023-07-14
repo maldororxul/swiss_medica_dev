@@ -49,6 +49,7 @@ def reply_on_new_lead(_request, msg_builder: Callable):
 for bot in BOTS.values():
     @bot.message_handler(commands=['start', 'help'])
     def send_welcome(message):
+        print('>>', bot, message.chat.id)
         bot.reply_to(message, f'CHAT_ID={message.chat.id}')
 
 
@@ -66,7 +67,7 @@ def set_telegram_webhooks():
         _bot.remove_webhook()
         token = Config.NEW_LEAD_TELEGRAM.get(pipeline_or_branch).get('TOKEN')
         _bot.set_webhook(url=Config.HEROKU_URL + token)
-    return "!", 200
+    return "Telegram webhooks were configured", 200
 
 
 @bp.route('/new_lead', methods=['POST'])
