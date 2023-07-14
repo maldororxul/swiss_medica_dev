@@ -65,13 +65,13 @@ class Autocall:
         app = current_app._get_current_object()
         with app.app_context():
             number_entity = self.__get_autocall_number_entity(number=data.get('number'))
-            number_entity.calls += 1
-            number_entity.last_call_timestamp = int(time.time())
             if not number_entity:
                 return
+            number_entity.calls += 1
+            number_entity.last_call_timestamp = int(time.time())
             # получаем идентификаторы обзвона и лида, связанные с этим номером
             autocall_id = number_entity.autocall_id
-            autocall_config = self.__sipuni_branch_config.get(autocall_id)
+            autocall_config = self.__sipuni_config.get(number_entity.branch).get(autocall_id)
             if status == 'Исходящий, неотвеченный':
                 db.session.commit()
             elif status == 'Исходящие, отвеченные':
@@ -80,7 +80,7 @@ class Autocall:
                 # удаляем номер из нашей базы
                 db.session.delete(number_entity)
                 db.session.commit()
-                amo_client = API_CLIENT.get(self.__branch)()
+                amo_client = API_CLIENT.get(number_entity.branch)()
                 print(f"Moving lead {autocall_config.get('success_pipeline_id')} {autocall_config.get('success_status_id')}")
                 amo_client.update_lead(
                     lead_id=lead_id,
