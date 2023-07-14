@@ -49,7 +49,7 @@ def reply_on_new_lead(_request, msg_builder: Callable):
 def make_send_welcome_handler(tg_bot):
     @tg_bot.message_handler(commands=['start', 'help'])
     def send_welcome(message):
-        bot.reply_to(message, f'CHAT_ID={message.chat.id}')
+        tg_bot.reply_to(message, f'CHAT_ID={message.chat.id}')
     return send_welcome
 
 
