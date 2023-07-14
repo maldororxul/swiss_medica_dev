@@ -53,17 +53,16 @@ def make_send_welcome_handler(tg_bot):
     return send_welcome
 
 
-def make_send_message_handler(tg_bot):
-    @bp.route("/send_message/<chat_id>/<message>")
-    def send_message(chat_id, message):
-        tg_bot.send_message(chat_id, message)
-        return 'success', 200
-    return send_message
-
-
 for bot in BOTS.values():
     make_send_welcome_handler(bot)
-    make_send_message_handler(bot)
+
+
+@bp.route("/<bot_key>/send_message/<chat_id>/<message>")
+def send_message(bot_key, chat_id, message):
+    if bot_key not in BOTS:
+        return 'Bot not found', 404
+    BOTS[bot_key].send_message(chat_id, message)
+    return 'success', 200
 
 
 @bp.route('/set_telegram_webhooks')
