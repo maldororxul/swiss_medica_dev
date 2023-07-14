@@ -1,49 +1,92 @@
 """ Маршруты для работы Telegram-ботов """
 __author__ = 'ke.mizonov'
+from typing import Optional, Dict, Callable
 import telebot
 from flask import redirect, url_for, request
 from app.main import bp
-from app.main.utils import handle_new_lead
+from app.main.utils import handle_new_lead, handle_autocall_success
 from config import Config
 
-sm_telegram_bot = telebot.TeleBot(Config.SM_TELEGRAM_BOT_TOKEN)
+BOTS = {
+    pipeline_or_branch: telebot.TeleBot(params['TOKEN'])
+    for pipeline_or_branch, params in Config.NEW_LEAD_TELEGRAM.items()
+    if params.get('TOKEN')
+}
 
 
-@sm_telegram_bot.message_handler(commands=['start', 'help'])
-def send_welcome(message):
-    sm_telegram_bot.reply_to(message, f'CHAT_ID={message.chat.id}')
+def get_data_from_post_request(_request) -> Optional[Dict]:
+    if request.content_type == 'application/json':
+        return _request.json
+    elif request.content_type == 'application/x-www-form-urlencoded':
+        return _request.form.to_dict()
+    else:
+        return None
 
 
-@bp.route("/send_message/<chat_id>/<message>")
-def send_message_sm(chat_id, message):
-    sm_telegram_bot.send_message(chat_id, message)
+def reply_on_new_lead(_request, msg_builder: Callable):
+    data = get_data_from_post_request(_request=_request)
+    if not data:
+        return 'Unsupported Media Type', 415
+    branch = data.get('account[subdomain]')
+    pipeline_id, message = msg_builder(data=data)
+    # в параметрах содержится идентификатор чата; вероятно, есть параметры конкретной воронки (по дефолту - филиала)
+    params = Config.NEW_LEAD_TELEGRAM.get(pipeline_id)
+    if params:
+        bot_key = pipeline_id
+    else:
+        params = Config.NEW_LEAD_TELEGRAM.get(branch)
+        bot_key = branch
+    if not params:
+        return 'Bot not found', 404
+    return redirect(url_for(
+        'main.send_message',
+        bot_key=bot_key,
+        chat_id=params.get('CHAT_ID'),
+        message=message
+    ))
+
+
+for bot in BOTS.values():
+    @bot.message_handler(commands=['start', 'help'])
+    def send_welcome(message):
+        bot.reply_to(message, f'CHAT_ID={message.chat.id}')
+
+
+@bp.route("/<bot_key>/send_message/<chat_id>/<message>")
+def send_message(bot_key, chat_id, message):
+    if bot_key not in BOTS:
+        return 'Bot not found', 404
+    BOTS[bot_key].send_message(chat_id, message)
     return 'success', 200
 
 
 @bp.route('/set_telegram_webhooks')
 def set_telegram_webhooks():
-    sm_telegram_bot.remove_webhook()
-    sm_telegram_bot.set_webhook(url=Config.HEROKU_URL + Config.SM_TELEGRAM_BOT_TOKEN)
+    for pipeline_or_branch, _bot in BOTS.items():
+        _bot.remove_webhook()
+        token = Config.NEW_LEAD_TELEGRAM.get(pipeline_or_branch).get('TOKEN')
+        _bot.set_webhook(url=Config.HEROKU_URL + token)
     return "!", 200
 
 
-@bp.route('/new_lead_sm', methods=['POST'])
-def new_lead_sm():
-    if request.content_type == 'application/json':
-        data = request.json
-    elif request.content_type == 'application/x-www-form-urlencoded':
-        data = request.form.to_dict()
-    else:
-        return 'Unsupported Media Type', 415
-    endpoint = 'main.send_message_sm'
-    return redirect(url_for(
-        endpoint,
-        chat_id=Config.NEW_LEADS_CHAT_ID_SM,
-        message=handle_new_lead(data=data)
-    ))
+@bp.route('/new_lead', methods=['POST'])
+def new_lead():
+    return reply_on_new_lead(_request=request, msg_builder=handle_new_lead)
 
 
-@bp.route('/' + Config.SM_TELEGRAM_BOT_TOKEN, methods=['POST'])
-def get_message_sm():
-    sm_telegram_bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+@bp.route('/autocall_success', methods=['POST'])
+def autocall_success():
+    return reply_on_new_lead(_request=request, msg_builder=handle_autocall_success)
+
+
+@bp.route('/<bot_token>', methods=['POST'])
+def get_message(bot_token):
+    _bot = None
+    for pipeline_or_branch, params in Config.NEW_LEAD_TELEGRAM.items():
+        if params.get('TOKEN') == bot_token:
+            _bot = BOTS.get(pipeline_or_branch)
+            break
+    if not _bot:
+        return "Invalid bot token", 400
+    _bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
     return "!", 200

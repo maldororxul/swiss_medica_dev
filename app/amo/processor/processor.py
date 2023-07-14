@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from enum import Enum
@@ -476,6 +477,26 @@ class DataProcessor:
             else:
                 stmt = select(table)
             return [x._asdict() for x in connection.execute(stmt).fetchall() or []]
+
+    def get_pipeline_and_status_by_id(self, pipeline_id: int, status_id: int) -> Dict:
+        table = Table('Pipeline', MetaData(), autoload_with=self.engine, schema=self.schema)
+        with self.engine.begin() as connection:
+            stmt = select(table).where(
+                table.c.id_on_source == pipeline_id
+            )
+            pipeline = connection.execute(stmt).fetchone()
+            if not pipeline:
+                return {}
+            _embedded = json.loads(pipeline._embedded) or {}
+            status = None
+            for line in _embedded.get('statuses'):
+                if line['id'] == status_id:
+                    status = line['name']
+                    break
+            return {
+                'pipeline': pipeline.name,
+                'status': status
+            }
 
     def get_data_borders(self) -> Tuple[Optional[int], Optional[int]]:
         lowest_df = None
