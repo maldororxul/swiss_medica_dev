@@ -1,4 +1,3 @@
-import json
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from enum import Enum
@@ -498,7 +497,7 @@ class DataProcessor:
                 'status': status
             }
 
-    def get_user_by_id(self, user_id: int) -> Dict:
+    def get_user_by_id(self, user_id: int):
         table = Table('User', MetaData(), autoload_with=self.engine, schema=self.schema)
         with self.engine.begin() as connection:
             stmt = select(table).where(
@@ -506,8 +505,8 @@ class DataProcessor:
             )
             user = connection.execute(stmt).fetchone()
         if not user:
-            return {}
-        return user.to_dict()
+            return None
+        return user
 
     def get_data_borders(self) -> Tuple[Optional[int], Optional[int]]:
         lowest_df = None

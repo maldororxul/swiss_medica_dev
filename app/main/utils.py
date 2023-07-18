@@ -96,6 +96,6 @@ def handle_get_in_touch(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
         f"Lead: https://{branch}.amocrm.ru/leads/detail/{lead_id} "
-        f"Responsible: {user.get('name') or ''}"
+        f"Responsible: {user.name if user else ''}"
         f"Reaction time: {reaction_time or ''}".strip()
     )
