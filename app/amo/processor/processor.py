@@ -487,7 +487,7 @@ class DataProcessor:
             pipeline = connection.execute(stmt).fetchone()
             if not pipeline:
                 return {}
-            _embedded = json.loads(pipeline._embedded) or {}
+            _embedded = pipeline._embedded
             status = None
             for line in _embedded.get('statuses'):
                 if line['id'] == status_id:
