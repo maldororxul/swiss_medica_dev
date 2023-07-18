@@ -35,7 +35,7 @@ class LeadBase(db.Model):
         return f'<Lead "{self.name}">'
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns if c.name != 'to_dict'}
 
 
 class SMLead(LeadBase):

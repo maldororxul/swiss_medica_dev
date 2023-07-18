@@ -25,7 +25,7 @@ class NoteBase(db.Model):
         return f'<Note "{self.id}">'
 
     def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns if c.name != 'to_dict'}
 
 
 class SMNote(NoteBase):

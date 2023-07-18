@@ -505,9 +505,9 @@ class DataProcessor:
                 table.c.id_on_source == user_id
             )
             user = connection.execute(stmt).fetchone()
-            if not user:
-                return {}
-            return user.to_dict()
+        if not user:
+            return {}
+        return user.to_dict()
 
     def get_data_borders(self) -> Tuple[Optional[int], Optional[int]]:
         lowest_df = None
