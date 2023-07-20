@@ -1,5 +1,8 @@
 """ Прочие полезные функции """
 __author__ = 'ke.mizonov'
+
+import time
+from datetime import datetime
 from typing import Dict, Callable, Tuple, Optional
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
@@ -92,10 +95,12 @@ def handle_get_in_touch(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
     created_at, updated_at = lead.get('created_at'), lead.get('updated_at')
     reaction_time = updated_at - created_at if created_at and updated_at else None
+    if reaction_time:
+        reaction_time = time.strftime('%H:%M:%S', reaction_time)
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
         f"Lead: https://{branch}.amocrm.ru/leads/detail/{lead_id} "
-        f"Responsible: {user.name if user else ''}"
+        f"Responsible: {user.name if user else ''}\n"
         f"Reaction time: {reaction_time or ''}".strip()
     )

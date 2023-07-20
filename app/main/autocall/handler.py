@@ -166,6 +166,14 @@ class Autocall:
         Args:
             autocall_id: идентификатор автообзвона в Sipuni
         """
+        processor = DATA_PROCESSOR.get(self.__branch)()
+        processor.log.add(text='starting autocalls')
+        try:
+            self.__start_autocall()
+        except Exception as exc:
+            processor.log.add(str(exc))
+
+    def __start_autocall(self):
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
@@ -176,6 +184,14 @@ class Autocall:
 
     def start_autocalls(self, app: Flask):
         """ Перезапускает все автообзвоны """
+        processor = DATA_PROCESSOR.get(self.__branch)()
+        processor.log.add(text='starting autocalls')
+        try:
+            self.__start_autocalls(app=app, processor=processor)
+        except Exception as exc:
+            processor.log.add(str(exc))
+
+    def __start_autocalls(self, app: Flask, processor):
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
@@ -193,8 +209,8 @@ class Autocall:
             branch_config = self.__sipuni_branch_config
             sipuni_client = Sipuni(sipuni_config=branch_config)
             for line in all_numbers:
-                # с момента last_call_timestamp должно пройти не менее 24 часов
-                if line.last_call_timestamp + 24 * 3600 > time.time():
+                # с момента last_call_timestamp должно пройти не менее 23 часов
+                if line.last_call_timestamp + 23 * 3600 > time.time():
                     continue
                 # конфиг SIPUNI существует
                 autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
@@ -224,6 +240,7 @@ class Autocall:
                         break
                 else:
                     continue
+                processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
                 sipuni_client.add_number_to_autocall(number=line.number, autocall_id=line.autocall_id)
         # запускаем все автообзвоны Sipuni
         for autocall_id in autocall_ids:
