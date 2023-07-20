@@ -96,7 +96,10 @@ def handle_get_in_touch(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     created_at, updated_at = lead.get('created_at'), lead.get('updated_at')
     reaction_time = updated_at - created_at if created_at and updated_at else None
     if reaction_time:
-        reaction_time = time.strftime('%H:%M:%S', reaction_time)
+        if reaction_time < 3600 * 12:
+            reaction_time = time.strftime('%H:%M:%S', time.gmtime(reaction_time))
+        else:
+            reaction_time = 'over 12 hours'
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
