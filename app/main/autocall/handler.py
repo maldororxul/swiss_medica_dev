@@ -167,7 +167,7 @@ class Autocall:
             autocall_id: идентификатор автообзвона в Sipuni
         """
         processor = DATA_PROCESSOR.get(self.__branch)()
-        processor.log.add(text='starting autocalls')
+        processor.log.add(text='starting autocall')
         try:
             self.__start_autocall(autocall_id=autocall_id)
         except Exception as exc:
@@ -184,12 +184,14 @@ class Autocall:
 
     def start_autocalls(self, app: Flask):
         """ Перезапускает все автообзвоны """
-        processor = DATA_PROCESSOR.get(self.__branch)()
-        processor.log.add(text='starting autocalls')
+        with app.app_context():
+            processor = DATA_PROCESSOR.get(self.__branch)()
+            processor.log.add(text='starting autocalls')
         try:
             self.__start_autocalls(app=app, processor=processor)
         except Exception as exc:
-            processor.log.add(str(exc))
+            with app.app_context():
+                processor.log.add(str(exc))
 
     def __start_autocalls(self, app: Flask, processor):
         try:
