@@ -169,11 +169,11 @@ class Autocall:
         processor = DATA_PROCESSOR.get(self.__branch)()
         processor.log.add(text='starting autocalls')
         try:
-            self.__start_autocall()
+            self.__start_autocall(autocall_id=autocall_id)
         except Exception as exc:
             processor.log.add(str(exc))
 
-    def __start_autocall(self):
+    def __start_autocall(self, autocall_id: int):
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
