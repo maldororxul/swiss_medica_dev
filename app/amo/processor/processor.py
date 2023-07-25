@@ -583,7 +583,7 @@ class DataProcessor:
                     if field_code == 'PHONE':
                         result.append(clear_phone(value['value']))
                     elif field_code == 'EMAIL':
-                        result.append(value)
+                        result.append(value['value'])
         return result
 
     @staticmethod
