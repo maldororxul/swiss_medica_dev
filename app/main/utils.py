@@ -92,7 +92,8 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated_id}" if duplicated_id else ''
     # прописываем тег "duplicated_lead"
     if duplicate and str(duplicated_id) == '34222011':
-        amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': 'duplicated_lead'}})
+        amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': ['duplicated_lead']}})
+        amo_client.update_lead(lead_id=duplicated_id, data={'_embedded': {'tags': ['duplicated_lead']}})
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
