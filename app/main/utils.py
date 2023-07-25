@@ -73,6 +73,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     duplicated_id = None
     for field_code in ('PHONE', 'EMAIL'):
         for contact in processor.get_lead_contacts(lead=lead, field_code=field_code):
+            processor.log.add(text=f"{field_code} :: {contact}")
             if not contact:
                 continue
             for existing_lead in amo_client.find_leads(query=contact, limit=2) or []:
