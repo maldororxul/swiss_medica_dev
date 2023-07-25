@@ -70,7 +70,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         contacts.append(amo_client.get_contact_by_id(contact_id=contact['id']))
         time.sleep(0.25)
     lead['contacts'] = contacts
-    duplicated_id = None
+    duplicated = None
     for field_code in ('PHONE', 'EMAIL'):
         for contact in processor.get_lead_contacts(lead=lead, field_code=field_code):
             if len(contact) < 6:
@@ -82,18 +82,24 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
                 continue
             for existing_lead in amo_client.find_leads(query=contact, limit=2) or []:
                 if str(existing_lead['id']) != str(lead_id):
-                    duplicated_id = existing_lead['id']
+                    duplicated = existing_lead
                     break
             time.sleep(0.25)
-            if duplicated_id:
+            if duplicated:
                 break
-        if duplicated_id:
+        if duplicated:
             break
-    duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated_id}" if duplicated_id else ''
+    duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}" if duplicated else ''
     # прописываем тег "duplicated_lead"
-    if duplicate and str(duplicated_id) == '34222011':
-        amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': [{'name': 'duplicated_lead'}]}})
-        amo_client.update_lead(lead_id=duplicated_id, data={'_embedded': {'tags': [{'name': 'duplicated_lead'}]}})
+    if duplicate and str(duplicated['id']) == '34222011':
+        # обновляем теги текущего лида
+        existing_tags = [{'name': tag['name']} for tag in (lead.get('_embedded') or {}).get('tags') or []]
+        existing_tags.append({'name': 'duplicated_lead'})
+        amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': existing_tags}})
+        # обновляем теги лида-дубля
+        existing_tags = [{'name': tag['name']} for tag in (duplicated.get('_embedded') or {}).get('tags') or []]
+        existing_tags.append({'name': 'duplicated_lead'})
+        amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': [{'name': 'duplicated_lead'}]}})
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
