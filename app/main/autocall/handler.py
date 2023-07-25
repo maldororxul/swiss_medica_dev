@@ -203,6 +203,7 @@ class Autocall:
         for autocall_id in autocall_ids:
             browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
             time.sleep(10)
+        amo_client = API_CLIENT.get(self.__branch)()
         with app.app_context():
             # читаем номера из БД и добавляем в автообзвон те, которые удовлетворяют условию
             # for branch in self.__sipuni_config.keys():
@@ -242,8 +243,20 @@ class Autocall:
                         break
                 else:
                     continue
+                # лид все еще находится в воронке автообзвона
+                lead = amo_client.get_lead_by_id(lead_id=line.lead_id)
+                pipeline_id, status_id = lead.get('pipeline_id'), lead.get('status_id')
+                if not pipeline_id or not status_id:
+                    continue
+                if autocall_config.get('pipeline_id') != str(line.pipeline_id) \
+                        or autocall_config.get('status_id') != str(line.status_id):
+                    # лид был перемещен, удаляем номер из БД автообзвона
+                    db.session.delete(line)
+                    db.session.commit()
+                    continue
                 processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
                 sipuni_client.add_number_to_autocall(number=line.number, autocall_id=line.autocall_id)
+                time.sleep(0.25)
         # запускаем все автообзвоны Sipuni
         for autocall_id in autocall_ids:
             browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')

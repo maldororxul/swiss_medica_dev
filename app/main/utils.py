@@ -73,6 +73,10 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     duplicated_id = None
     for field_code in ('PHONE', 'EMAIL'):
         for contact in processor.get_lead_contacts(lead=lead, field_code=field_code):
+            if len(contact) < 6:
+                continue
+            if field_code == 'EMAIL' and '@' not in contact:
+                continue
             processor.log.add(text=f"{field_code} :: {contact}")
             if not contact:
                 continue
@@ -86,6 +90,9 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         if duplicated_id:
             break
     duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated_id}" if duplicated_id else ''
+    # прописываем тег "duplicated_lead"
+    if duplicate and str(duplicated_id) == '34222011':
+        amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': 'duplicated_lead'}})
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
