@@ -76,7 +76,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
             if not contact:
                 continue
             for existing_lead in amo_client.find_leads(query=contact, limit=2) or []:
-                if existing_lead['id'] != lead_id:
+                if str(existing_lead['id']) != str(lead_id):
                     duplicated_id = existing_lead['id']
                     break
             time.sleep(0.25)
