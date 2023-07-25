@@ -512,7 +512,7 @@ class SwissmedicaAmoProcessor(AmoProcessor):
             line[self.lead.PurchaseExtendedPrice.Key] = line[self.lead.Stage.Treatment.Price]
 
         # телефоны
-        line[self.lead.Phone.Key] = self._get_lead_phones(lead)
+        line[self.lead.Phone.Key] = self.get_lead_contacts(lead)
 
         # сортировка по ключам
         return self._sort_dict(line)

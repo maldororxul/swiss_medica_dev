@@ -528,17 +528,18 @@ class APIClient:
         response = self.__execute(endpoint='leads', params=params, entity_id=lead_id)
         return response.json()
 
-    def find_leads(self, query: str) -> List[Dict]:
+    def find_leads(self, query: str, limit: int = 1) -> List[Dict]:
         """ Поиск сделок по запросу
 
         Args:
             query: запрос для поиска
+            limit: ограничение по количеству найденных лидов
 
         Returns:
             список сделок
         """
         params = f'query={query}' \
-                 f'&limit={1}' \
+                 f'&limit={limit}' \
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
 

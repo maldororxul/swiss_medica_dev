@@ -351,7 +351,7 @@ class AmoProcessor:
         if not calls:
             return ''
         longest = 0
-        for phone in self._get_lead_phones(lead):
+        for phone in self.get_lead_contacts(lead):
             history = calls.get(phone)
             if not history:
                 continue
@@ -364,7 +364,7 @@ class AmoProcessor:
         """ Проверка по телефонии - время исходящего звонка """
         if not calls:
             return None
-        for phone in self._get_lead_phones(lead):
+        for phone in self.get_lead_contacts(lead):
             history = calls.get(phone)
             if not history:
                 continue
@@ -382,7 +382,7 @@ class AmoProcessor:
         if not calls:
             return ''
         longest = 0
-        for phone in self._get_lead_phones(lead):
+        for phone in self.get_lead_contacts(lead):
             history = calls.get(phone)
             if not history:
                 continue
@@ -403,12 +403,12 @@ class AmoProcessor:
         return datetime.fromtimestamp(unix_ts, timezone(+timedelta(hours=self.data_client().time_shift)))
 
     @staticmethod
-    def _get_lead_phones(lead: Dict) -> List[str]:
-        """ Получить список телефонов из контактов лида """
+    def get_lead_contacts(lead: Dict, field_code: str = 'PHONE') -> List[str]:
+        """ Получить список телефонов / email из контактов лида """
         result = []
         for contact in lead.get('contacts') or []:
             for contact_field in contact.get('custom_fields_values') or []:
-                if contact_field['field_code'] != 'PHONE':  # todo хардкод
+                if contact_field['field_code'] != field_code:
                     continue
                 for phone in contact_field['values']:
                     result.append(clear_phone(phone['value']))

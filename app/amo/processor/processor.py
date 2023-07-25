@@ -572,6 +572,21 @@ class DataProcessor:
         return result
 
     @staticmethod
+    def get_lead_contacts(lead: Dict, field_code: str = 'PHONE') -> List[str]:
+        """ Получить список телефонов / email из контактов лида """
+        result = []
+        for contact in lead.get('contacts') or []:
+            for contact_field in contact.get('custom_fields_values') or []:
+                if contact_field['field_code'] != field_code:
+                    continue
+                for value in contact_field['values']:
+                    if field_code == 'PHONE':
+                        result.append(clear_phone(value['value']))
+                    elif field_code == 'EMAIL':
+                        result.append(value)
+        return result
+
+    @staticmethod
     def _check_stages_priority(line: Dict, stages_priority: Tuple, exclude: Tuple = ('long_negotiations',)):
         """ Дозаполнение предыдущих этапов воронки, если заполнены последующие """
         for i in range(len(stages_priority) - 1, -1, -1):
