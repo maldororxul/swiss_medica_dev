@@ -63,7 +63,6 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         status_id=data.get('leads[add][0][status_id]')
     )
     # проверка на дубли (находит первый дубль из возможных)
-    duplicated_id = None
     amo_client = API_CLIENT.get(branch)()
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
     contacts = []
@@ -71,22 +70,20 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         contacts.append(amo_client.get_contact_by_id(contact_id=contact['id']))
         time.sleep(0.25)
     lead['contacts'] = contacts
-    for phone in processor.get_lead_contacts(lead=lead):
-        if not phone:
-            continue
-        for existing_lead in amo_client.find_leads(query=phone, limit=2) or []:
-            if existing_lead['id'] != lead_id:
-                duplicated_id = existing_lead['id']
+    duplicated_id = None
+    for field_code in ('PHONE', 'EMAIL'):
+        for contact in processor.get_lead_contacts(lead=lead, field_code=field_code):
+            if not contact:
+                continue
+            for existing_lead in amo_client.find_leads(query=contact, limit=2) or []:
+                if existing_lead['id'] != lead_id:
+                    duplicated_id = existing_lead['id']
+                    break
+            time.sleep(0.25)
+            if duplicated_id:
                 break
-        time.sleep(0.25)
-    for email in processor.get_lead_contacts(lead=lead, field_code='EMAIL'):
-        if not email:
-            continue
-        for existing_lead in amo_client.find_leads(query=email, limit=2) or []:
-            if existing_lead['id'] != lead_id:
-                duplicated_id = existing_lead['id']
-                break
-        time.sleep(0.25)
+        if duplicated_id:
+            break
     duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated_id}" if duplicated_id else ''
     return (
         str(pipeline_id),
