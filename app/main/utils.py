@@ -91,15 +91,24 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
             break
     duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}" if duplicated else ''
     # прописываем тег "duplicated_lead"
+    dup_tag = 'duplicated_lead'
     if duplicate and str(duplicated['id']) == '34222011':
         # обновляем теги текущего лида
-        existing_tags = [{'name': tag['name']} for tag in (lead.get('_embedded') or {}).get('tags') or []]
-        existing_tags.append({'name': 'duplicated_lead'})
+        existing_tags = [
+            {'name': tag['name']}
+            for tag in (lead.get('_embedded') or {}).get('tags') or []
+            if tag['name'] != dup_tag
+        ]
+        existing_tags.append({'name': dup_tag})
         amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': existing_tags}})
         # обновляем теги лида-дубля
-        existing_tags = [{'name': tag['name']} for tag in (duplicated.get('_embedded') or {}).get('tags') or []]
-        existing_tags.append({'name': 'duplicated_lead'})
-        amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': [{'name': 'duplicated_lead'}]}})
+        existing_tags = [
+            {'name': tag['name']}
+            for tag in (duplicated.get('_embedded') or {}).get('tags') or []
+            if tag['name'] != dup_tag
+        ]
+        existing_tags.append({'name': dup_tag})
+        amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': existing_tags}})
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
