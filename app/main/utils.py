@@ -2,7 +2,6 @@
 __author__ = 'ke.mizonov'
 
 import time
-from datetime import datetime
 from typing import Dict, Callable, Tuple, Optional
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
@@ -63,10 +62,15 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         pipeline_id=pipeline_id,
         status_id=data.get('leads[add][0][status_id]')
     )
+    # проверка на дубли
+    amo_client = API_CLIENT.get(branch)()
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    # amo_client.find_leads(query='')
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
-        f"New lead: https://{branch}.amocrm.ru/leads/detail/{lead_id}".strip()
+        f"New lead: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
+        f"{lead}".strip()
     )
 
 

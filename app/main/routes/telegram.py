@@ -27,12 +27,12 @@ def reply_on_lead_event(_request, msg_builder: Callable):
     data = get_data_from_post_request(_request=_request)
     if not data:
         return 'Unsupported Media Type', 415
-    branch = data.get('account[subdomain]')
     pipeline_id, message = msg_builder(data=data)
     if not message:
         # если сообщения нет, ничего не делаем
         return 'Ok', 200
     # в параметрах содержится идентификатор чата; вероятно, есть параметры конкретной воронки (по дефолту - филиала)
+    branch = data.get('account[subdomain]')
     params = Config.NEW_LEAD_TELEGRAM.get(pipeline_id)
     if params:
         bot_key = pipeline_id
