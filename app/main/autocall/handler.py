@@ -213,8 +213,8 @@ class Autocall:
         sipuni_client = Sipuni(sipuni_config=branch_config)
         for line in all_numbers:
             # с момента last_call_timestamp должно пройти не менее 23 часов
-            # if line.last_call_timestamp + 23 * 3600 > time.time():
-            #     continue
+            if line.last_call_timestamp + 23 * 3600 > time.time():
+                continue
             # конфиг SIPUNI существует
             autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
             if not autocall_config:
@@ -229,10 +229,8 @@ class Autocall:
                 continue
             # лид все еще находится в воронке автообзвона
             lead = amo_client.get_lead_by_id(lead_id=line.lead_id)
-            processor.log.add(text=f"{lead}")
             pipeline_id, status_id = lead.get('pipeline_id'), lead.get('status_id')
             if not pipeline_id or not status_id:
-                processor.log.add(text=f"no pipeline / status")
                 continue
             if autocall_config.get('pipeline_id') != str(pipeline_id) \
                     or autocall_config.get('status_id') != str(status_id):
