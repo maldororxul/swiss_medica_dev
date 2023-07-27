@@ -188,12 +188,12 @@ class Autocall:
             processor = DATA_PROCESSOR.get(self.__branch)()
             processor.log.add(text='starting autocalls')
         try:
-            self.__start_autocalls(app=app, processor=processor)
+            self.__start_autocalls(processor=processor)
         except Exception as exc:
             with app.app_context():
                 processor.log.add(str(exc))
 
-    def __start_autocalls(self, app: Flask, processor):
+    def __start_autocalls(self, processor):
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
@@ -204,6 +204,7 @@ class Autocall:
             browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
             time.sleep(10)
         amo_client = API_CLIENT.get(self.__branch)()
+        app = current_app._get_current_object()
         with app.app_context():
             # читаем номера из БД и добавляем в автообзвон те, которые удовлетворяют условию
             # for branch in self.__sipuni_config.keys():
