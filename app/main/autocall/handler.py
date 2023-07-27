@@ -234,8 +234,8 @@ class Autocall:
             if not pipeline_id or not status_id:
                 processor.log.add(text=f"no pipeline / status")
                 continue
-            if autocall_config.get('pipeline_id') != str(line.pipeline_id) \
-                    or autocall_config.get('status_id') != str(line.status_id):
+            if autocall_config.get('pipeline_id') != str(pipeline_id) \
+                    or autocall_config.get('status_id') != str(status_id):
                 # лид был перемещен, удаляем номер из БД автообзвона
                 processor.log.add(text=f"removing number {line.number} from database")
                 db.session.delete(line)
