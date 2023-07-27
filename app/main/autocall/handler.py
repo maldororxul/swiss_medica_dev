@@ -229,12 +229,15 @@ class Autocall:
                     continue
                 # лид все еще находится в воронке автообзвона
                 lead = amo_client.get_lead_by_id(lead_id=line.lead_id)
+                processor.log.add(text=f"{lead}")
                 pipeline_id, status_id = lead.get('pipeline_id'), lead.get('status_id')
                 if not pipeline_id or not status_id:
+                    processor.log.add(text=f"no pipeline / status")
                     continue
                 if autocall_config.get('pipeline_id') != str(line.pipeline_id) \
                         or autocall_config.get('status_id') != str(line.status_id):
                     # лид был перемещен, удаляем номер из БД автообзвона
+                    processor.log.add(text=f"removing number {line.number} from database")
                     db.session.delete(line)
                     db.session.commit()
                     time.sleep(0.25)

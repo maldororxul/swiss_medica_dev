@@ -77,7 +77,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
                 continue
             if field_code == 'EMAIL' and '@' not in contact:
                 continue
-            processor.log.add(text=f"{field_code} :: {contact}")
+            # processor.log.add(text=f"{field_code} :: {contact}")
             if not contact:
                 continue
             for existing_lead in amo_client.find_leads(query=contact, limit=2) or []:
