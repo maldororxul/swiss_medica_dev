@@ -10,6 +10,7 @@ def whatsapp_webhook():
     if request.method == 'GET':
         # Handle the verification request from Meta
         params = request.args
+        print(params)
         if 'hub.verify_token' in params and params['hub.verify_token'] == Config.META_WHATSAPP_TOKEN:
             return jsonify({'hub.challenge': params['hub.challenge']})
         else:
