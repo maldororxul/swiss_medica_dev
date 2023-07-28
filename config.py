@@ -21,3 +21,4 @@ class Config:
     SIPUNI = json.loads(os.environ.get("SIPUNI"))
     AUTOCALL_INTERVAL = os.environ.get("AUTOCALL_INTERVAL")
     NEW_LEAD_TELEGRAM = json.loads(os.environ.get("NEW_LEAD_TELEGRAM") or '')
+    META_WHATSAPP_TOKEN = os.environ.get("META_WHATSAPP_TOKEN")
