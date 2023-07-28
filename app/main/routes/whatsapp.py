@@ -10,10 +10,8 @@ def whatsapp_webhook():
     if request.method == 'GET':
         # Handle the verification request from Meta
         params = request.args
-        print(params)
         if 'hub.verify_token' in params and params['hub.verify_token'] == Config.META_WHATSAPP_TOKEN:
-            print('good?')
-            return params['hub.challenge']
+            return params['hub.challenge'], 200
         else:
             return jsonify({'error': 'Invalid Verify Token'}), 403
     elif request.method == 'POST':
