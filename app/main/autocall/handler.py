@@ -58,7 +58,7 @@ class Autocall:
 
     @property
     def __sipuni_config(self) -> Dict:
-        return Config().SIPUNI
+        return Config().sipuni
 
     def handle_autocall_result(self, data: Dict):
         """ Обработка результата звонка (Sipuni)

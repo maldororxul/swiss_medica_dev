@@ -23,7 +23,7 @@ def create_app(config_class: Config = Config) -> Flask:
         экземпляр приложения Flask
     """
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    app.config.from_object(config_class())
     # Logging
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers

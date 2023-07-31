@@ -9,7 +9,7 @@ from config import Config
 
 BOTS = {
     pipeline_or_branch: telebot.TeleBot(params['TOKEN'])
-    for pipeline_or_branch, params in Config().NEW_LEAD_TELEGRAM.items()
+    for pipeline_or_branch, params in Config().new_lead_telegram.items()
     if params.get('TOKEN')
 }
 
@@ -34,11 +34,11 @@ def reply_on_lead_event(_request, msg_builder: Callable):
     config = Config()
     # в параметрах содержится идентификатор чата; вероятно, есть параметры конкретной воронки (по дефолту - филиала)
     branch = data.get('account[subdomain]')
-    params = config.NEW_LEAD_TELEGRAM.get(pipeline_id)
+    params = config.new_lead_telegram.get(pipeline_id)
     if params:
         bot_key = pipeline_id
     else:
-        params = config.NEW_LEAD_TELEGRAM.get(branch)
+        params = config.new_lead_telegram.get(branch)
         bot_key = branch
     if not params:
         return 'Bot not found', 404
@@ -62,8 +62,8 @@ def set_telegram_webhooks():
     config = Config()
     for pipeline_or_branch, _bot in BOTS.items():
         _bot.remove_webhook()
-        token = config.NEW_LEAD_TELEGRAM.get(pipeline_or_branch).get('TOKEN')
-        _bot.set_webhook(url=config.HEROKU_URL + token)
+        token = config.new_lead_telegram.get(pipeline_or_branch).get('TOKEN')
+        _bot.set_webhook(url=config.heroku_url + token)
     return "Telegram webhooks were configured", 200
 
 
@@ -85,7 +85,7 @@ def get_in_touch():
 @bp.route('/<bot_token>', methods=['POST'])
 def get_message(bot_token):
     _bot = None
-    for pipeline_or_branch, params in Config().NEW_LEAD_TELEGRAM.items():
+    for pipeline_or_branch, params in Config().new_lead_telegram.items():
         if params.get('TOKEN') == bot_token:
             _bot = BOTS.get(pipeline_or_branch)
             break

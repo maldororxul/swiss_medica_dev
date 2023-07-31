@@ -12,9 +12,9 @@ def get_engine():
     config = Config()
     if engine is None:
         engine = create_engine(
-            config.SQLALCHEMY_DATABASE_URI,
-            pool_size=config.CONNECTIONS_LIMIT,
-            max_overflow=config.CONNECTIONS_LIMIT,
+            config.sqlalchemy_database_uri,
+            pool_size=config.connections_limit,
+            max_overflow=config.connections_limit,
             pool_pre_ping=True
         )
     return engine
