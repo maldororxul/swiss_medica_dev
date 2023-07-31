@@ -108,24 +108,24 @@ class Autocall:
                         'status_id': int(autocall_config.get('success_status_id'))
                     }
                 )
-                spl = (data.get('"call_record_link"') or '').split('href="')
-                link = spl[1].split('">')[0] if len(spl) > 1 else ''
-                duration = int(data.get('timestamp') or 0) - int(data.get('call_answer_timestamp') or 0)
-                try:
-                    note_data = [{
-                        "entity_id": lead_id,
-                        "note_type": "call_out",
-                        "params": {
-                            "uniq": str(uuid.uuid4()),
-                            "duration": duration,
-                            "source": "Autocall",
-                            "link": link,
-                            "phone": number_entity.number
-                        }
-                    }]
-                    amo_client.add_note(entity_id=lead_id, data=note_data)
-                except Exception as exc:
-                    print(exc)
+                # spl = (data.get('"call_record_link"') or '').split('href="')
+                # link = spl[1].split('">')[0] if len(spl) > 1 else ''
+                # duration = int(data.get('timestamp') or 0) - int(data.get('call_answer_timestamp') or 0)
+                # try:
+                #     note_data = [{
+                #         "entity_id": lead_id,
+                #         "note_type": "call_out",
+                #         "params": {
+                #             "uniq": str(uuid.uuid4()),
+                #             "duration": duration,
+                #             "source": "Autocall",
+                #             "link": link,
+                #             "phone": number_entity.number
+                #         }
+                #     }]
+                #     amo_client.add_note(entity_id=lead_id, data=note_data)
+                # except Exception as exc:
+                #     print(exc)
 
     def handle_lead_status_changed(self, data: Dict) -> None:
         """ Обработка смены статуса лида
