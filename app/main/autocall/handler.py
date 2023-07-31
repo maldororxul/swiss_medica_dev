@@ -262,13 +262,13 @@ class Autocall:
             else:
                 processor.log.add(text=f'out of schedule {line.autocall_id} number {line.number}')
                 continue
-            processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
-            numbers_added.append(line.number)
-            time.sleep(0.25)
+            # processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
+            numbers_added.append({'number': line.number, 'autocall_id': line.autocall_id})
         # запускаем все автообзвоны Sipuni
         if not numbers_added:
             processor.log.add(text=f'{self.__branch} no numbers for autocall')
             return
+        processor.log.add(text=f'{self.__branch} got {len(numbers_added)} for autocall')
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
@@ -281,8 +281,9 @@ class Autocall:
         for autocall_id in autocall_ids:
             browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
             time.sleep(10)
-        for number in numbers_added:
-            sipuni_client.add_number_to_autocall(number=number, autocall_id=line.autocall_id)
+        for item in numbers_added:
+            sipuni_client.add_number_to_autocall(number=item['number'], autocall_id=item['autocall_id'])
+            time.sleep(0.25)
         for autocall_id in autocall_ids:
             try:
                 browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
