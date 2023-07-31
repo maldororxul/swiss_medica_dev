@@ -256,7 +256,6 @@ class Autocall:
                 _from, _to = period.split(' - ')
                 _from = self.__build_datetime_from_timestring(timestring=_from)
                 _to = self.__build_datetime_from_timestring(timestring=_to)
-                print(line.number, _from, curr_dt, _to)
                 if _from <= curr_dt <= _to:
                     break
             else:
@@ -268,7 +267,7 @@ class Autocall:
         if not numbers_added:
             processor.log.add(text=f'{self.__branch} no numbers for autocall')
             return
-        processor.log.add(text=f'{self.__branch} got {len(numbers_added)} for autocall')
+        processor.log.add(text=f'{self.__branch} got {len(numbers_added)} numbers for autocall')
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
