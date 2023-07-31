@@ -46,5 +46,5 @@ def whatsapp_webhook():
 
 
 @bp.route('/whatsapp_remove', methods=['GET', 'POST'])
-def whatsapp_webhook():
+def whatsapp_remove():
     pass
