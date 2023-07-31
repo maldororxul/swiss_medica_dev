@@ -186,7 +186,7 @@ class Autocall:
         """ Перезапускает все автообзвоны """
         with app.app_context():
             processor = DATA_PROCESSOR.get(self.__branch)()
-            processor.log.add(text='starting autocalls')
+            processor.log.add(text=f'{self.__branch} starting autocalls')
             # try:
             self.__start_autocalls(processor=processor)
             # except Exception as exc:
@@ -212,25 +212,30 @@ class Autocall:
         branch_config = self.__sipuni_branch_config
         sipuni_client = Sipuni(sipuni_config=branch_config)
         for line in all_numbers:
-            # с момента last_call_timestamp должно пройти не менее 23 часов
+            # с момента last_call_timestamp должно пройти не менее 23 часов (если звонок не первый)
             if line.last_call_timestamp + 23 * 3600 > time.time() and line.calls > 0:
+                processor.log.add(text=f'out of schedule (0) {line.autocall_id} number {line.number}')
                 continue
             # конфиг SIPUNI существует
             autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
             if not autocall_config:
+                processor.log.add(text=f'config not found {line.autocall_id} number {line.number}')
                 continue
             # лимит звонков еще не достигнут
             if line.calls >= int(autocall_config.get('calls_limit')):
+                processor.log.add(text=f'calls limit reached {line.autocall_id} number {line.number}')
                 db.session.delete(line)
                 continue
             schedule = autocall_config.get('schedule')
             # существует расписание для данного автообзвона
             if not schedule:
+                processor.log.add(text=f'schedule not found (0) {line.autocall_id} number {line.number}')
                 continue
             # лид все еще находится в воронке автообзвона
             lead = amo_client.get_lead_by_id(lead_id=line.lead_id)
             pipeline_id, status_id = lead.get('pipeline_id'), lead.get('status_id')
             if not pipeline_id or not status_id:
+                processor.log.add(text=f'lead pipeline or status not found {line.autocall_id} number {line.number}')
                 continue
             if autocall_config.get('pipeline_id') != str(pipeline_id) \
                     or autocall_config.get('status_id') != str(status_id):
@@ -246,6 +251,7 @@ class Autocall:
                 WEEKDAY.get(curr_dt.weekday())
             )
             if not weekday_schedule:
+                processor.log.add(text=f'schedule not found {line.autocall_id} number {line.number}')
                 continue
             # сейчас время, подходящее для звонка
             for period in weekday_schedule:
@@ -255,13 +261,17 @@ class Autocall:
                 if _from <= curr_dt <= _to:
                     break
             else:
+                processor.log.add(text=f'out of schedule {line.autocall_id} number {line.number}')
                 continue
             processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
             sipuni_client.add_number_to_autocall(number=line.number, autocall_id=line.autocall_id)
             time.sleep(0.25)
         # запускаем все автообзвоны Sipuni
         for autocall_id in autocall_ids:
-            browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
+            try:
+                browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
+            except Exception as exc:
+                processor.log.add(text=f'browser error: {exc}')
             time.sleep(10)
         browser.close()
 
