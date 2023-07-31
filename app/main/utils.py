@@ -53,14 +53,20 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str]:
 
 def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     lead_id = data.get('leads[add][0][id]')
+    event = 'New lead'
+    key = 'add'
+    if not lead_id:
+        event = 'Lead moved'
+        key = 'status'
+        lead_id = data.get(f'leads[{key}][0][id]')
     if not lead_id:
         return None, None
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
-    pipeline_id = data.get('leads[add][0][pipeline_id]')
+    pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
     pipeline = processor.get_pipeline_and_status_by_id(
         pipeline_id=pipeline_id,
-        status_id=data.get('leads[add][0][status_id]')
+        status_id=data.get(f'leads[{key}][0][status_id]')
     )
     # проверка на дубли (находит первый дубль из возможных)
     amo_client = API_CLIENT.get(branch)()
@@ -112,7 +118,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     return (
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
-        f"New lead: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
+        f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
         f"{duplicate}".strip()
     )
 

@@ -211,6 +211,7 @@ class Autocall:
         all_numbers = autocall_model.query.all()
         branch_config = self.__sipuni_branch_config
         sipuni_client = Sipuni(sipuni_config=branch_config)
+        numbers_added = 0
         for line in all_numbers:
             # с момента last_call_timestamp должно пройти не менее 23 часов (если звонок не первый)
             if line.last_call_timestamp + 23 * 3600 > time.time() and line.calls > 0:
@@ -265,8 +266,11 @@ class Autocall:
                 continue
             processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
             sipuni_client.add_number_to_autocall(number=line.number, autocall_id=line.autocall_id)
+            numbers_added += 1
             time.sleep(0.25)
         # запускаем все автообзвоны Sipuni
+        if numbers_added == 0:
+            return
         for autocall_id in autocall_ids:
             try:
                 browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
