@@ -251,6 +251,7 @@ class Autocall:
                 _from, _to = period.split(' - ')
                 _from = self.__build_datetime_from_timestring(timestring=_from)
                 _to = self.__build_datetime_from_timestring(timestring=_to)
+                print(line.number, _from, curr_dt, _to)
                 if _from <= curr_dt <= _to:
                     break
             else:
