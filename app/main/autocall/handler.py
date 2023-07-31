@@ -193,7 +193,11 @@ class Autocall:
             #     processor.log.add(str(exc))
 
     def __start_autocalls(self, processor):
-        autocall_ids = list(self.__sipuni_branch_config.get('autocall').keys())
+        branch_config = self.__sipuni_branch_config
+        if not branch_config:
+            processor.log.add(text=f'no config for {self.__branch}')
+            return
+        autocall_ids = list(branch_config.get('autocall').keys())
         amo_client = API_CLIENT.get(self.__branch)()
         # app = current_app._get_current_object()
         # with app.app_context():
