@@ -160,14 +160,13 @@ class KmBrowser:
         options.add_argument('--ignore-ssl-errors=yes')
         options.add_argument('--ignore-certificate-errors')
         # тут мы говорим браузеру писать логи
-        capabilities = DesiredCapabilities.CHROME
-        capabilities['goog:loggingPrefs'] = {'performance': 'ALL'}
+        # capabilities = DesiredCapabilities.CHROME
+        # capabilities['goog:loggingPrefs'] = {'performance': 'ALL'}
+
+        # options.set_capability("loggingPrefs", {'performance': 'ALL'})
+
         # инициализируем экземпляр браузера
         service = Service(executable_path=Config.CHROMEDRIVER_PATH)
-        driver = webdriver.Chrome(
-            service=service,
-            options=options,
-            # desired_capabilities=capabilities
-        )
+        driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(WAIT_TIME)
         return driver
