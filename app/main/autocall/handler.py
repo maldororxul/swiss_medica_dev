@@ -193,10 +193,6 @@ class Autocall:
             #     processor.log.add(str(exc))
 
     def __start_autocalls(self, processor):
-        try:
-            browser: KmBrowser = self.__get_sipuni_browser()
-        except SipuniConfigError:
-            return
         autocall_ids = list(self.__sipuni_branch_config.get('autocall').keys())
         amo_client = API_CLIENT.get(self.__branch)()
         # app = current_app._get_current_object()
@@ -266,6 +262,14 @@ class Autocall:
             time.sleep(0.25)
         # запускаем все автообзвоны Sipuni
         if numbers_added == 0:
+            return
+        try:
+            browser: KmBrowser = self.__get_sipuni_browser()
+        except SipuniConfigError:
+            processor.log.add(text=f'SipuniConfigError')
+            return
+        except Exception as exc:
+            processor.log.add(text=f'browser error: {exc}')
             return
         # удаляем все номера из всех автообзвонов Sipuni (через браузер)
         for autocall_id in autocall_ids:
