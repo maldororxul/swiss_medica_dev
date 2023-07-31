@@ -6,6 +6,7 @@ Notes:
 __author__ = 'ke.mizonov'
 import json
 import time
+import uuid
 from datetime import datetime
 from typing import Dict, Optional
 from flask import current_app, Flask
@@ -57,9 +58,27 @@ class Autocall:
 
     @property
     def __sipuni_config(self) -> Dict:
-        return Config.SIPUNI
+        return Config().SIPUNI
 
     def handle_autocall_result(self, data: Dict):
+        """ Обработка результата звонка (Sipuni)
+
+        Args:
+            data: данные, пришедшие через webhook в формате
+                {
+                    "call_id": "1429019739.49501",
+                    "event": "2",
+                    "dst_type": "2",
+                    "dst_num": "012345261","src_type": "1",
+                    "src_num": "89104846817",
+                    "timestamp": "1429019790", "status": "ANSWER",
+                    "call_start_timestamp": "1429019739",
+                    "call_answer_timestamp": "1429019750",
+                    "call_record_link": "<a href="https://sipuni.com/api/crm/record">https://sipuni.com/api/crm/record</a>;?
+                    id=1429019739.49501&hash=abcdefghijklmnopqrstuvwxyzabcdef&user=012345", "channel": "Local/261@transfer_vats-000001e9;2",
+                    "treeName": "Тестирование CRM", "treeNumber": "000960393"
+                }
+        """
         status = data.get('status')
         # получаем экземпляр номера автообзвона из нашей БД
         app = current_app._get_current_object()
@@ -89,6 +108,24 @@ class Autocall:
                         'status_id': int(autocall_config.get('success_status_id'))
                     }
                 )
+                spl = (data.get('"call_record_link"') or '').split('href="')
+                link = spl[1].split('">')[0] if len(spl) > 1 else ''
+                duration = int(data.get('timestamp') or 0) - int(data.get('call_answer_timestamp') or 0)
+                try:
+                    note_data = [{
+                        "entity_id": lead_id,
+                        "note_type": "call_out",
+                        "params": {
+                            "uniq": str(uuid.uuid4()),
+                            "duration": duration,
+                            "source": "Autocall",
+                            "link": link,
+                            "phone": number_entity.number
+                        }
+                    }]
+                    amo_client.add_note(entity_id=lead_id, data=note_data)
+                except Exception as exc:
+                    print(exc)
 
     def handle_lead_status_changed(self, data: Dict) -> None:
         """ Обработка смены статуса лида

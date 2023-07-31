@@ -166,7 +166,7 @@ class KmBrowser:
         # options.set_capability("loggingPrefs", {'performance': 'ALL'})
 
         # инициализируем экземпляр браузера
-        service = Service(executable_path=Config.CHROMEDRIVER_PATH)
+        service = Service(executable_path=Config().CHROMEDRIVER_PATH)
         driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(WAIT_TIME)
         return driver

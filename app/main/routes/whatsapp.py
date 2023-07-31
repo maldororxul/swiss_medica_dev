@@ -9,7 +9,7 @@ from config import Config
 def reply(msg: str, number: str):
     res = requests.post(
         url='https://graph.facebook.com/v13.0/PHONE_NUMBER_ID/messages',
-        headers={'Authorization': f"Bearer {Config.META_SYSTEM_USER_TOKEN}"},
+        headers={'Authorization': f"Bearer {Config().META_SYSTEM_USER_TOKEN}"},
         json={
             'messaging_product': 'whatsapp',
             'to': number,
@@ -29,7 +29,7 @@ def whatsapp_webhook():
     if request.method == 'GET':
         # Handle the verification request from Meta
         params = request.args
-        if 'hub.verify_token' in params and params['hub.verify_token'] == Config.META_WHATSAPP_TOKEN:
+        if 'hub.verify_token' in params and params['hub.verify_token'] == Config().META_WHATSAPP_TOKEN:
             return params['hub.challenge'], 200
         else:
             return jsonify({'error': 'Invalid Verify Token'}), 403

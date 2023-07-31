@@ -20,9 +20,9 @@ class Config:
     def CONNECTIONS_LIMIT(self):
         return int(os.environ.get('CONNECTIONS_LIMIT'))
 
-    @property
-    def SQLALCHEMY_TRACK_MODIFICATIONS(self):
-        return os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS')
+    # @property
+    # def SQLALCHEMY_TRACK_MODIFICATIONS(self):
+    #     return os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS')
 
     @property
     def CHROMEDRIVER_PATH(self):
