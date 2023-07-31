@@ -251,6 +251,7 @@ class Autocall:
                 processor.log.add(text=f'schedule not found {line.autocall_id} number {line.number}')
                 continue
             # сейчас время, подходящее для звонка
+            processor.log.add(text=f'schedule: {weekday_schedule}, current {curr_dt}')
             for period in weekday_schedule:
                 _from, _to = period.split(' - ')
                 _from = self.__build_datetime_from_timestring(timestring=_from)
