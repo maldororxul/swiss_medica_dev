@@ -10,7 +10,7 @@ class AutocallNumberBase(db.Model):
     autocall_id = db.Column(db.Integer, nullable=False)
     lead_id = db.Column(db.Integer, nullable=False)
     number = db.Column(db.String, nullable=False, unique=True)
-    branch = db.Column(db.String, nullable=False, unique=True)
+    branch = db.Column(db.String, nullable=False)
     calls = db.Column(db.Integer, nullable=False)
     last_call_timestamp = db.Column(db.Integer, nullable=False)
 
