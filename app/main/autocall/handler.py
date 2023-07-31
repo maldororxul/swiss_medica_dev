@@ -198,10 +198,6 @@ class Autocall:
         except SipuniConfigError:
             return
         autocall_ids = list(self.__sipuni_branch_config.get('autocall').keys())
-        # удаляем все номера из всех автообзвонов Sipuni (через браузер)
-        for autocall_id in autocall_ids:
-            browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
-            time.sleep(10)
         amo_client = API_CLIENT.get(self.__branch)()
         # app = current_app._get_current_object()
         # with app.app_context():
@@ -271,6 +267,10 @@ class Autocall:
         # запускаем все автообзвоны Sipuni
         if numbers_added == 0:
             return
+        # удаляем все номера из всех автообзвонов Sipuni (через браузер)
+        for autocall_id in autocall_ids:
+            browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
+            time.sleep(10)
         for autocall_id in autocall_ids:
             try:
                 browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
