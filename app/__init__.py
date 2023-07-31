@@ -13,17 +13,14 @@ from config import Config
 from app.extensions import db, socketio
 
 
-def create_app(config_class: Config = Config) -> Flask:
+def create_app() -> Flask:
     """ Инициализация приложения и всех его компонентов
-
-    Args:
-        config_class: класс настроек (настройки берутся из виртуального окружения)
 
     Returns:
         экземпляр приложения Flask
     """
     app = Flask(__name__)
-    app.config.from_object(config_class())
+    app.config.from_object(Config())
     # Logging
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers

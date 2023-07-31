@@ -9,7 +9,7 @@ load_dotenv()
 
 class Config:
     """ Конфиг, к которому обращается приложение. Параметры """
-    def __call__(self):
+    def __init__(self):
         self.SQLALCHEMY_DATABASE_URI = self.sqlalchemy_database_uri
         self.CONNECTIONS_LIMIT = self.connections_limit
         self.CHROMEDRIVER_PATH = self.chromedriver_path
