@@ -248,7 +248,8 @@ class Autocall:
         for line in all_numbers:
             # с момента last_call_timestamp должно пройти не менее 23 часов (если звонок не первый)
             if line.last_call_timestamp + 23 * 3600 > time.time() and line.calls > 0:
-                processor.log.add(text=f'out of schedule (0) {line.autocall_id} number {line.number}')
+                waiting_for = f"waiting for {line.last_call_timestamp + 23 * 3600}, now {time.time()}"
+                processor.log.add(text=f'out of schedule (0) {line.autocall_id} number {line.number} ({waiting_for})')
                 continue
             # конфиг SIPUNI существует
             autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))

@@ -77,22 +77,24 @@
                 <div class="col-12 col-md-10 offset-md-1">
                     <div class="button-group">
                         <div class="input-group mb-3">
-                            <span class="input-group-text mr-3" id="inputGroup-sizing-default">{{ sm_df }} - {{ sm_dt }}</span>
-                            <input type="datetime-local" id="time1" value="{{ sm_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default">
+                            <span class="input-group-text mr-3" id="inputGroup-sizing-default-sm">{{ sm_df }} - {{ sm_dt }}</span>
+                            <input type="datetime-local" id="time-sm" value="{{ sm_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-sm">
                         </div>
-                        <button class="btn btn-custom" id="button1">Load Amo data SM</button>
+                        <button class="btn btn-custom" id="get_amo_data_sm">Load Amo data SM</button>
+                    </div>
+                    <div class="button-group">
+                        <div class="input-group mb-3">
+                            <span class="input-group-text mr-3" id="inputGroup-sizing-default-cdv">{{ cdv_df }} - {{ cdv_dt }}</span>
+                            <input type="datetime-local" id="time-cdv" value="{{ cdv_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-cdv">
+                        </div>
+                        <button class="btn btn-custom" id="get_amo_data_cdv">Load Amo data CDV</button>
                     </div>
                 </div>
             </div>
         </div>
         <script type="text/javascript" charset="utf-8">
-
-            // var socket = io.connect('https://localhost:8080'); // Replace with your server address
-
             let protocol = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "http" : "https";
             let socket = io.connect(protocol + '://' + document.domain + ':' + location.port);
-
-            // var socket = io.connect('http://' + document.domain + ':' + location.port);
 
             // Connected event
             socket.on('connect', function() {
@@ -100,8 +102,6 @@
             });
 
             // Send an event to the server
-            // socket.emit('my_event', {data: 'Hello, server!'});
-
             socket.on('new_event', function(event) {
                 $('#events').prepend('<p>' + event.msg + '</p>');
                 if($('#events').children().length > 1000){
@@ -109,16 +109,25 @@
                 }
             });
 
-            function attachButtonAction(buttonNum) {
-                $('#button' + buttonNum).on('click', function() {
-                    var dateTime = $('#time' + buttonNum).val();
-                    $.get('/button' + buttonNum, { time: dateTime }, function(response) {
-                        console.log(response);
-                    });
+            // Handle buttons clicks
+            function getAmoDataSm() {
+                var dateTime = $('#time-sm').val();
+                $.get('/get_amo_data_sm', { time: dateTime }, function(response) {
+                    console.log(response);
                 });
             }
 
-            ['1'].forEach(attachButtonAction);
+            function getAmoDataCdv() {
+                var dateTime = $('#time-cdv').val();
+                $.get('/get_amo_data_cdv', { time: dateTime }, function(response) {
+                    console.log(response);
+                });
+            }
+
+            $(document).ready(function() {
+                $('#get_amo_data_sm').on('click', getAmoDataSm);
+                $('#get_amo_data_cdv').on('click', getAmoDataCdv);
+            });
         </script>
     </body>
 </html>

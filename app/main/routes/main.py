@@ -18,19 +18,52 @@ API_CLIENT = {
 }
 
 
+def start_get_data_from_amo_scheduler(branch: str):
+    scheduler_id = f'get_data_from_amo_{branch}'
+    lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
+    # current_app - это проксированный экземпляр приложения,
+    # _get_current_object - доступ к объекту приложения напрямую
+    # с проксированным объектом получается некорректный контекст => костыляем
+    app = current_app._get_current_object()
+    # загрузка данных из Amo CDV
+    try:
+        app.scheduler.remove_job(scheduler_id)
+    except JobLookupError:
+        pass
+    app.scheduler.add_job(
+        id=scheduler_id,
+        func=socketio.start_background_task,
+        args=[get_data_from_amo, app, branch, lowest_dt],
+        trigger='interval',
+        seconds=60,
+        max_instances=1
+    )
+    processor = DATA_PROCESSOR.get(branch)()
+    with app.app_context():
+        if not app.scheduler.running:
+            app.scheduler.start()
+            processor.log.add(text=f'{branch.upper()} Amo data loader has started', log_type=1)
+        else:
+            processor.log.add(text=f'{branch.upper()} Amo data loader is already working', log_type=1)
+    return render_template('index.html')
+
+
 @bp.route('/')
 def index():
+    # границы данных и текущая дата SM
     processor = DATA_PROCESSOR.get('sm')()
-    # границы данных
-    df, dt = processor.get_data_borders()
-    date_from = datetime.fromtimestamp(df) if df else None
-    date_to = datetime.fromtimestamp(dt) if dt else None
-    date_curr = date_from + timedelta(minutes=60) if date_from else datetime.now()
+    sm_date_from, sm_date_to, sm_date_curr = processor.get_data_borders_and_current_date()
+    # границы данных и текущая дата CDV
+    processor = DATA_PROCESSOR.get('cdv')()
+    cdv_date_from, cdv_date_to, cdv_date_curr = processor.get_data_borders_and_current_date()
     return render_template(
         'index.html',
-        sm_df=date_from,
-        sm_dt=date_to,
-        sm_curr=date_curr.strftime("%Y-%m-%dT%H:%M")
+        sm_df=sm_date_from,
+        sm_dt=sm_date_to,
+        sm_curr=sm_date_curr,
+        cdv_df=cdv_date_from,
+        cdv_dt=cdv_date_to,
+        cdv_curr=cdv_date_curr
     )
 
 
@@ -68,49 +101,14 @@ def data_to_excel():
     return send_file(os.path.join('data', 'sm_data.xlsx'), as_attachment=True)
 
 
-# @bp.route('/handle_new_leads_cdv', methods=['POST'])
-# def handle_new_leads_cdv():
-#     if request.content_type == 'application/json':
-#         handle_lead_status_changed(data=request.json)
-#         return 'success', 200
-#     elif request.content_type == 'application/x-www-form-urlencoded':
-#         handle_lead_status_changed(data=request.form.to_dict())
-#         return 'success', 200
-#     return 'Unsupported Media Type', 415
+@bp.route('/get_amo_data_sm')
+def get_amo_data_sm():
+    return start_get_data_from_amo_scheduler(branch='sm')
 
 
-@bp.route('/button1')
-def start_sm():
-    lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
-    # current_app - это проксированный экземпляр приложения,
-    # _get_current_object - доступ к объекту приложения напрямую
-    # с проксированным объектом получается некорректный контекст => костыляем
-    app = current_app._get_current_object()
-    # загрузка данных из Amo SM
-    try:
-        app.scheduler.remove_job('get_data_from_amo_sm')
-    except JobLookupError:
-        pass
-    app.scheduler.add_job(
-        id='get_data_from_amo_sm',
-        func=socketio.start_background_task,
-        args=[get_data_from_amo, app, 'sm', lowest_dt],
-        trigger='interval',
-        seconds=5,
-        max_instances=1
-    )
-    if not app.scheduler.running:
-        app.scheduler.start()
-    # загрузка данных из Amo CDV
-    # app.scheduler.add_job(
-    #     id='get_data_from_amo_cdv',
-    #     func=get_data_from_amo,
-    #     args=[app, 'cdv'],
-    #     trigger='interval',
-    #     seconds=5,
-    #     max_instances=1
-    # )
-    return render_template('index.html')
+@bp.route('/get_amo_data_cdv')
+def get_amo_data_cdv():
+    return start_get_data_from_amo_scheduler(branch='cdv')
 
 
 @bp.route('/start_update_pivot_data')

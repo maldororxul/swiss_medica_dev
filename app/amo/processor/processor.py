@@ -530,6 +530,13 @@ class DataProcessor:
                 highest_dt = dt
         return lowest_df, highest_dt
 
+    def get_data_borders_and_current_date(self) -> Tuple[datetime, datetime, str]:
+        df, dt = self.get_data_borders()
+        date_from = datetime.fromtimestamp(df) if df else None
+        date_to = datetime.fromtimestamp(dt) if dt else None
+        date_curr = date_from + timedelta(minutes=60) if date_from else datetime.now()
+        return date_from, date_to, date_curr.strftime("%Y-%m-%dT%H:%M")
+
     def __get_data_borders(self, table_name: str, field: str = 'updated_at') -> Tuple[Optional[int], Optional[int]]:
         table = Table(table_name, MetaData(), autoload_with=self.engine, schema=self.schema)
         with self.engine.begin() as connection:
