@@ -164,7 +164,7 @@ def start_update_pivot_data_sm():
 
 
 @bp.route('/start_update_pivot_data_cdv')
-def start_update_pivot_data_sm():
+def start_update_pivot_data_cdv():
     start_update_pivot_data(branch='cdv')
 
 
