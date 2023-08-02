@@ -1,7 +1,7 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, send_file, send_from_directory
 from app import db, socketio
@@ -42,13 +42,12 @@ def start_get_data_from_amo_scheduler(branch: str):
     if not app.scheduler.running:
         app.scheduler.start()
     with app.app_context():
-        processor.log.add(text=f'{branch.upper()} Amo data loader has started', log_type=1)
+        processor.log.add(text=f'Amo data loader has started', log_type=1)
     return render_template('index.html')
 
 
 def start_update_pivot_data(branch: str):
     scheduler_id = f'update_pivot_data_{branch}'
-    lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
     # current_app - это проксированный экземпляр приложения,
     # _get_current_object - доступ к объекту приложения напрямую
     # с проксированным объектом получается некорректный контекст => костыляем
@@ -70,7 +69,7 @@ def start_update_pivot_data(branch: str):
     if not app.scheduler.running:
         app.scheduler.start()
     with app.app_context():
-        processor.log.add(text=f'{branch.upper()} Amo data builder has started', log_type=1)
+        processor.log.add(text=f'Amo data builder has started', log_type=1)
     return render_template('index.html')
 
 
