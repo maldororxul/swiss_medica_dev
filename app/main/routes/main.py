@@ -3,7 +3,7 @@ __author__ = 'ke.mizonov'
 import os
 from datetime import datetime, timedelta
 from apscheduler.jobstores.base import JobLookupError
-from flask import render_template, current_app, redirect, url_for, request, send_file
+from flask import render_template, current_app, redirect, url_for, request, send_file, send_from_directory
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
@@ -48,6 +48,36 @@ def start_get_data_from_amo_scheduler(branch: str):
     return render_template('index.html')
 
 
+def start_update_pivot_data(branch: str):
+    scheduler_id = f'update_pivot_data_{branch}'
+    lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
+    # current_app - это проксированный экземпляр приложения,
+    # _get_current_object - доступ к объекту приложения напрямую
+    # с проксированным объектом получается некорректный контекст => костыляем
+    app = current_app._get_current_object()
+    # загрузка данных из Amo CDV
+    try:
+        app.scheduler.remove_job(scheduler_id)
+    except JobLookupError:
+        pass
+    app.scheduler.add_job(
+        id=scheduler_id,
+        func=socketio.start_background_task,
+        args=[update_pivot_data, app, branch],
+        trigger='interval',
+        seconds=600,
+        max_instances=1
+    )
+    processor = DATA_PROCESSOR.get(branch)()
+    with app.app_context():
+        if not app.scheduler.running:
+            app.scheduler.start()
+            processor.log.add(text=f'{branch.upper()} Amo data builder has started', log_type=1)
+        else:
+            processor.log.add(text=f'{branch.upper()} Amo data builder is already working', log_type=1)
+    return render_template('index.html')
+
+
 @bp.route('/')
 def index():
     # границы данных и текущая дата SM
@@ -65,6 +95,13 @@ def index():
         cdv_dt=cdv_date_to,
         cdv_curr=cdv_date_curr
     )
+
+
+@bp.route('/favicon.ico')
+def favicon():
+    app = current_app._get_current_object()
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
 @bp.route('/get_token', methods=['GET'])
@@ -121,19 +158,14 @@ def get_amo_data_cdv():
     return start_get_data_from_amo_scheduler(branch='cdv')
 
 
-@bp.route('/start_update_pivot_data')
-def start_update_pivot_data():
-    app = current_app._get_current_object()
-    # обновление данных для сводной таблицы SM
-    app.scheduler.add_job(
-        id='update_pivot_data_sm',
-        func=update_pivot_data,
-        args=[app, 'sm'],
-        trigger='interval',
-        seconds=5,
-        max_instances=1
-    )
-    return 'started scheduler "update pivot data"'
+@bp.route('/start_update_pivot_data_sm')
+def start_update_pivot_data_sm():
+    start_update_pivot_data(branch='sm')
+
+
+@bp.route('/start_update_pivot_data_cdv')
+def start_update_pivot_data_sm():
+    start_update_pivot_data(branch='cdv')
 
 
 @bp.route('/create_all')

@@ -143,13 +143,13 @@
             }
 
             function buildPivotDataSm() {
-                $.get('/get_amo_data_sm', {}, function(response) {
+                $.get('/start_update_pivot_data_sm', {}, function(response) {
                     console.log(response);
                 });
             }
 
             function buildPivotDataCdv() {
-                $.get('/get_amo_data_cdv', {}, function(response) {
+                $.get('/start_update_pivot_data_cdv', {}, function(response) {
                     console.log(response);
                 });
             }
