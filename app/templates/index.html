@@ -120,50 +120,50 @@
             function getAmoDataSm() {
                 var dateTime = $('#time-sm').val();
                 $.get('/get_amo_data_sm', { time: dateTime }, function(response) {
-                    console.log(response);
+                    console.log('get_amo_data_sm');
                 });
             }
 
             function getAmoDataCdv() {
                 var dateTime = $('#time-cdv').val();
                 $.get('/get_amo_data_cdv', { time: dateTime }, function(response) {
-                    console.log(response);
+                    console.log('get_amo_data_cdv');
                 });
             }
 
             function startAutocalls() {
                 $.get('/start_autocalls', {}, function(response) {
-                    console.log(response);
+                    console.log('start_autocalls');
                 });
             }
 
             function setTelegramWebhooks() {
                 $.get('/set_telegram_webhooks', {}, function(response) {
-                    console.log(response);
+                    console.log('set_telegram_webhooks');
                 });
             }
 
             function buildPivotDataSm() {
                 $.get('/start_update_pivot_data_sm', {}, function(response) {
-                    console.log(response);
+                    console.log('start_update_pivot_data_sm');
                 });
             }
 
             function buildPivotDataCdv() {
                 $.get('/start_update_pivot_data_cdv', {}, function(response) {
-                    console.log(response);
+                    console.log('start_update_pivot_data_cdv');
                 });
             }
 
             function downloadPivotDataSm() {
                 $.get('/data_excel_sm', {}, function(response) {
-                    console.log(response);
+                    console.log('data_excel_sm');
                 });
             }
 
             function downloadPivotDataCdv() {
                 $.get('/data_excel_cdv', {}, function(response) {
-                    console.log(response);
+                    console.log('data_excel_cdv');
                 });
             }
 

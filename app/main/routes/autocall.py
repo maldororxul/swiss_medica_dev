@@ -25,13 +25,11 @@ def start_autocalls():
             seconds=int(Config().autocall_interval),
             max_instances=1
         )
+        processor = DATA_PROCESSOR.get('swissmedica')()
+        if not app.scheduler.running:
+            app.scheduler.start()
         with app.app_context():
-            processor = DATA_PROCESSOR.get('swissmedica')()
-            if not app.scheduler.running:
-                app.scheduler.start()
-                processor.log.add(text=f'Autocalls scheduler started')
-            else:
-                processor.log.add(text=f'Autocalls scheduler is already working')
+            processor.log.add(text=f'Autocalls scheduler started')
     return render_template('index.html')
 
 

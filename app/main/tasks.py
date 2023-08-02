@@ -37,15 +37,12 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
                 empty_steps += 1
             else:
                 empty_steps = 0
-            curr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             df = date_from.strftime("%Y-%m-%d %H:%M:%S")
             dt = date_to.strftime("%H:%M:%S")
             repeated_iteration = "" if has_new else f" :: R{empty_steps}"
             msg = f'reading {branch} data :: {df} - {dt}{repeated_iteration}'
             # запись лога в БД
             processor.log.add(text=msg, log_type=1)
-            # отправка данных клиенту
-            socketio.emit('new_event', {'msg': f'{curr} :: {msg}'})
             if empty_steps_limit == empty_steps:
                 is_running = False
                 break
@@ -75,7 +72,7 @@ def update_pivot_data(app: Flask, branch: str):
                 })
             controller = SYNC_CONTROLLER.get(branch)
             has_new = controller(date_from=date_from, date_to=date_to).update_data(collection=collection)
-            print(f'{datetime.now()} :: updating data :: {date_from} :: {date_to} :: {has_new}')
+            data_processor.log.add(f'{branch} updating pivot data :: {date_from} :: {date_to} :: {has_new}')
             if not has_new:
                 empty_steps += 1
             else:

@@ -39,12 +39,10 @@ def start_get_data_from_amo_scheduler(branch: str):
         max_instances=1
     )
     processor = DATA_PROCESSOR.get(branch)()
+    if not app.scheduler.running:
+        app.scheduler.start()
     with app.app_context():
-        if not app.scheduler.running:
-            app.scheduler.start()
-            processor.log.add(text=f'{branch.upper()} Amo data loader has started', log_type=1)
-        else:
-            processor.log.add(text=f'{branch.upper()} Amo data loader is already working', log_type=1)
+        processor.log.add(text=f'{branch.upper()} Amo data loader has started', log_type=1)
     return render_template('index.html')
 
 
@@ -69,12 +67,10 @@ def start_update_pivot_data(branch: str):
         max_instances=1
     )
     processor = DATA_PROCESSOR.get(branch)()
+    if not app.scheduler.running:
+        app.scheduler.start()
     with app.app_context():
-        if not app.scheduler.running:
-            app.scheduler.start()
-            processor.log.add(text=f'{branch.upper()} Amo data builder has started', log_type=1)
-        else:
-            processor.log.add(text=f'{branch.upper()} Amo data builder is already working', log_type=1)
+        processor.log.add(text=f'{branch.upper()} Amo data builder has started', log_type=1)
     return render_template('index.html')
 
 

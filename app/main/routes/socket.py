@@ -16,4 +16,4 @@ def pre_load_from_socket():
     logs = sorted([log for log in logs], key=lambda x: x.created_at)
     for log in logs:
         dt = datetime.fromtimestamp(log.created_at).strftime("%Y-%m-%d %H:%M:%S")
-        socketio.emit('new_event', {'msg': f"{dt} :: {log.text}"})
+        socketio.emit('new_event', {'msg': f"{dt} :: {log.text[:1000]}"})
