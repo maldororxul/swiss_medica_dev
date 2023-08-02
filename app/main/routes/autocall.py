@@ -1,11 +1,11 @@
 """ Маршруты для работы с Автообзвоном """
 __author__ = 'ke.mizonov'
 from apscheduler.jobstores.base import JobLookupError
-from flask import request, current_app
+from flask import request, current_app, render_template
 from app import socketio
 from app.main import bp
 from app.main.autocall.handler import Autocall
-from app.main.utils import get_data_from_external_api
+from app.main.utils import get_data_from_external_api, DATA_PROCESSOR
 from config import Config
 
 
@@ -27,7 +27,10 @@ def start_autocalls():
         )
         if not app.scheduler.running:
             app.scheduler.start()
-    return 'started scheduler "autocalls"'
+    with app.app_context():
+        processor = DATA_PROCESSOR.get('swissmedica')()
+        processor.log.add(text=f'Telegram webhooks were set')
+    return render_template('index.html')
 
 
 @bp.route('/autocall_handler', methods=['POST'])

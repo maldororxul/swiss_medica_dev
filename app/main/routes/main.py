@@ -9,7 +9,7 @@ from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
-from app.models.data import SMData
+from app.models.data import SMData, CDVData
 from app.utils.excel import ExcelClient
 
 API_CLIENT = {
@@ -91,14 +91,24 @@ def send_auth_code():
     return redirect(url_for('main.get_token'))
 
 
-@bp.route('/sm_data_excel')
-def data_to_excel():
+@bp.route('/data_excel_sm')
+def data_to_excel_sm():
     collection = SMData.query.all()
     data = [(x.to_dict() or {}).get('data') for x in collection]
-    ExcelClient(file_path=os.path.join('app', 'data'), file_name='sm_data').write(data=[
+    ExcelClient(file_path=os.path.join('app', 'data'), file_name='data_sm').write(data=[
         ExcelClient.Data(data=data)
     ])
-    return send_file(os.path.join('data', 'sm_data.xlsx'), as_attachment=True)
+    return send_file(os.path.join('data', 'data_sm.xlsx'), as_attachment=True)
+
+
+@bp.route('/data_excel_cdv')
+def data_to_excel_cdv():
+    collection = CDVData.query.all()
+    data = [(x.to_dict() or {}).get('data') for x in collection]
+    ExcelClient(file_path=os.path.join('app', 'data'), file_name='data_cdv').write(data=[
+        ExcelClient.Data(data=data)
+    ])
+    return send_file(os.path.join('data', 'data_cdv.xlsx'), as_attachment=True)
 
 
 @bp.route('/get_amo_data_sm')

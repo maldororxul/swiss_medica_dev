@@ -86,9 +86,6 @@ class DataProcessor:
         }
         self.users_dict = {x['id_on_source']: x for x in self.users()}
 
-    def update(self):
-        return self._build_leads_data()
-
     def companies(self) -> List[Dict]:
         return self.__get_data(table_name='Company')
 
@@ -97,6 +94,28 @@ class DataProcessor:
 
     def events(self) -> List[Dict]:
         return self.__get_data(table_name='Event')
+
+    def get_lead_phones(self, lead: Dict, forced_contacts_update: bool = False) -> List[str]:
+        """ Получить список телефонов из контактов лида """
+        result = []
+        # вычитываем контакты при необходимости
+        if forced_contacts_update or (not lead.get('contacts')):
+            _embedded = lead.get('_embedded') or {}
+            contacts = _embedded.get('contacts')
+            lead.update({
+                'contacts': self.__get_by(
+                    table_name='Contact',
+                    by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
+                ) if contacts else [],
+            })
+        # из контактов тащим телефоны
+        for contact in lead.get('contacts') or []:
+            for contact_field in contact.get('custom_fields_values') or []:
+                if contact_field['field_code'] != 'PHONE':
+                    continue
+                for phone in contact_field['values']:
+                    result.append(clear_phone(phone['value']))
+        return result
 
     def leads(self) -> List[Dict]:
         return self.__get_data(table_name='Lead')
@@ -109,6 +128,9 @@ class DataProcessor:
 
     def tasks(self) -> List[Dict]:
         return self.__get_data(table_name='Task')
+
+    def update(self):
+        return self._build_leads_data()
 
     def users(self) -> List[Dict]:
         return self.__get_data(table_name='User', date_field=None)
@@ -400,6 +422,17 @@ class DataProcessor:
             if line[at_work] == 0:
                 line[at_work] = ''
 
+    def _clear_country(self, line: Dict):
+        country = line[self.lead.Country.Key]
+        if '.' in country or ':' in country or country.lower() in ('-', 'yeah', 'yes', 'yes!', 'alqouz1', 'false'):
+            line[self.lead.Country.Key] = ''
+            return
+        if country.isnumeric():
+            return
+        if CONTRY_REPLACEMENTS.get(country):
+            country = CONTRY_REPLACEMENTS[country]
+        line[self.lead.Country.Key] = country
+
     def _convert_date_time_from_unix_timestamp(self, unix_ts: int) -> datetime:
         """ Переводит время из unix-формата в datetime с учетом текущих настроек часового пояса
 
@@ -433,6 +466,26 @@ class DataProcessor:
             'calls': calls,
             'utm_rules': GoogleAPIClient(book_id=self.utm_rules_book_id, sheet_title='rules').get_sheet()
         }
+
+    def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):
+        _embedded = lead.get('_embedded')
+        loss_reason = _embedded['loss_reason'][0]['name'] if _embedded['loss_reason'] else ''
+        is_lead = 1 if self._is_lead(loss_reason) and not lead.get('deleted') else ''
+        for lead_model in self.lead_models:
+            stages_priority = lead_model.get_stages_priority()
+            stage_instance = lead_model.Stage()
+            is_target = 1 if is_lead and (not loss_reason or loss_reason in lead_model.get_loss_reasons()) else ''
+            line[stage_instance.Target.Key] = is_target
+            # строим историю прохождения сделки по этапам
+            self._build_lead_history(
+                lead_model=lead_model,
+                lead=lead,
+                line=line,
+                pipelines_dict=pre_data.get('pipelines_dict'),
+                stages_priority=stages_priority
+            )
+            # дозаполняем пропущенные этапы (полученные по доп. полям)
+            self._check_stages_priority(line=line, stages_priority=stages_priority)
 
     def _process_prices(self, line: Dict, lead: Dict):
         for lead_model in self.lead_models:
@@ -556,28 +609,6 @@ class DataProcessor:
             stmt = select(table).where(reduce(and_, conditions))
             return [x._asdict() for x in connection.execute(stmt).fetchall() or []]
 
-    def get_lead_phones(self, lead: Dict, forced_contacts_update: bool = False) -> List[str]:
-        """ Получить список телефонов из контактов лида """
-        result = []
-        # вычитываем контакты при необходимости
-        if forced_contacts_update or (not lead.get('contacts')):
-            _embedded = lead.get('_embedded') or {}
-            contacts = _embedded.get('contacts')
-            lead.update({
-                'contacts': self.__get_by(
-                    table_name='Contact',
-                    by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
-                ) if contacts else [],
-            })
-        # из контактов тащим телефоны
-        for contact in lead.get('contacts') or []:
-            for contact_field in contact.get('custom_fields_values') or []:
-                if contact_field['field_code'] != 'PHONE':  # todo хардкод
-                    continue
-                for phone in contact_field['values']:
-                    result.append(clear_phone(phone['value']))
-        return result
-
     @staticmethod
     def get_lead_contacts(lead: Dict, field_code: str = 'PHONE') -> List[str]:
         """ Получить список телефонов / email из контактов лида """
@@ -607,6 +638,14 @@ class DataProcessor:
                     if past_stage.Key in exclude:
                         continue
                     line[past_stage.Key] = 1
+
+    @staticmethod
+    def _get_cf_values(field: Dict) -> Any:
+        """ Конкатенирует значения доп. поля, либо возвращает единственное значение """
+        values = field.get('values') or []
+        if len(values) == 1:
+            return values[0]['value']
+        return ', '.join([str(value['value']) for value in values])
 
     @staticmethod
     def _get_input_field_value(lead: Dict) -> Optional[str]:
@@ -650,14 +689,6 @@ class DataProcessor:
                 if not earliest_ts or current_ts < earliest_ts:
                     earliest_ts = current_ts
             lead['created_at_offset'] = 1 if not earliest_ts or earliest_ts - created_at < -3600 * 1 else ''
-
-    @staticmethod
-    def __get_cf_values(field: Dict) -> Any:
-        """ Конкатенирует значения доп. поля, либо возвращает единственное значение """
-        values = field.get('values') or []
-        if len(values) == 1:
-            return values[0]['value']
-        return ', '.join([str(value['value']) for value in values])
 
     @staticmethod
     def __get_stage_if_reached(stages_priority, status):
@@ -844,38 +875,36 @@ class SMDataProcessor(DataProcessor):
                         continue
                     line[stage.Key] = value
 
-    def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):
-        _embedded = lead.get('_embedded')
-        loss_reason = _embedded['loss_reason'][0]['name'] if _embedded['loss_reason'] else ''
-        is_lead = 1 if self._is_lead(loss_reason) and not lead.get('deleted') else ''
-        for lead_model in self.lead_models:
-            stages_priority = lead_model.get_stages_priority()
-            stage_instance = lead_model.Stage()
-            # if lead_model is not self.lead and self.lead.Stage.Target.Key == lead_model.Stage.Target.Key:
-            #     continue
-            is_target = 1 if is_lead and (not loss_reason or loss_reason in lead_model.get_loss_reasons()) else ''
-            line[stage_instance.Target.Key] = is_target
-            # строим историю прохождения сделки по этапам
-            self._build_lead_history(
-                lead_model=lead_model,
-                lead=lead,
-                line=line,
-                pipelines_dict=pre_data.get('pipelines_dict'),
-                stages_priority=stages_priority
-            )
-            # дозаполняем пропущенные этапы (полученные по доп. полям)
-            self._check_stages_priority(line=line, stages_priority=stages_priority)
+    # def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):
+    #     _embedded = lead.get('_embedded')
+    #     loss_reason = _embedded['loss_reason'][0]['name'] if _embedded['loss_reason'] else ''
+    #     is_lead = 1 if self._is_lead(loss_reason) and not lead.get('deleted') else ''
+    #     for lead_model in self.lead_models:
+    #         stages_priority = lead_model.get_stages_priority()
+    #         stage_instance = lead_model.Stage()
+    #         is_target = 1 if is_lead and (not loss_reason or loss_reason in lead_model.get_loss_reasons()) else ''
+    #         line[stage_instance.Target.Key] = is_target
+    #         # строим историю прохождения сделки по этапам
+    #         self._build_lead_history(
+    #             lead_model=lead_model,
+    #             lead=lead,
+    #             line=line,
+    #             pipelines_dict=pre_data.get('pipelines_dict'),
+    #             stages_priority=stages_priority
+    #         )
+    #         # дозаполняем пропущенные этапы (полученные по доп. полям)
+    #         self._check_stages_priority(line=line, stages_priority=stages_priority)
 
-    def _clear_country(self, line: Dict):
-        country = line[self.lead.Country.Key]
-        if '.' in country or ':' in country or country.lower() in ('-', 'yeah', 'yes', 'yes!', 'alqouz1', 'false'):
-            line[self.lead.Country.Key] = ''
-            return
-        if country.isnumeric():
-            return
-        if CONTRY_REPLACEMENTS.get(country):
-            country = CONTRY_REPLACEMENTS[country]
-        line[self.lead.Country.Key] = country
+    # def _clear_country(self, line: Dict):
+    #     country = line[self.lead.Country.Key]
+    #     if '.' in country or ':' in country or country.lower() in ('-', 'yeah', 'yes', 'yes!', 'alqouz1', 'false'):
+    #         line[self.lead.Country.Key] = ''
+    #         return
+    #     if country.isnumeric():
+    #         return
+    #     if CONTRY_REPLACEMENTS.get(country):
+    #         country = CONTRY_REPLACEMENTS[country]
+    #     line[self.lead.Country.Key] = country
 
     @staticmethod
     def _is_lead(loss_reason: str) -> bool:
@@ -905,24 +934,122 @@ class CDVDataProcessor(DataProcessor):
         self.log = DBLogger(log_model=CDVLog, branch='cdv')
 
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
-        pass
+        # строим словарь с дефолтными значениями полей лида
+        line = self._build_lead_base_data(lead=lead, pre_data=pre_data)
+        # заполняем доп. поля лида
+        self._process_custom_fields(line=line, lead=lead, pre_data=pre_data)
+        # костыль для дополнительных воронок
+        self._process_pipelines(line=line, lead=lead, pre_data=pre_data)
+        # кастинг дат
+        self._cast_dates(line=line, pre_data=pre_data)
+        # маркеры скорости прохождения лида по воронке
+        self._freeze_stages(line=line)
+        # прокидываем цены по этапам
+        self._process_prices(line=line, lead=lead)
+        # телефоны
+        line[self.lead.Phone.Key] = self.get_lead_phones(lead)
+        # сортировка по ключам
+        return line
 
     def _freeze_stages(self, line: Dict):
-        pass
-
-    def _freeze_stages_italy(self, line: Dict):
-        pass
+        if not self._is_lead(line[self.lead.LossReason.Key]):
+            return
+        created_at = line[self.lead.CreatedAt.Key]
+        if line[self.lead.DateOfAdmission.Key] and line[self.lead.DateOfAdmission.Key] >= created_at:
+            period = (line[self.lead.DateOfAdmission.Key] - created_at).days
+            line[self.lead.Admission7Days.Key] = period // 7 + 1
+            line[self.lead.Admission14Days.Key] = 1 if period <= 14 else ''
+        if line[self.lead.DateOfPriorConsent.Key] and line[self.lead.DateOfPriorConsent.Key] >= created_at:
+            period = (line[self.lead.DateOfPriorConsent.Key] - created_at).days
+            line[self.lead.PriorConsent14Days.Key] = 1 if period <= 14 else ''
 
     def _process_custom_fields(self, line: Dict, lead: Dict, pre_data: Dict):
-        pass
+        # кастомные поля
+        custom_fields = lead.get('custom_fields_values') or []
+        # значения из доп. полей (без этапов сделки!)
+        countries = []
+        for field in custom_fields:
+            name = field['field_name']
+            if name not in pre_data.get('lead_custom_fields').keys():
+                if name in (
+                        'Country',
+                        'Страна',
+                        'Country_from_Jivo',
+                        # 'CLIENTS_COUNTRY'
+                ):
+                    value = field['values'][0]['value']
+                    if str(value).isnumeric() or ':' in value or '.' in value:
+                        continue
+                    countries.append(value)
+                continue
+            line[pre_data.get('lead_custom_fields')[name]] = self._get_cf_values(field=field)
+        # докидываем страну, если ее не удалось заполнить из доп. поля Country
+        if not line[self.lead.Country.Key]:
+            if countries:
+                line[self.lead.Country.Key] = countries[0]
+            else:
+                for contact in lead.get('contacts') or []:
+                    for field in contact.get('custom_fields_values') or []:
+                        if field['field_name'] in ('Country by phone', 'Страна по номеру телефона', 'Country by IP'):
+                            val = field['values'][0]['value']
+                            if not val:
+                                continue
+                            countries.append(val)
+                if countries:
+                    line[self.lead.Country.Key] = countries[0]
+        # очистка названий стран
+        self._clear_country(line=line)
+        # utm из доп. полей
+        for field in custom_fields:
+            name = field['field_name'].lower()
+            for val in self.lead.Utm.__dict__.values():
+                if not isinstance(val, LeadField):
+                    continue
+                if val.Key == name:
+                    line[val.Key] = field['values'][0]['value']
+                    break
+        # только для лидов (не сырых!)
+        for lead_model in self.lead_models:
+            if line['pipeline_name'] not in lead_model.Pipelines:
+                continue
+            # приоритеты стадий воронки
+            stages_priority = lead_model.get_stages_priority()
+            if not line[lead_model.Stage.Lead.Key]:
+                continue
+            # определяем достигнутые этапы сделки по доп. полям
+            for field in custom_fields:
+                name = field['field_name']
+                # значение по умолчанию для всех None - ''
+                value = 1 if field['values'][0]['value'] else ''
+                for stage in stages_priority:
+                    if name not in stage.IncludeFields and name.lower() not in stage.IncludeFields:
+                        continue
+                    line[stage.Key] = value
+                    if value == 1:
+                        line[lead_model.ReachedStage.Key] = stage.DisplayName
 
-    def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):
-        pass
+    # def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):
+    #     for lead_model in self.lead_models:
+    #         stages_priority = lead_model.get_stages_priority()
+    #         loss_reason = lead['loss_reason'][0]['name'] if lead['loss_reason'] else ''
+    #         is_lead = 1 if self._is_lead(loss_reason) and not lead.get('deleted') else ''
+    #         is_target = 1 if is_lead and (not loss_reason or loss_reason in lead_model.get_loss_reasons()) else ''
+    #         line[lead_model.Stage.Target.Key] = is_target
+    #         # строим историю прохождения сделки по этапам
+    #         self._build_lead_history(
+    #             lead_model=lead_model,
+    #             lead=lead,
+    #             line=line,
+    #             pipelines_dict=pre_data.get('pipelines_dict'),
+    #             stages_priority=stages_priority
+    #         )
+    #         # дозаполняем пропущенные этапы (полученные по доп. полям)
+    #         self._check_stages_priority(line=line, stages_priority=stages_priority)
 
-    def _clear_country(self, line: Dict):
-        pass
+    # def _clear_country(self, line: Dict):
+    #     pass
 
     @staticmethod
     def _is_lead(loss_reason: str) -> bool:
         """ Возвращает кортеж причин закрытия, которые не соответствуют лидам """
-        pass
+        return loss_reason not in ('Duplicate Lead', 'SPAM')

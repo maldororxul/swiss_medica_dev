@@ -75,12 +75,15 @@
             </div>
             <div class="row">
                 <div class="col-12 col-md-10 offset-md-1">
+                    <button class="btn btn-custom mt-3" id="download_pivot_data_sm">Download SM data</button>
+                    <button class="btn btn-custom mt-3" id="download_pivot_data_cdv">Download CDV data</button>
                     <div class="button-group">
                         <div class="input-group mb-3">
                             <span class="input-group-text mr-3" id="inputGroup-sizing-default-sm">{{ sm_df }} - {{ sm_dt }}</span>
                             <input type="datetime-local" id="time-sm" value="{{ sm_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-sm">
                         </div>
                         <button class="btn btn-custom" id="get_amo_data_sm">Load Amo data SM</button>
+                        <button class="btn btn-custom mt-3" id="build_pivot_data_sm">Build pivot data SM</button>
                     </div>
                     <div class="button-group">
                         <div class="input-group mb-3">
@@ -88,7 +91,10 @@
                             <input type="datetime-local" id="time-cdv" value="{{ cdv_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-cdv">
                         </div>
                         <button class="btn btn-custom" id="get_amo_data_cdv">Load Amo data CDV</button>
+                        <button class="btn btn-custom mt-3" id="build_pivot_data_cdv">Build pivot data CDV</button>
                     </div>
+                    <button class="btn btn-custom mt-3" id="start_autocalls">Start autocalls</button>
+                    <button class="btn btn-custom mt-3" id="set_telegram_webhooks">Set Telegram webhooks</button>
                 </div>
             </div>
         </div>
@@ -124,9 +130,51 @@
                 });
             }
 
+            function startAutocalls() {
+                $.get('/start_autocalls', {}, function(response) {
+                    console.log(response);
+                });
+            }
+
+            function setTelegramWebhooks() {
+                $.get('/set_telegram_webhooks', {}, function(response) {
+                    console.log(response);
+                });
+            }
+
+            function buildPivotDataSm() {
+                $.get('/get_amo_data_sm', {}, function(response) {
+                    console.log(response);
+                });
+            }
+
+            function buildPivotDataCdv() {
+                $.get('/get_amo_data_cdv', {}, function(response) {
+                    console.log(response);
+                });
+            }
+
+            function downloadPivotDataSm() {
+                $.get('/data_excel_sm', {}, function(response) {
+                    console.log(response);
+                });
+            }
+
+            function downloadPivotDataCdv() {
+                $.get('/data_excel_cdv', {}, function(response) {
+                    console.log(response);
+                });
+            }
+
             $(document).ready(function() {
+                $('#download_pivot_data_sm').on('click', downloadPivotDataSm);
+                $('#download_pivot_data_cdv').on('click', downloadPivotDataCdv);
                 $('#get_amo_data_sm').on('click', getAmoDataSm);
+                $('#build_pivot_data_sm').on('click', buildPivotDataSm);
                 $('#get_amo_data_cdv').on('click', getAmoDataCdv);
+                $('#build_pivot_data_cdv').on('click', buildPivotDataCdv);
+                $('#start_autocalls').on('click', startAutocalls);
+                $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
             });
         </script>
     </body>

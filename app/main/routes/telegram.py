@@ -2,9 +2,9 @@
 __author__ = 'ke.mizonov'
 from typing import Optional, Dict, Callable
 import telebot
-from flask import request
+from flask import request, current_app, render_template
 from app.main import bp
-from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch
+from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR
 from config import Config
 
 BOTS = {
@@ -53,8 +53,19 @@ def make_send_welcome_handler(tg_bot):
     return send_welcome
 
 
+def make_buttons_handlers(tg_bot):
+    @tg_bot.callback_query_handler(func=lambda call: True)
+    def handle_button_click(call):
+        if call.data == 'btn_test':
+            tg_bot.send_message(call.message.chat.id, "Button clicked!")
+        elif call.data == 'button2':
+            tg_bot.send_message(call.message.chat.id, "Button 2 clicked!")
+    return handle_button_click
+
+
 for bot in BOTS.values():
     make_send_welcome_handler(bot)
+    make_buttons_handlers(bot)
 
 
 @bp.route('/set_telegram_webhooks')
@@ -64,7 +75,15 @@ def set_telegram_webhooks():
         _bot.remove_webhook()
         token = config.new_lead_telegram.get(pipeline_or_branch).get('TOKEN')
         _bot.set_webhook(url=config.heroku_url + token)
-    return "Telegram webhooks were configured", 200
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
+        button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
+        keyboard.row(button1, button2)
+    app = current_app._get_current_object()
+    with app.app_context():
+        processor = DATA_PROCESSOR.get('swissmedica')()
+        processor.log.add(text=f'Telegram webhooks were set')
+    return render_template('index.html')
 
 
 @bp.route('/new_lead', methods=['POST'])
