@@ -72,9 +72,12 @@ for bot in BOTS.values():
 def set_telegram_webhooks():
     config = Config()
     for pipeline_or_branch, _bot in BOTS.items():
-        _bot.remove_webhook()
+        # _bot.remove_webhook()
         token = config.new_lead_telegram.get(pipeline_or_branch).get('TOKEN')
-        _bot.set_webhook(url=config.heroku_url + token)
+        try:
+            _bot.set_webhook(url=config.heroku_url + token)
+        except:
+            pass
         keyboard = telebot.types.InlineKeyboardMarkup()
         button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
         button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
