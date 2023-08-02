@@ -20,7 +20,7 @@ class DBLogger:
         # отправка данных клиенту
         if log_type == 1:
             curr = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            socketio.emit('new_event', {'msg': f'{curr} :: {text[:1000]}'})
+            socketio.emit('new_event', {'msg': f'{curr} :: {self.branch} :: {text[:1000]}'})
 
     def get(self, log_type: int = 1, limit: int = 100) -> List[db.Model]:
         table = Table('Log', MetaData(), autoload_with=self.engine, schema=self.branch)

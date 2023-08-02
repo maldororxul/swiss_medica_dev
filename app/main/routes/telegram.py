@@ -79,9 +79,9 @@ def set_telegram_webhooks():
         button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
         button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
         keyboard.row(button1, button2)
+    processor = DATA_PROCESSOR.get('swissmedica')()
     app = current_app._get_current_object()
     with app.app_context():
-        processor = DATA_PROCESSOR.get('swissmedica')()
         processor.log.add(text=f'Telegram webhooks were set')
     return render_template('index.html')
 

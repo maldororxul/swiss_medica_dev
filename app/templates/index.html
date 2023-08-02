@@ -39,6 +39,17 @@
                 color: #7FDBFF;
                 width: 100%;
             }
+            .btn:active {
+                background-color: #2F4F4F;
+                color: #7FDBFF;
+                border-color: #2F4F4F;
+            }
+            /* Remove the active styles when the button is no longer in focus */
+            .btn:not(.active) {
+                background-color: #1B1C1D;
+                border-color: #1B1C1D;
+                color: #7FDBFF;
+            }
             .btn-custom:hover, .btn-custom:active, .btn-custom:focus {
                 background-color: #2F4F4F;
                 color: #7FDBFF;
@@ -122,6 +133,8 @@
                 $.get('/get_amo_data_sm', { time: dateTime }, function(response) {
                     console.log('get_amo_data_sm');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             function getAmoDataCdv() {
@@ -129,42 +142,56 @@
                 $.get('/get_amo_data_cdv', { time: dateTime }, function(response) {
                     console.log('get_amo_data_cdv');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             function startAutocalls() {
                 $.get('/start_autocalls', {}, function(response) {
                     console.log('start_autocalls');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             function setTelegramWebhooks() {
                 $.get('/set_telegram_webhooks', {}, function(response) {
                     console.log('set_telegram_webhooks');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             function buildPivotDataSm() {
                 $.get('/start_update_pivot_data_sm', {}, function(response) {
                     console.log('start_update_pivot_data_sm');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             function buildPivotDataCdv() {
                 $.get('/start_update_pivot_data_cdv', {}, function(response) {
                     console.log('start_update_pivot_data_cdv');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             function downloadPivotDataSm() {
                 $.get('/data_excel_sm', {}, function(response) {
                     console.log('data_excel_sm');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             function downloadPivotDataCdv() {
                 $.get('/data_excel_cdv', {}, function(response) {
                     console.log('data_excel_cdv');
                 });
+                // Make the button lose focus after it's clicked
+                $(this).blur();
             }
 
             $(document).ready(function() {
