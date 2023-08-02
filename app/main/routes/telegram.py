@@ -72,17 +72,20 @@ for bot in BOTS.values():
 def set_telegram_webhooks():
     config = Config()
     app = current_app._get_current_object()
-    # for pipeline_or_branch, _bot in BOTS.items():
-    #     try:
-    #         _bot.remove_webhook()
-    #     except Exception as exc:
-    #         print('_bot.remove_webhook() error:', exc)
-    #     token = config.new_lead_telegram.get(pipeline_or_branch).get('TOKEN')
-    #     _bot.set_webhook(url=config.heroku_url + token)
-    #     # keyboard = telebot.types.InlineKeyboardMarkup()
-    #     # button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
-    #     # button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
-    #     # keyboard.row(button1, button2)
+    for pipeline_or_branch, _bot in BOTS.items():
+        try:
+            _bot.remove_webhook()
+        except Exception as exc:
+            print('_bot.remove_webhook error:', exc)
+        token = config.new_lead_telegram.get(pipeline_or_branch).get('TOKEN')
+        try:
+            _bot.set_webhook(url=config.heroku_url + token)
+        except Exception as exc:
+            print('_bot.set_webhook error:', exc)
+        # keyboard = telebot.types.InlineKeyboardMarkup()
+        # button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
+        # button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
+        # keyboard.row(button1, button2)
     #     processor = DATA_PROCESSOR.get(pipeline_or_branch)
     #     if not processor:
     #         print('NO PROCESSOR FOR', pipeline_or_branch)
