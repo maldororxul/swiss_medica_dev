@@ -131,6 +131,20 @@
 
             // Saving pivot data to Excel
 
+            function convertToJSDate(data) {
+              for (const key in data) {
+                if (typeof data[key] === 'string') {
+                  const date = new Date(data[key]);
+                  if (!isNaN(date)) {
+                    data[key] = date;
+                  }
+                } else if (typeof data[key] === 'object') {
+                  data[key] = convertToJSDate(data[key]);
+                }
+              }
+              return data;
+            }
+
             let dataAccumulated = [];
 
             socket.on('pivot_data', function(event) {
@@ -149,16 +163,9 @@
               if (event.done) {
                 // If 'done' is true, save all the accumulated data to Excel
                 const rows = dataAccumulated.map(item => {
-                  // Convert date strings back to JavaScript Date objects
-                  for (const key in item.data) {
-                    if (typeof item.data[key] === 'string') {
-                      const date = new Date(item.data[key]);
-                      if (!isNaN(date)) {
-                        item.data[key] = date;
-                      }
-                    }
-                  }
-                  return Object.values(item.data);
+                  // Convert date and datetime strings back to JavaScript Date objects
+                  const data = convertToJSDate(item.data);
+                  return Object.values(data);
                 });
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -166,7 +173,6 @@
                 XLSX.writeFile(wb, event.file_name + '.xlsx');
               }
             });
-
             // Handle buttons clicks
             function getAmoDataSm() {
                 var dateTime = $('#time-sm').val();
