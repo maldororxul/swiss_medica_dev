@@ -110,6 +110,8 @@
                 </div>
             </div>
         </div>
+        <!-- Include SheetJS (XLSX) library -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
         <script type="text/javascript" charset="utf-8">
             let protocol = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "http" : "https";
             let socket = io.connect(protocol + '://' + document.domain + ':' + location.port);
@@ -125,6 +127,31 @@
                 if($('#events').children().length > 1000){
                     $('#events').children().last().remove();
                 }
+            });
+
+            // Saving pivot data to Excel
+
+            let dataAccumulated = [];
+
+            socket.on('pivot_data', function(event) {
+              if (event.start) {
+                // If 'start' is true, prepare an empty list for the upcoming data
+                dataAccumulated = [];
+              }
+
+              if (event.data && event.data.length > 0) {
+                // If 'data' is not empty, append records to the list
+                dataAccumulated.push(...event.data);
+              }
+
+              if (event.done) {
+                // If 'done' is true, save all the accumulated data to Excel
+                const rows = dataAccumulated.map(item => [item.field1, item.field2, ...]); // Modify this based on your data structure
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                XLSX.utils.book_append_sheet(wb, ws, 'Data');
+                XLSX.writeFile(wb, event.file_name + '.xlsx');
+              }
             });
 
             // Handle buttons clicks

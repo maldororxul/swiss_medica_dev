@@ -3,7 +3,7 @@ __author__ = 'ke.mizonov'
 import os
 from datetime import datetime
 from apscheduler.jobstores.base import JobLookupError
-from flask import render_template, current_app, redirect, url_for, request, send_file, send_from_directory
+from flask import render_template, current_app, redirect, url_for, request, send_file
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
@@ -15,6 +15,11 @@ from app.utils.excel import ExcelClient
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
     'CDV': DrvorobjevAPIClient,
+}
+
+DATA_MODEL = {
+    'sm': SMData,
+    'cdv': CDVData
 }
 
 
@@ -123,24 +128,38 @@ def send_auth_code():
     return redirect(url_for('main.get_token'))
 
 
+def data_to_excel(branch: str):
+    model = DATA_MODEL.get(branch)
+    portion_size = 1000
+    offset = 0
+    while True:
+        collection = model.query.limit(portion_size).offset(offset).all()
+        if not collection:
+            break
+        socketio.emit('pivot_data', {
+            'start': True,
+            'data': [(x.to_dict() or {}).get('data') for x in collection],
+            'done': False,
+            'file_name': f'data_{branch}'
+        })
+        offset += portion_size
+    return render_template('index.html')
+
+
 @bp.route('/data_excel_sm')
 def data_to_excel_sm():
-    collection = SMData.query.all()
-    data = [(x.to_dict() or {}).get('data') for x in collection]
-    ExcelClient(file_path=os.path.join('app', 'data'), file_name='data_sm').write(data=[
-        ExcelClient.Data(data=data)
-    ])
-    return send_file(os.path.join('data', 'data_sm.xlsx'), as_attachment=True)
+    return data_to_excel(branch='sm')
 
 
 @bp.route('/data_excel_cdv')
 def data_to_excel_cdv():
-    collection = CDVData.query.all()
-    data = [(x.to_dict() or {}).get('data') for x in collection]
-    ExcelClient(file_path=os.path.join('app', 'data'), file_name='data_cdv').write(data=[
-        ExcelClient.Data(data=data)
-    ])
-    return send_file(os.path.join('data', 'data_cdv.xlsx'), as_attachment=True)
+    # collection = CDVData.query.all()
+    # data = [(x.to_dict() or {}).get('data') for x in collection]
+    # ExcelClient(file_path=os.path.join('app', 'data'), file_name='data_cdv').write(data=[
+    #     ExcelClient.Data(data=data)
+    # ])
+    # return send_file(os.path.join('data', 'data_cdv.xlsx'), as_attachment=True)
+    return data_to_excel(branch='cdv')
 
 
 @bp.route('/get_amo_data_sm')
