@@ -4,7 +4,8 @@ from typing import Optional, Dict, Callable
 import telebot
 from flask import request, current_app, render_template
 from app.main import bp
-from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR
+from app.main.processors import DATA_PROCESSOR
+from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch
 from config import Config
 
 BOTS = {
@@ -91,7 +92,7 @@ def set_telegram_webhooks():
             print('NO PROCESSOR FOR', pipeline_or_branch)
             continue
         with app.app_context():
-            processor.log.add(text=f'Telegram webhooks were set')
+            processor().log.add(text=f'Telegram webhooks were set')
     return render_template('index.html')
 
 
