@@ -1,1 +1,1 @@
-web: gunicorn --preload --max-requests 100 --worker-class eventlet -w 1 wsgi:app --log-level=debug
+web: gunicorn --worker-class eventlet -w 1 wsgi:app --log-level=debug
