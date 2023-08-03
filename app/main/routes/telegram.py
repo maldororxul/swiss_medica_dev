@@ -4,8 +4,7 @@ from typing import Optional, Dict, Callable
 import telebot
 from flask import request, current_app, render_template
 from app.main import bp
-from app.main.processors import DATA_PROCESSOR
-from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch
+from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR
 from config import Config
 
 BOTS = {
