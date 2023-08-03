@@ -87,8 +87,8 @@
             </div>
             <div class="row">
                 <div class="col-12 col-md-10 offset-md-1">
-                    <button class="btn btn-custom mt-3" id="download_pivot_data_sm">Download SM data</button>
-                    <button class="btn btn-custom mt-3" id="download_pivot_data_cdv">Download CDV data</button>
+                    <button class="btn btn-custom mt-3" id="download_pivot_data_sm">Download pivot data SM</button>
+                    <button class="btn btn-custom mt-3" id="download_pivot_data_cdv">Download pivot data CDV</button>
                     <div class="button-group">
                         <div class="input-group mb-3">
                             <span class="input-group-text mr-3" id="inputGroup-sizing-default-sm">{{ sm_df }} - {{ sm_dt }}</span>
@@ -131,6 +131,11 @@
             });
 
             // Saving pivot data to Excel
+
+            function sanitize(str) {
+              return str.replace(/[^\x20-\x7E]/g, '');
+            }
+
             let dataAccumulated = [];
             let headersReceived = false;
             let headers = [];
@@ -153,21 +158,29 @@
                 dataAccumulated.push(...event.data);
               }
 
-              if (event.done) {
-                // If 'done' is true, save all the accumulated data to Excel
+            if (event.done) {
+                // Add headers to the beginning of data
+                dataAccumulated.unshift(headers);
+
+                // Sanitize data
+                let sanitizedData = dataAccumulated.map(item => {
+                    let newItem = {...item};
+                    for(let key in newItem) {
+                        if(typeof newItem[key] === 'string') {
+                            newItem[key] = sanitize(newItem[key]);
+                        }
+                    }
+                    return Object.values(newItem);
+                });
+
                 const wb = XLSX.utils.book_new();
-
-                // Add headers as the first row
-                // dataAccumulated.unshift(headers);
-                const rows = [headers].concat(dataAccumulated.map(item => Object.values(item)));
-
-                const ws = XLSX.utils.aoa_to_sheet(rows, {dateNF: "YYYY-MM-DD HH:MM:SS"});
+                const ws = XLSX.utils.aoa_to_sheet(sanitizedData, {dateNF: "YYYY-MM-DD HH:MM:SS"});
                 XLSX.utils.book_append_sheet(wb, ws, 'Data');
 
                 // Create Blob and save it using FileSaver.js
                 const blob = new Blob([XLSX.write(wb, {bookType:'xlsx', type:'array'})], {type: "application/octet-stream"});
                 saveAs(blob, event.file_name + '.xlsx');
-              }
+            }
 
             // Handle buttons clicks
             function getAmoDataSm() {
