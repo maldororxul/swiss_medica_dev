@@ -25,7 +25,7 @@ def start_autocalls():
             seconds=int(Config().autocall_interval),
             max_instances=1
         )
-        processor = DATA_PROCESSOR.get('swissmedica')()
+        processor = DATA_PROCESSOR.get(branch)()
         if not app.scheduler.running:
             app.scheduler.start()
         with app.app_context():

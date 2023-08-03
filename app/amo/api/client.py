@@ -356,12 +356,12 @@ class APIClient:
 
     def test_request(self):
         """ Проверочный запрос, чтобы убедиться, что токен жив """
-        # todo подобрать пригодный запрос !!!
         response = requests.get(url=self.__get_url(f'leads/pipelines'), headers=self.headers)
-        json_response = response.json()
-        if json_response.get('status') == 401:
+        if response.status_code == 401:
             self.refresh_token()
             self._set_auth_headers()
+        elif response.status_code != 200:
+            print(f'{self.sub_domain} amo test_request responded with: {response.status_code} {response.text}')
 
     def _get_contacts_by_id(self, _ids: List[int]) -> List[Dict]:
         """ Получить список контактов
