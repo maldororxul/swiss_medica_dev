@@ -53,19 +53,19 @@ def make_send_welcome_handler(tg_bot):
     return send_welcome
 
 
-# def make_buttons_handlers(tg_bot):
-#     @tg_bot.callback_query_handler(func=lambda call: True)
-#     def handle_button_click(call):
-#         if call.data == 'btn_test':
-#             tg_bot.send_message(call.message.chat.id, "Button clicked!")
-#         elif call.data == 'button2':
-#             tg_bot.send_message(call.message.chat.id, "Button 2 clicked!")
-#     return handle_button_click
+def make_buttons_handlers(tg_bot):
+    @tg_bot.callback_query_handler(func=lambda call: True)
+    def handle_button_click(call):
+        if call.data == 'btn_test':
+            tg_bot.send_message(call.message.chat.id, "Button clicked!")
+        elif call.data == 'button2':
+            tg_bot.send_message(call.message.chat.id, "Button 2 clicked!")
+    return handle_button_click
 
 
 for bot in BOTS.values():
     make_send_welcome_handler(bot)
-    # make_buttons_handlers(bot)
+    make_buttons_handlers(bot)
 
 
 @bp.route('/set_telegram_webhooks')
@@ -82,10 +82,10 @@ def set_telegram_webhooks():
             _bot.set_webhook(url=config.heroku_url + token)
         except Exception as exc:
             print('_bot.set_webhook error:', exc)
-        # keyboard = telebot.types.InlineKeyboardMarkup()
-        # button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
-        # button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
-        # keyboard.row(button1, button2)
+        keyboard = telebot.types.InlineKeyboardMarkup()
+        button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
+        button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
+        keyboard.row(button1, button2)
         processor = DATA_PROCESSOR.get(pipeline_or_branch)
         if not processor:
             print('NO PROCESSOR FOR', pipeline_or_branch)
