@@ -114,151 +114,90 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
         <script type="text/javascript" charset="utf-8">
-            let protocol = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "http" : "https";
-            let socket = io.connect(protocol + '://' + document.domain + ':' + location.port);
+          let protocol = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "http" : "https";
+          let socket = io.connect(protocol + '://' + document.domain + ':' + location.port);
 
-            // Connected event
-            socket.on('connect', function() {
-                console.log('Connected to the server');
-            });
+          socket.on('connect', function() {
+            console.log('Connected to the server');
+          });
 
-            // Send an event to the server
-            socket.on('new_event', function(event) {
-                $('#events').prepend('<p>' + event.msg + '</p>');
-                if($('#events').children().length > 1000){
-                    $('#events').children().last().remove();
-                }
-            });
+          socket.on('new_event', function(event) {
+            $('#events').prepend('<p>' + event.msg + '</p>');
+            if ($('#events').children().length > 1000) {
+              $('#events').children().last().remove();
+            }
+          });
 
-            // Saving pivot data to Excel
+          function sanitize(str) {
+            return str.replace(/[^\x20-\x7E]/g, '');
+          }
 
-            function sanitize(str) {
-              return str.replace(/[^\x20-\x7E]/g, '');
+          let dataAccumulated = [];
+          let headersReceived = false;
+          let headers = [];
+
+          socket.on('pivot_data', function(event) {
+            if (event.start) {
+              dataAccumulated = [];
+              headersReceived = false;
             }
 
-            let dataAccumulated = [];
-            let headersReceived = false;
-            let headers = [];
+            if (event.headers && !headersReceived) {
+              headers = event.headers;
+              headersReceived = true;
+            }
 
-            socket.on('pivot_data', function(event) {
-              if (event.start) {
-                // If 'start' is true, prepare an empty list for the upcoming data
-                dataAccumulated = [];
-                headersReceived = false;
-              }
-
-              if (event.headers && !headersReceived) {
-                // If 'headers' is not empty and not received before, save them
-                headers = event.headers;
-                headersReceived = true;
-              }
-
-              if (event.data && event.data.length > 0) {
-                // If 'data' is not empty, append records to the list
-                dataAccumulated.push(...event.data);
-              }
+            if (event.data && event.data.length > 0) {
+              dataAccumulated.push(...event.data);
+            }
 
             if (event.done) {
-                // Add headers to the beginning of data
-                dataAccumulated.unshift(headers);
+              dataAccumulated.unshift(headers);
 
-                // Sanitize data
-                let sanitizedData = dataAccumulated.map(item => {
-                    let newItem = {...item};
-                    for(let key in newItem) {
-                        if(typeof newItem[key] === 'string') {
-                            newItem[key] = sanitize(newItem[key]);
-                        }
-                    }
-                    return Object.values(newItem);
-                });
+              let sanitizedData = dataAccumulated.map(item => {
+                let newItem = { ...item };
+                for (let key in newItem) {
+                  if (typeof newItem[key] === 'string') {
+                    newItem[key] = sanitize(newItem[key]);
+                  }
+                }
+                return Object.values(newItem);
+              });
 
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.aoa_to_sheet(sanitizedData, {dateNF: "YYYY-MM-DD HH:MM:SS"});
-                XLSX.utils.book_append_sheet(wb, ws, 'Data');
+              const wb = XLSX.utils.book_new();
+              const ws = XLSX.utils.aoa_to_sheet(sanitizedData, { dateNF: "YYYY-MM-DD HH:MM:SS" });
+              XLSX.utils.book_append_sheet(wb, ws, 'Data');
 
-                // Create Blob and save it using FileSaver.js
-                const blob = new Blob([XLSX.write(wb, {bookType:'xlsx', type:'array'})], {type: "application/octet-stream"});
-                saveAs(blob, event.file_name + '.xlsx');
+              const blob = new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: "application/octet-stream" });
+              saveAs(blob, event.file_name + '.xlsx');
             }
+          });
 
-            // Handle buttons clicks
-            function getAmoDataSm() {
-                var dateTime = $('#time-sm').val();
-                $.get('/get_amo_data_sm', { time: dateTime }, function(response) {
-                    console.log('get_amo_data_sm');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            function getAmoDataCdv() {
-                var dateTime = $('#time-cdv').val();
-                $.get('/get_amo_data_cdv', { time: dateTime }, function(response) {
-                    console.log('get_amo_data_cdv');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            function startAutocalls() {
-                $.get('/start_autocalls', {}, function(response) {
-                    console.log('start_autocalls');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            function setTelegramWebhooks() {
-                $.get('/set_telegram_webhooks', {}, function(response) {
-                    console.log('set_telegram_webhooks');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            function buildPivotDataSm() {
-                $.get('/start_update_pivot_data_sm', {}, function(response) {
-                    console.log('start_update_pivot_data_sm');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            function buildPivotDataCdv() {
-                $.get('/start_update_pivot_data_cdv', {}, function(response) {
-                    console.log('start_update_pivot_data_cdv');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            function downloadPivotDataSm() {
-                $.get('/data_excel_sm', {}, function(response) {
-                    console.log('data_excel_sm');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            function downloadPivotDataCdv() {
-                $.get('/data_excel_cdv', {}, function(response) {
-                    console.log('data_excel_cdv');
-                });
-                // Make the button lose focus after it's clicked
-                $(this).blur();
-            }
-
-            $(document).ready(function() {
-                $('#download_pivot_data_sm').on('click', downloadPivotDataSm);
-                $('#download_pivot_data_cdv').on('click', downloadPivotDataCdv);
-                $('#get_amo_data_sm').on('click', getAmoDataSm);
-                $('#build_pivot_data_sm').on('click', buildPivotDataSm);
-                $('#get_amo_data_cdv').on('click', getAmoDataCdv);
-                $('#build_pivot_data_cdv').on('click', buildPivotDataCdv);
-                $('#start_autocalls').on('click', startAutocalls);
-                $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
+          function makeGetRequest(endpoint, params, msg) {
+            $.get(endpoint, params, function(response) {
+              console.log(msg);
             });
+          }
+
+          $(document).ready(function() {
+            const getAmoDataSm = () => makeGetRequest('/get_amo_data_sm', { time: $('#time-sm').val() }, 'get_amo_data_sm');
+            const getAmoDataCdv = () => makeGetRequest('/get_amo_data_cdv', { time: $('#time-cdv').val() }, 'get_amo_data_cdv');
+            const startAutocalls = () => makeGetRequest('/start_autocalls', {}, 'start_autocalls');
+            const setTelegramWebhooks = () => makeGetRequest('/set_telegram_webhooks', {}, 'set_telegram_webhooks');
+            const buildPivotDataSm = () => makeGetRequest('/start_update_pivot_data_sm', {}, 'start_update_pivot_data_sm');
+            const buildPivotDataCdv = () => makeGetRequest('/start_update_pivot_data_cdv', {}, 'start_update_pivot_data_cdv');
+            const downloadPivotDataSm = () => makeGetRequest('/data_excel_sm', {}, 'data_excel_sm');
+            const downloadPivotDataCdv = () => makeGetRequest('/data_excel_cdv', {}, 'data_excel_cdv');
+
+            $('#download_pivot_data_sm').on('click', downloadPivotDataSm);
+            $('#download_pivot_data_cdv').on('click', downloadPivotDataCdv);
+            $('#get_amo_data_sm').on('click', getAmoDataSm);
+            $('#build_pivot_data_sm').on('click', buildPivotDataSm);
+            $('#get_amo_data_cdv').on('click', getAmoDataCdv);
+            $('#build_pivot_data_cdv').on('click', buildPivotDataCdv);
+            $('#start_autocalls').on('click', startAutocalls);
+            $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
+          });
         </script>
     </body>
 </html>
