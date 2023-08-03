@@ -155,7 +155,7 @@
             }
 
             if (event.done) {
-              dataAccumulated.unshift(headers);
+              dataAccumulated.unshift([headers]);
 
               let sanitizedData = dataAccumulated.map(item => {
                 let newItem = { ...item };
