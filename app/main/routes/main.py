@@ -141,11 +141,11 @@ def data_to_excel(branch: str):
     model = DATA_MODEL.get(branch)
     portion_size = 1000
     offset = 0
-    print(f'sending {branch} pivot data started')
+    # print(f'sending {branch} pivot data started')
     socketio.emit('pivot_data', {
         'start': True,
         'data': [],
-        'headers': [],
+        'headers': None,
         'done': False,
         'file_name': None
     })
@@ -157,22 +157,22 @@ def data_to_excel(branch: str):
             break
         if not headers:
             headers = [[x for x in collection[0].to_dict().get('data').keys()]]
-            print(f'headers: {headers} ')
+            # print(f'headers: {headers} ')
         data = [
             (json.loads(json.dumps(x.to_dict(), default=convert_date_to_str)) or {}).get('data')
             for x in collection
         ]
         num += 1
-        print(f'sending {branch} pivot data [{num} :: {len(data)}]')
+        # print(f'sending {branch} pivot data [{num} :: {len(data)}]')
         socketio.emit('pivot_data', {
             'start': False,
             'data': data,
-            'headers': [],
+            'headers': headers,
             'done': False,
             'file_name': None
         })
         offset += portion_size
-    print(f'sending {branch} pivot data stopped')
+    # print(f'sending {branch} pivot data stopped')
     socketio.emit('pivot_data', {
         'start': False,
         'data': [],
