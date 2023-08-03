@@ -148,9 +148,11 @@ def data_to_excel(branch: str):
         collection = model.query.limit(portion_size).offset(offset).all()
         if not collection:
             break
+        data = [(x.to_dict() or {}).get('data') for x in collection]
+        data = [{'data': {k: v.isoformat() if isinstance(v, datetime) else v for k, v in row.items()}} for row in data]
         socketio.emit('pivot_data', {
             'start': False,
-            'data': json.dumps([(x.to_dict() or {}).get('data') for x in collection], default=str),
+            'data': data,
             'done': False,
             'file_name': f'data_{branch}'
         })

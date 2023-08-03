@@ -134,6 +134,8 @@
             let dataAccumulated = [];
 
             socket.on('pivot_data', function(event) {
+              event = JSON.parse(event); // Parse the JSON data
+
               if (event.start) {
                 // If 'start' is true, prepare an empty list for the upcoming data
                 dataAccumulated = [];
@@ -146,7 +148,18 @@
 
               if (event.done) {
                 // If 'done' is true, save all the accumulated data to Excel
-                const rows = dataAccumulated.map(item => Object.values(item));
+                const rows = dataAccumulated.map(item => {
+                  // Convert date strings back to JavaScript Date objects
+                  for (const key in item.data) {
+                    if (typeof item.data[key] === 'string') {
+                      const date = new Date(item.data[key]);
+                      if (!isNaN(date)) {
+                        item.data[key] = date;
+                      }
+                    }
+                  }
+                  return Object.values(item.data);
+                });
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(rows);
                 XLSX.utils.book_append_sheet(wb, ws, 'Data');

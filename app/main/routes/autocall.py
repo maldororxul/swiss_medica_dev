@@ -1,5 +1,8 @@
 """ Маршруты для работы с Автообзвоном """
 __author__ = 'ke.mizonov'
+
+import time
+
 from apscheduler.jobstores.base import JobLookupError
 from flask import request, current_app, render_template
 from app import socketio
@@ -30,6 +33,8 @@ def start_autocalls():
             app.scheduler.start()
         with app.app_context():
             processor.log.add(text=f'Autocalls scheduler started')
+        # чтобы планировщики не работали одновременно, зададим паузу
+        time.sleep(600)
     return render_template('index.html')
 
 
