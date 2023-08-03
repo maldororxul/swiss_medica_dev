@@ -138,17 +138,29 @@ def data_to_excel(branch: str):
     model = DATA_MODEL.get(branch)
     portion_size = 1000
     offset = 0
+    socketio.emit('pivot_data', {
+        'start': True,
+        'data': [],
+        'done': False,
+        'file_name': None
+    })
     while True:
         collection = model.query.limit(portion_size).offset(offset).all()
         if not collection:
             break
         socketio.emit('pivot_data', {
-            'start': True,
-            'data': [(x.to_dict() or {}).get('data') for x in collection],
+            'start': False,
+            'data': json.dumps([(x.to_dict() or {}).get('data') for x in collection], json_encoder=CustomJSONEncoder),
             'done': False,
             'file_name': f'data_{branch}'
-        }, json_encoder=CustomJSONEncoder)
+        })
         offset += portion_size
+    socketio.emit('pivot_data', {
+        'start': False,
+        'data': [],
+        'done': True,
+        'file_name': None
+    })
     return render_template('index.html')
 
 

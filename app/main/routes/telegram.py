@@ -97,7 +97,6 @@ def set_telegram_webhooks():
 
 @bp.route('/new_lead', methods=['POST'])
 def new_lead():
-    print('calling new_lead handler')
     return reply_on_lead_event(_request=request, msg_builder=handle_new_lead)
 
 
