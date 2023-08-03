@@ -146,8 +146,7 @@
             }
 
             if (event.headers && !headersReceived) {
-              headers = event.headers;
-              console.log(headers);
+              headers = event.headers.map(header => `'${header}`);
               headersReceived = true;
             }
 
