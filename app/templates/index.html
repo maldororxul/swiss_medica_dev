@@ -158,6 +158,7 @@
                 const wb = XLSX.utils.book_new();
 
                 // Add headers as the first row
+                // dataAccumulated.unshift(headers);
                 const rows = [headers].concat(dataAccumulated.map(item => Object.values(item)));
 
                 const ws = XLSX.utils.aoa_to_sheet(rows, {dateNF: "YYYY-MM-DD HH:MM:SS"});

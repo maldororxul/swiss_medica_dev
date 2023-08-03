@@ -156,7 +156,8 @@ def data_to_excel(branch: str):
         if not collection:
             break
         if not headers:
-            headers = [x for x in collection[0].to_dict()]
+            headers = [x for x in collection[0].to_dict().keys()]
+            print(f'headers: {headers} ')
         data = [
             (json.loads(json.dumps(x.to_dict(), default=convert_date_to_str)) or {}).get('data')
             for x in collection
@@ -175,7 +176,7 @@ def data_to_excel(branch: str):
     socketio.emit('pivot_data', {
         'start': False,
         'data': [],
-        'headers': [],
+        'headers': headers,
         'done': True,
         'file_name': f'data_{branch}'
     })
