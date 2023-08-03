@@ -146,7 +146,7 @@
 
               if (event.done) {
                 // If 'done' is true, save all the accumulated data to Excel
-                const rows = dataAccumulated.map(item => [item.field1, item.field2, ...]); // Modify this based on your data structure
+                dataAccumulated.push(...event.data);
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(rows);
                 XLSX.utils.book_append_sheet(wb, ws, 'Data');
