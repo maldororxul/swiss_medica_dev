@@ -135,6 +135,12 @@
             return str.replace(/[^\x20-\x7E]/g, '');
           }
 
+          // This function tries to parse a string to Date, and if it succeeds, it returns the Date, otherwise, the original string.
+            function parseDate(str) {
+              const date = new Date(str);
+              return isNaN(date.getTime()) ? str : date;
+            }
+
           let dataAccumulated = [];
           let headersReceived = false;
           let headers = [];
@@ -155,17 +161,17 @@
             }
 
             if (event.done) {
-              dataAccumulated.unshift([headers]);
+              dataAccumulated.unshift(headers);
 
-              let sanitizedData = dataAccumulated.map(item => {
-                let newItem = { ...item };
-                for (let key in newItem) {
-                  if (typeof newItem[key] === 'string') {
-                    newItem[key] = sanitize(newItem[key]);
+                let sanitizedData = dataAccumulated.map(item => {
+                  let newItem = {...item};
+                  for(let key in newItem) {
+                    if(typeof newItem[key] === 'string') {
+                      newItem[key] = parseDate(sanitize(newItem[key]));
+                    }
                   }
-                }
-                return Object.values(newItem);
-              });
+                  return Object.values(newItem);
+                });
 
               const wb = XLSX.utils.book_new();
               const ws = XLSX.utils.aoa_to_sheet(sanitizedData, { dateNF: "YYYY-MM-DD HH:MM:SS" });
