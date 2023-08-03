@@ -22,11 +22,11 @@ DATA_MODEL = {
 }
 
 
-class CustomJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, date) or isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+# class CustomJSONEncoder(json.JSONEncoder):
+#     def default(self, obj):
+#         if isinstance(obj, date) or isinstance(obj, datetime):
+#             return obj.isoformat()
+#         return super().default(obj)
 
 
 def start_get_data_from_amo_scheduler(branch: str):
@@ -150,7 +150,7 @@ def data_to_excel(branch: str):
             break
         socketio.emit('pivot_data', {
             'start': False,
-            'data': json.dumps([(x.to_dict() or {}).get('data') for x in collection], json_encoder=CustomJSONEncoder),
+            'data': json.dumps([(x.to_dict() or {}).get('data') for x in collection], default=str),
             'done': False,
             'file_name': f'data_{branch}'
         })
