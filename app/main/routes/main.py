@@ -1,16 +1,15 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
-import os
-from datetime import datetime
+import json
+from datetime import date, datetime
 from apscheduler.jobstores.base import JobLookupError
-from flask import render_template, current_app, redirect, url_for, request, send_file
+from flask import render_template, current_app, redirect, url_for, request
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import get_data_from_amo, update_pivot_data
 from app.models.data import SMData, CDVData
-from app.utils.excel import ExcelClient
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
@@ -21,6 +20,13 @@ DATA_MODEL = {
     'sm': SMData,
     'cdv': CDVData
 }
+
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, date) or isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 
 def start_get_data_from_amo_scheduler(branch: str):
@@ -141,7 +147,7 @@ def data_to_excel(branch: str):
             'data': [(x.to_dict() or {}).get('data') for x in collection],
             'done': False,
             'file_name': f'data_{branch}'
-        })
+        }, json_encoder=CustomJSONEncoder)
         offset += portion_size
     return render_template('index.html')
 
