@@ -4,7 +4,7 @@ import json
 from datetime import date, datetime
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request
-from app import db, socketio, CustomJSONEncoder
+from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
@@ -20,13 +20,6 @@ DATA_MODEL = {
     'sm': SMData,
     'cdv': CDVData
 }
-
-
-# class CustomJSONEncoder(json.JSONEncoder):
-#     def default(self, obj):
-#         if isinstance(obj, date) or isinstance(obj, datetime):
-#             return obj.isoformat()
-#         return super().default(obj)
 
 
 def start_get_data_from_amo_scheduler(branch: str):
@@ -134,36 +127,42 @@ def send_auth_code():
     return redirect(url_for('main.get_token'))
 
 
+def convert_date_to_str(obj):
+    if isinstance(obj, date):
+        return obj.strftime("%Y-%m-%d")
+    elif isinstance(obj, datetime):
+        return obj.strftime("%Y-%m-%d %H:%M:%S")
+    raise TypeError("Type not serializable")
+
+
 def data_to_excel(branch: str):
     model = DATA_MODEL.get(branch)
     portion_size = 1000
     offset = 0
-    socketio.emit('pivot_data', json.dumps({
+    socketio.emit('pivot_data', {
         'start': True,
         'data': [],
         'done': False,
         'file_name': None
-    }, cls=CustomJSONEncoder))  # Use the custom encoder here
+    })
     while True:
         collection = model.query.limit(portion_size).offset(offset).all()
         if not collection:
             break
-        # Convert datetime objects to strings in ISO format
-        data = [(x.to_dict() or {}).get('data') for x in collection]
-        data = [{'data': {k: v.isoformat() if isinstance(v, datetime) else v for k, v in row.items()}} for row in data]
-        socketio.emit('pivot_data', json.dumps({
+        data = [(json.loads(json.dumps(x.to_dict(), default=convert_date_to_str)) or {}).get('data') for x in collection]
+        socketio.emit('pivot_data', {
             'start': False,
             'data': data,
             'done': False,
             'file_name': f'data_{branch}'
-        }, cls=CustomJSONEncoder))  # Use the custom encoder here
+        })
         offset += portion_size
-    socketio.emit('pivot_data', json.dumps({
+    socketio.emit('pivot_data', {
         'start': False,
         'data': [],
         'done': True,
         'file_name': None
-    }, cls=CustomJSONEncoder))  # Use the custom encoder here
+    })
     return render_template('index.html')
 
 

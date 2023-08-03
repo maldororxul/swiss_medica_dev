@@ -10,7 +10,7 @@ from flask import Flask
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.commands import create_tables
 from config import Config
-from app.extensions import db, socketio, CustomJSONEncoder
+from app.extensions import db, socketio
 
 
 def create_app() -> Flask:
@@ -26,7 +26,6 @@ def create_app() -> Flask:
     app.logger.handlers = gunicorn_logger.handlers
     app.logger.setLevel(gunicorn_logger.level)
     # Initialize Flask extensions here
-    app.json_encoder = CustomJSONEncoder
     db.init_app(app)
     socketio.init_app(app, async_mode='eventlet', cors_allowed_origins="*")
     app.scheduler = BackgroundScheduler()
