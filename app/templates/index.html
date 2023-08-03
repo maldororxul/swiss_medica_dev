@@ -167,10 +167,21 @@
                   const data = convertToJSDate(item.data);
                   return Object.values(data);
                 });
-                const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, 'Data');
-                XLSX.writeFile(wb, event.file_name + '.xlsx');
+                const wbout = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+
+                // Create an anchor link and simulate a click to trigger the download
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = event.file_name + '.xlsx';
+                a.click();
+
+                // Clean up the URL object after the download
+                URL.revokeObjectURL(url);
               }
             });
 

@@ -33,8 +33,6 @@ def start_autocalls():
             app.scheduler.start()
         with app.app_context():
             processor.log.add(text=f'Autocalls scheduler started')
-        # чтобы планировщики не работали одновременно, зададим паузу
-        time.sleep(600)
     return render_template('index.html')
 
 
