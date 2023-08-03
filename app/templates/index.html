@@ -132,44 +132,41 @@
 
             // Saving pivot data to Excel
             let dataAccumulated = [];
+            let headersReceived = false;
+            let headers = [];
 
             socket.on('pivot_data', function(event) {
               if (event.start) {
                 // If 'start' is true, prepare an empty list for the upcoming data
                 dataAccumulated = [];
+                headersReceived = false;
+              }
+
+              if (event.headers && !headersReceived) {
+                // If 'headers' is not empty and not received before, save them
+                headers = event.headers;
+                headersReceived = true;
               }
 
               if (event.data && event.data.length > 0) {
                 // If 'data' is not empty, append records to the list
-                // And convert date and datetime strings back to JavaScript Date objects
-                event.data.forEach(item => {
-                  for (let key in item) {
-                    // Assuming your datetime string is formatted as 'YYYY-MM-DD HH:MM:SS' and date string as 'YYYY-MM-DD'
-                    const datetimePattern = /\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/;
-                    const datePattern = /\d{4}-\d{2}-\d{2}/;
-                    if (typeof item[key] === 'string' && datetimePattern.test(item[key])) {
-                      item[key] = new Date(item[key]);
-                    } else if (typeof item[key] === 'string' && datePattern.test(item[key])) {
-                      item[key] = new Date(item[key] + 'T00:00:00');
-                    }
-                  }
-                });
-
                 dataAccumulated.push(...event.data);
               }
 
-                if (event.done) {
-                    // If 'done' is true, save all the accumulated data to Excel
-                    const rows = dataAccumulated.map(item => Object.values(item));
-                    const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.aoa_to_sheet(rows, {dateNF: "YYYY-MM-DD HH:MM:SS"});
-                    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+              if (event.done) {
+                // If 'done' is true, save all the accumulated data to Excel
+                const wb = XLSX.utils.book_new();
 
-                    // Create Blob and save it using FileSaver.js
-                    const blob = new Blob([XLSX.write(wb, {bookType:'xlsx', type:'array'})], {type: "application/octet-stream"});
-                    saveAs(blob, event.file_name + '.xlsx');
-                }
-            });
+                // Add headers as the first row
+                const rows = [headers].concat(dataAccumulated.map(item => Object.values(item)));
+
+                const ws = XLSX.utils.aoa_to_sheet(rows, {dateNF: "YYYY-MM-DD HH:MM:SS"});
+                XLSX.utils.book_append_sheet(wb, ws, 'Data');
+
+                // Create Blob and save it using FileSaver.js
+                const blob = new Blob([XLSX.write(wb, {bookType:'xlsx', type:'array'})], {type: "application/octet-stream"});
+                saveAs(blob, event.file_name + '.xlsx');
+              }
 
             // Handle buttons clicks
             function getAmoDataSm() {

@@ -145,14 +145,18 @@ def data_to_excel(branch: str):
     socketio.emit('pivot_data', {
         'start': True,
         'data': [],
+        'headers': [],
         'done': False,
         'file_name': None
     })
     num = 0
+    headers = []
     while True:
         collection = model.query.limit(portion_size).offset(offset).all()
         if not collection:
             break
+        if not headers:
+            headers = [x for x in collection[0].to_dict()]
         data = [
             (json.loads(json.dumps(x.to_dict(), default=convert_date_to_str)) or {}).get('data')
             for x in collection
@@ -162,6 +166,7 @@ def data_to_excel(branch: str):
         socketio.emit('pivot_data', {
             'start': False,
             'data': data,
+            'headers': [],
             'done': False,
             'file_name': None
         })
@@ -170,6 +175,7 @@ def data_to_excel(branch: str):
     socketio.emit('pivot_data', {
         'start': False,
         'data': [],
+        'headers': [],
         'done': True,
         'file_name': f'data_{branch}'
     })
