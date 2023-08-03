@@ -156,7 +156,7 @@ def data_to_excel(branch: str):
         if not collection:
             break
         if not headers:
-            headers = [x for x in collection[0].to_dict().get('data').keys()]
+            headers = [[x for x in collection[0].to_dict().get('data').keys()]]
             print(f'headers: {headers} ')
         data = [
             (json.loads(json.dumps(x.to_dict(), default=convert_date_to_str)) or {}).get('data')
