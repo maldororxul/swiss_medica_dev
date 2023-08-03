@@ -2,7 +2,7 @@
 <html>
     <head>
         <title>Swiss Medica</title>
-        <link rel='shortcut icon' type='image/png' href='favicon.png'/>
+        <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" />
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
         <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
@@ -157,14 +157,24 @@
                 dataAccumulated.push(...event.data);
               }
 
-              if (event.done) {
-                // If 'done' is true, save all the accumulated data to Excel
-                const rows = dataAccumulated.map(item => Object.values(item));
-                const wb = XLSX.utils.book_new();
-                const ws = XLSX.utils.aoa_to_sheet(rows, {dateNF:"YYYY-MM-DD HH:MM:SS"});
-                XLSX.utils.book_append_sheet(wb, ws, 'Data');
-                XLSX.writeFile(wb, event.file_name + '.xlsx');
-              }
+                if (event.done) {
+                  // If 'done' is true, save all the accumulated data to Excel
+                  const rows = dataAccumulated.map(item => Object.values(item));
+                  const wb = XLSX.utils.book_new();
+                  const ws = XLSX.utils.aoa_to_sheet(rows, {dateNF: "YYYY-MM-DD HH:MM:SS"});
+                  XLSX.utils.book_append_sheet(wb, ws, 'data');
+
+                  // Create Blob and download link
+                  const blob = XLSX.write(wb, {bookType: 'xlsx', type: 'blob'});
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = event.file_name + '.xlsx';
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                }
             });
 
             // Handle buttons clicks

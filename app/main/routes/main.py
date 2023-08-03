@@ -3,7 +3,7 @@ __author__ = 'ke.mizonov'
 import json
 from datetime import date, datetime
 from apscheduler.jobstores.base import JobLookupError
-from flask import render_template, current_app, redirect, url_for, request
+from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
@@ -47,7 +47,8 @@ def start_get_data_from_amo_scheduler(branch: str):
         app.scheduler.start()
     with app.app_context():
         processor.log.add(text=f'Amo data loader has started', log_type=1)
-    return render_template('index.html')
+    return Response(status=204)
+    # return render_template('index.html')
 
 
 def start_update_pivot_data(branch: str):
@@ -74,7 +75,8 @@ def start_update_pivot_data(branch: str):
         app.scheduler.start()
     with app.app_context():
         processor.log.add(text=f'Amo data builder has started', log_type=1)
-    return render_template('index.html')
+    return Response(status=204)
+    # return render_template('index.html')
 
 
 @bp.route('/')
@@ -139,31 +141,40 @@ def data_to_excel(branch: str):
     model = DATA_MODEL.get(branch)
     portion_size = 1000
     offset = 0
+    print(f'sending {branch} pivot data started')
     socketio.emit('pivot_data', {
         'start': True,
         'data': [],
         'done': False,
         'file_name': None
     })
+    num = 0
     while True:
         collection = model.query.limit(portion_size).offset(offset).all()
         if not collection:
             break
-        data = [(json.loads(json.dumps(x.to_dict(), default=convert_date_to_str)) or {}).get('data') for x in collection]
+        data = [
+            (json.loads(json.dumps(x.to_dict(), default=convert_date_to_str)) or {}).get('data')
+            for x in collection
+        ]
+        num += 1
+        print(f'sending {branch} pivot data [{num} :: {len(data)}]')
         socketio.emit('pivot_data', {
             'start': False,
             'data': data,
             'done': False,
-            'file_name': f'data_{branch}'
+            'file_name': None
         })
         offset += portion_size
+    print(f'sending {branch} pivot data stopped')
     socketio.emit('pivot_data', {
         'start': False,
         'data': [],
         'done': True,
-        'file_name': None
+        'file_name': f'data_{branch}'
     })
-    return render_template('index.html')
+    return Response(status=204)
+    # return render_template('index.html')
 
 
 @bp.route('/data_excel_sm')

@@ -2,7 +2,7 @@
 __author__ = 'ke.mizonov'
 from typing import Optional, Dict, Callable
 import telebot
-from flask import request, current_app, render_template
+from flask import request, current_app, render_template, Response
 from app.main import bp
 from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR
 from config import Config
@@ -92,7 +92,8 @@ def set_telegram_webhooks():
             continue
         with app.app_context():
             processor().log.add(text=f'Telegram webhooks were set')
-    return render_template('index.html')
+    return Response(status=204)
+    # return render_template('index.html')
 
 
 @bp.route('/new_lead', methods=['POST'])
