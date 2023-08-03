@@ -4,7 +4,7 @@ import json
 from datetime import date, datetime
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request
-from app import db, socketio
+from app import db, socketio, CustomJSONEncoder
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
@@ -138,31 +138,32 @@ def data_to_excel(branch: str):
     model = DATA_MODEL.get(branch)
     portion_size = 1000
     offset = 0
-    socketio.emit('pivot_data', {
+    socketio.emit('pivot_data', json.dumps({
         'start': True,
         'data': [],
         'done': False,
         'file_name': None
-    })
+    }, cls=CustomJSONEncoder))  # Use the custom encoder here
     while True:
         collection = model.query.limit(portion_size).offset(offset).all()
         if not collection:
             break
+        # Convert datetime objects to strings in ISO format
         data = [(x.to_dict() or {}).get('data') for x in collection]
         data = [{'data': {k: v.isoformat() if isinstance(v, datetime) else v for k, v in row.items()}} for row in data]
-        socketio.emit('pivot_data', {
+        socketio.emit('pivot_data', json.dumps({
             'start': False,
             'data': data,
             'done': False,
             'file_name': f'data_{branch}'
-        })
+        }, cls=CustomJSONEncoder))  # Use the custom encoder here
         offset += portion_size
-    socketio.emit('pivot_data', {
+    socketio.emit('pivot_data', json.dumps({
         'start': False,
         'data': [],
         'done': True,
         'file_name': None
-    })
+    }, cls=CustomJSONEncoder))  # Use the custom encoder here
     return render_template('index.html')
 
 
