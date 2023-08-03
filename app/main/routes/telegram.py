@@ -4,7 +4,7 @@ from typing import Optional, Dict, Callable
 import telebot
 from flask import request, current_app, render_template
 from app.main import bp
-from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR
+from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch
 from config import Config
 
 BOTS = {
@@ -71,7 +71,8 @@ for bot in BOTS.values():
 @bp.route('/set_telegram_webhooks')
 def set_telegram_webhooks():
     config = Config()
-    app = current_app._get_current_object()
+    # app = current_app._get_current_object()
+    print(f'BOTS {BOTS}')
     for pipeline_or_branch, _bot in BOTS.items():
         try:
             _bot.remove_webhook()
@@ -86,12 +87,12 @@ def set_telegram_webhooks():
         # button1 = telebot.types.InlineKeyboardButton(text="Button 1", callback_data="btn_test")
         # button2 = telebot.types.InlineKeyboardButton(text="Button 2", callback_data="button2")
         # keyboard.row(button1, button2)
-    #     processor = DATA_PROCESSOR.get(pipeline_or_branch)
-    #     if not processor:
-    #         print('NO PROCESSOR FOR', pipeline_or_branch)
-    #         continue
-    #     with app.app_context():
-    #         processor.log.add(text=f'Telegram webhooks were set')
+        # processor = DATA_PROCESSOR.get(pipeline_or_branch)
+        # if not processor:
+        #     print('NO PROCESSOR FOR', pipeline_or_branch)
+        #     continue
+        # with app.app_context():
+        #     processor.log.add(text=f'Telegram webhooks were set')
     return render_template('index.html')
 
 
