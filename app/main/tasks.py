@@ -51,7 +51,7 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
 
 
 def update_pivot_data(app: Flask, branch: str):
-    interval = 59
+    interval = 10
     empty_steps_limit = 20
     empty_steps = 0
     # starting_date = datetime(2023, 5, 26, 15, 0, 0)
