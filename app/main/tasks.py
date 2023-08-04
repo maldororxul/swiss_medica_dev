@@ -50,11 +50,12 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             date_to = date_to - timedelta(minutes=interval)
 
 
-def sync_generator(app, data_processor, sync_controller, date_from, date_to):
+def sync_generator(app, data_processor, branch, date_from, date_to):
     with app.app_context():
+        controller = SYNC_CONTROLLER.get(branch)()
         for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
             item = {key.split('_(')[0]: value for key, value in line.items()}
-            yield sync_controller.sync_record({
+            yield controller.sync_record({
                 'id': line['id'],
                 'created_at': line['created_at_ts'],
                 'updated_at': line['updated_at_ts'],
@@ -72,12 +73,11 @@ def update_pivot_data(app: Flask, branch: str):
     date_to = starting_date
     data_processor_class = DATA_PROCESSOR.get(branch)
     data_processor = data_processor_class()
-    controller = SYNC_CONTROLLER.get(branch)()
     while True:
         for has_new in sync_generator(
             app=app,
             data_processor=data_processor,
-            sync_controller=controller,
+            branch=branch,
             date_from=date_from,
             date_to=date_to
         ):
