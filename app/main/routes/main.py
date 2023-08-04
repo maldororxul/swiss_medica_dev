@@ -212,12 +212,12 @@ def get_amo_data_cdv():
 
 @bp.route('/start_update_pivot_data_sm')
 def start_update_pivot_data_sm():
-    start_update_pivot_data(branch='sm')
+    return start_update_pivot_data(branch='sm')
 
 
 @bp.route('/start_update_pivot_data_cdv')
 def start_update_pivot_data_cdv():
-    start_update_pivot_data(branch='cdv')
+    return start_update_pivot_data(branch='cdv')
 
 
 @bp.route('/create_all')
