@@ -58,11 +58,12 @@ def update_pivot_data(app: Flask, branch: str):
     starting_date = datetime.now()
     date_from = starting_date - timedelta(minutes=interval)
     date_to = starting_date
-    data_processor = DATA_PROCESSOR.get(branch)
+    data_processor_class = DATA_PROCESSOR.get(branch)
     with app.app_context():
         while True:
             collection = []
-            for line in data_processor(date_from=date_from, date_to=date_to).update() or []:
+            data_processor = data_processor_class(date_from=date_from, date_to=date_to)
+            for line in data_processor.update() or []:
                 item = {key.split('_(')[0]: value for key, value in line.items()}
                 collection.append({
                     'id': line['id'],
