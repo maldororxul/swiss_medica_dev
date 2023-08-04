@@ -351,6 +351,8 @@ class DataProcessor:
             # todo добавить фильтрацию! например, фильтрацию лидов по email
             # if not self._filter(lead=lead, emails=emails):
             #     continue
+            # важно! подменяем идентификатор лида на идентификатор с источника
+            lead['id'] = lead['source_id']
             result.append(self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule))
         # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
         self.__fix_created_at(leads=result)
@@ -720,8 +722,8 @@ class SMDataProcessor(DataProcessor):
     time_shift: int = 3
     utm_rules_book_id = GoogleSheets.UtmRulesSM.value
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.log = DBLogger(log_model=SMLog, branch='sm')
 
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
@@ -929,8 +931,8 @@ class CDVDataProcessor(DataProcessor):
     time_shift: int = 3
     utm_rules_book_id = GoogleSheets.UtmRulesCDV.value
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.log = DBLogger(log_model=CDVLog, branch='cdv')
 
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
