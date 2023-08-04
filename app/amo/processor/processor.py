@@ -352,7 +352,7 @@ class DataProcessor:
             # if not self._filter(lead=lead, emails=emails):
             #     continue
             # важно! подменяем идентификатор лида на идентификатор с источника
-            lead['id'] = lead['source_id']
+            lead['id'] = lead['id_on_source']
             result.append(self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule))
         # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
         self.__fix_created_at(leads=result)

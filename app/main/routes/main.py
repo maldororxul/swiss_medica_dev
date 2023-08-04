@@ -67,7 +67,7 @@ def start_update_pivot_data(branch: str):
         func=socketio.start_background_task,
         args=[update_pivot_data, app, branch],
         trigger='interval',
-        seconds=600,
+        seconds=60,
         max_instances=1
     )
     processor = DATA_PROCESSOR.get(branch)()
