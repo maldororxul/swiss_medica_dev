@@ -50,17 +50,15 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             date_to = date_to - timedelta(minutes=interval)
 
 
-def sync_generator(app, data_processor, branch, date_from, date_to):
-    with app.app_context():
-        controller = SYNC_CONTROLLER.get(branch)()
-        for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
-            item = {key.split('_(')[0]: value for key, value in line.items()}
-            yield controller.sync_record({
-                'id': line['id'],
-                'created_at': line['created_at_ts'],
-                'updated_at': line['updated_at_ts'],
-                'data': json.dumps(item, cls=DateTimeEncoder)
-            })
+def sync_generator(data_processor, date_from, date_to):
+    for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
+        item = {key.split('_(')[0]: value for key, value in line.items()}
+        yield {
+            'id': line['id'],
+            'created_at': line['created_at_ts'],
+            'updated_at': line['updated_at_ts'],
+            'data': json.dumps(item, cls=DateTimeEncoder)
+        }
 
 
 def update_pivot_data(app: Flask, branch: str):
@@ -73,40 +71,41 @@ def update_pivot_data(app: Flask, branch: str):
     date_to = starting_date
     data_processor_class = DATA_PROCESSOR.get(branch)
     data_processor = data_processor_class()
-    while True:
-        for has_new in sync_generator(
-            app=app,
-            data_processor=data_processor,
-            branch=branch,
-            date_from=date_from,
-            date_to=date_to
-        ):
-            if has_new:
-                empty_steps += 1
-    #     # collection = []
-    #     for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
-    #         item = {key.split('_(')[0]: value for key, value in line.items()}
-    #         yield controller.sync_record({
-    #             'id': line['id'],
-    #             'created_at': line['created_at_ts'],
-    #             'updated_at': line['updated_at_ts'],
-    #             'data': json.dumps(item, cls=DateTimeEncoder)
-    #         })
-            # collection.append({
-            #     'id': line['id'],
-            #     'created_at': line['created_at_ts'],
-            #     'updated_at': line['updated_at_ts'],
-            #     'data': json.dumps(item, cls=DateTimeEncoder)
-            # })
-        # has_new = controller.update_data(collection=collection, date_from=date_from, date_to=date_to)
-        # del collection
-        with app.app_context():
+    with app.app_context():
+        controller = SYNC_CONTROLLER.get(branch)()
+        while True:
+            for item in sync_generator(
+                data_processor=data_processor,
+                date_from=date_from,
+                date_to=date_to
+            ):
+                has_new = controller.sync_record(item, table_name='Data')
+                if has_new:
+                    empty_steps += 1
+        #     # collection = []
+        #     for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
+        #         item = {key.split('_(')[0]: value for key, value in line.items()}
+        #         yield controller.sync_record({
+        #             'id': line['id'],
+        #             'created_at': line['created_at_ts'],
+        #             'updated_at': line['updated_at_ts'],
+        #             'data': json.dumps(item, cls=DateTimeEncoder)
+        #         })
+                # collection.append({
+                #     'id': line['id'],
+                #     'created_at': line['created_at_ts'],
+                #     'updated_at': line['updated_at_ts'],
+                #     'data': json.dumps(item, cls=DateTimeEncoder)
+                # })
+            # has_new = controller.update_data(collection=collection, date_from=date_from, date_to=date_to)
+            # del collection
+            # with app.app_context():
             data_processor.log.add(f'updating pivot data :: {date_from} :: {date_to}')
-        # if not has_new:
-        #     empty_steps += 1
-        # else:
-        #     empty_steps = 0
-        if empty_steps_limit == empty_steps:
-            break
-        date_from = date_from - timedelta(minutes=interval)
-        date_to = date_to - timedelta(minutes=interval)
+            # if not has_new:
+            #     empty_steps += 1
+            # else:
+            #     empty_steps = 0
+            if empty_steps_limit == empty_steps:
+                break
+            date_from = date_from - timedelta(minutes=interval)
+            date_to = date_to - timedelta(minutes=interval)
