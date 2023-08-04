@@ -1,7 +1,7 @@
 """ Контроллеры синхронизации данных Amo """
 __author__ = 'ke.mizonov'
 from datetime import datetime
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Optional
 from sqlalchemy import Table, MetaData, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import SQLAlchemyError
@@ -16,7 +16,7 @@ class SyncController:
     schema: str = NotImplemented
     api_client: Callable = NotImplemented
 
-    def __init__(self, date_from: datetime, date_to: datetime):
+    def __init__(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None):
         self.__date_from = date_from
         self.__date_to = date_to
         self.api_client: APIClient = self.api_client()
@@ -33,7 +33,16 @@ class SyncController:
             table_name='Contact',
         )
 
-    def update_data(self, collection: List[Dict]) -> bool:
+    def update_data(
+        self,
+        collection: List[Dict],
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None
+    ) -> bool:
+        if date_from:
+            self.__date_from = date_from
+        if date_to:
+            self.__date_to = date_to
         return self.__sync_data(collection=collection, table_name='Data')
 
     def events(self) -> bool:
@@ -103,6 +112,12 @@ class SyncController:
                 except SQLAlchemyError as exc:
                     print(f"Error occurred during database operation: {exc}")
         return has_new_records
+
+    def sync_record(self, record: Dict, table_name: str) -> bool:
+        engine = get_engine()
+        target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
+        with engine.begin() as connection:
+            return self.__sync_record(target_table=target_table, record=record, connection=connection)
 
     @staticmethod
     def __sync_record(target_table: Table, record: Dict, connection) -> bool:

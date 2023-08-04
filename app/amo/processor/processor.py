@@ -129,7 +129,11 @@ class DataProcessor:
     def tasks(self) -> List[Dict]:
         return self.__get_data(table_name='Task')
 
-    def update(self):
+    def update(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None):
+        if date_from:
+            self.__date_from = date_from
+        if date_to:
+            self.__date_to = date_to
         return self._build_leads_data()
 
     def users(self) -> List[Dict]:

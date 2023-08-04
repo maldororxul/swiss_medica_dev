@@ -50,34 +50,60 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             date_to = date_to - timedelta(minutes=interval)
 
 
+def sync_generator(data_processor, sync_controller, date_from, date_to):
+    for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
+        item = {key.split('_(')[0]: value for key, value in line.items()}
+        yield sync_controller.sync_record({
+            'id': line['id'],
+            'created_at': line['created_at_ts'],
+            'updated_at': line['updated_at_ts'],
+            'data': json.dumps(item, cls=DateTimeEncoder)
+        })
+
+
 def update_pivot_data(app: Flask, branch: str):
     interval = 5
-    empty_steps_limit = 20
+    empty_steps_limit = 100
     empty_steps = 0
     # starting_date = datetime(2023, 5, 26, 15, 0, 0)
     starting_date = datetime.now()
     date_from = starting_date - timedelta(minutes=interval)
     date_to = starting_date
     data_processor_class = DATA_PROCESSOR.get(branch)
+    data_processor = data_processor_class()
+    controller = SYNC_CONTROLLER.get(branch)()
     with app.app_context():
         while True:
-            collection = []
-            data_processor = data_processor_class(date_from=date_from, date_to=date_to)
-            for line in data_processor.update() or []:
-                item = {key.split('_(')[0]: value for key, value in line.items()}
-                collection.append({
-                    'id': line['id'],
-                    'created_at': line['created_at_ts'],
-                    'updated_at': line['updated_at_ts'],
-                    'data': json.dumps(item, cls=DateTimeEncoder)
-                })
-            controller = SYNC_CONTROLLER.get(branch)
-            has_new = controller(date_from=date_from, date_to=date_to).update_data(collection=collection)
-            data_processor.log.add(f'updating pivot data :: {date_from} :: {date_to} :: {has_new}')
-            if not has_new:
-                empty_steps += 1
-            else:
-                empty_steps = 0
+            for has_new in sync_generator(
+                data_processor=data_processor,
+                sync_controller=controller,
+                date_from=date_from,
+                date_to=date_to
+            ):
+                if has_new:
+                    empty_steps += 1
+        #     # collection = []
+        #     for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
+        #         item = {key.split('_(')[0]: value for key, value in line.items()}
+        #         yield controller.sync_record({
+        #             'id': line['id'],
+        #             'created_at': line['created_at_ts'],
+        #             'updated_at': line['updated_at_ts'],
+        #             'data': json.dumps(item, cls=DateTimeEncoder)
+        #         })
+                # collection.append({
+                #     'id': line['id'],
+                #     'created_at': line['created_at_ts'],
+                #     'updated_at': line['updated_at_ts'],
+                #     'data': json.dumps(item, cls=DateTimeEncoder)
+                # })
+            # has_new = controller.update_data(collection=collection, date_from=date_from, date_to=date_to)
+            # del collection
+            data_processor.log.add(f'updating pivot data :: {date_from} :: {date_to}')
+            # if not has_new:
+            #     empty_steps += 1
+            # else:
+            #     empty_steps = 0
             if empty_steps_limit == empty_steps:
                 break
             date_from = date_from - timedelta(minutes=interval)
