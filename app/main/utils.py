@@ -98,7 +98,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}" if duplicated else ''
     # прописываем тег "duplicated_lead"
     dup_tag = 'duplicated_lead'
-    if duplicate and str(duplicated['id']) == '34222011':
+    if duplicate:
         # обновляем теги текущего лида
         existing_tags = [
             {'name': tag['name']}
