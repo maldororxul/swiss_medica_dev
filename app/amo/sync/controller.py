@@ -98,6 +98,7 @@ class SyncController:
         )
 
     def __sync_data(self, collection: List[Dict], table_name: str) -> bool:
+        print(f'__sync_data {table_name}')
         engine = get_engine()
         target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
         has_new_records = False
