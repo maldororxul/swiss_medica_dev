@@ -1,6 +1,7 @@
 """ Фоновые задачи: загрузка данных с источников, обновление pivot data и проч. """
 __author__ = 'ke.mizonov'
 import json
+import time
 from datetime import datetime, timedelta, date
 from flask import Flask, current_app
 from app import socketio
@@ -92,5 +93,6 @@ def update_pivot_data(app: Flask, branch: str):
                 break
             else:
                 empty_steps = 0
+            time.sleep(0.5)
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)
