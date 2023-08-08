@@ -90,12 +90,15 @@ def update_pivot_data(app: Flask, branch: str):
             for line in data_processor.update(date_from=date_from, date_to=date_to):
                 item = {key.split('_(')[0]: value for key, value in line.items()}
                 # print('updating', item)
-                if not controller.sync_record({
-                    'id': line['id'],
-                    'created_at': line['created_at_ts'],
-                    'updated_at': line['updated_at_ts'],
-                    'data': json.dumps(item, cls=DateTimeEncoder)
-                }):
+                if not controller.sync_record(
+                    record={
+                        'id': line['id'],
+                        'created_at': line['created_at_ts'],
+                        'updated_at': line['updated_at_ts'],
+                        'data': json.dumps(item, cls=DateTimeEncoder)
+                    },
+                    table_name='Data'
+                ):
                     # print('not updated')
                     not_updated += 1
                 total += 1
