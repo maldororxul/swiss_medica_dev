@@ -13,10 +13,10 @@ class CommunicationBase:
     def __init__(
         self,
         sub_domain: str,
-        leads: List[Dict],
         users_dict: Dict,
         pipelines_dict: Dict,
         time_shift_function: Callable,
+        leads: List[Dict] = None,
         trying_to_get_in_touch: Optional[Tuple] = None,
         closed: Optional[Tuple] = None,
         schedule: Optional[Dict] = None
@@ -33,7 +33,7 @@ class CommunicationBase:
             schedule: расписание работы менеджеров
         """
         self.sub_domain = sub_domain
-        self.leads = leads
+        self.leads = leads or []
         self.schedule = schedule
         self.time_shift_function: Callable = time_shift_function
         self.trying_to_get_in_touch = trying_to_get_in_touch or []
@@ -74,46 +74,49 @@ class CommunicationBase:
         # # считываем словарь воронок и статусов
         # pipelines_dict = PklSerializer(file_name=f'{self.sub_domain}_pipelines').load() or []
         for lead in self.leads:
-            # пропускаем удаленные лиды
-            if lead.get('deleted') or lead.get('deleted_leads'):
-                continue
-            lead[self.lead.OnDuty.Key] = 'duty time'
-            if not lead[self.lead.Stage().Lead.Key]:
-                continue
-            # строим словарь данных с ключевыми событиями и примечаниями
-            reaction = self.__build_reaction_data(lead=lead)
-            # for k, v in reaction.items():
-            #     print(k, '::', v)
-            # print()
-            # считаем время реакции на сделку
-            # print(lead['id'])
-            reaction_time = self.__calculate_first_reaction_time(reaction=reaction)
-            # communication = self.__calculate_communication_process(reaction=reaction)
-            # lead.update(communication)
+            self.process_lead(lead=lead)
 
-            # if lead['id'] in (23559761, ):
-            #     print('>>', lead['id'], lead['created_at'])
-            #     for k, v in reaction.items():
-            #         print(k, '::', v)
-            #     print()
-            #     for k, v in reaction_time.items():
-            #         print(k, '::', v)
-            #     print()
+    def process_lead(self, lead: Dict):
+        # пропускаем удаленные лиды
+        if lead.get('deleted') or lead.get('deleted_leads'):
+            return
+        lead[self.lead.OnDuty.Key] = 'duty time'
+        if not lead[self.lead.Stage().Lead.Key]:
+            return
+        # строим словарь данных с ключевыми событиями и примечаниями
+        reaction = self.__build_reaction_data(lead=lead)
+        # for k, v in reaction.items():
+        #     print(k, '::', v)
+        # print()
+        # считаем время реакции на сделку
+        # print(lead['id'])
+        reaction_time = self.__calculate_first_reaction_time(reaction=reaction)
+        # communication = self.__calculate_communication_process(reaction=reaction)
+        # lead.update(communication)
 
-            # if lead['id'] == 23306909:
-            #     print('\n=== reaction ===')
-            #     for k, v in reaction.items():
-            #         print(k, '::', v)
-            #     print()
-            #     print('\n=== reaction_time ===')
-            #     for k, v in reaction_time.items():
-            #         print(k, '::', v)
-            #     print()
-            # записываем время реакции в сделку
-            self.__mixin_reaction_to_lead(lead=lead, reaction_time=reaction_time)
-            # удаляем временные поля
-            for key in ('notes', 'events', 'tasks'):
-                lead.pop(key)
+        # if lead['id'] in (23559761, ):
+        #     print('>>', lead['id'], lead['created_at'])
+        #     for k, v in reaction.items():
+        #         print(k, '::', v)
+        #     print()
+        #     for k, v in reaction_time.items():
+        #         print(k, '::', v)
+        #     print()
+
+        # if lead['id'] == 23306909:
+        #     print('\n=== reaction ===')
+        #     for k, v in reaction.items():
+        #         print(k, '::', v)
+        #     print()
+        #     print('\n=== reaction_time ===')
+        #     for k, v in reaction_time.items():
+        #         print(k, '::', v)
+        #     print()
+        # записываем время реакции в сделку
+        self.__mixin_reaction_to_lead(lead=lead, reaction_time=reaction_time)
+        # удаляем временные поля
+        for key in ('notes', 'events', 'tasks'):
+            lead.pop(key)
 
     @staticmethod
     def __get_creation_source(

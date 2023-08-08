@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from enum import Enum
 from functools import reduce
-from typing import Dict, List, Optional, Any, Type, Tuple, Union
+from typing import Dict, List, Optional, Any, Type, Tuple, Union, Generator
 from sqlalchemy import Table, MetaData, select, and_
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
@@ -129,12 +129,36 @@ class DataProcessor:
     def tasks(self) -> List[Dict]:
         return self.__get_data(table_name='Task')
 
-    def update(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None):
+    def update(
+        self,
+        date_from: Optional[datetime] = None,
+        date_to: Optional[datetime] = None,
+        schedule: Optional[Dict] = None
+    ) -> Dict:
         if date_from:
             self.__date_from = date_from
         if date_to:
             self.__date_to = date_to
-        return self._build_leads_data()
+        pre_data = self._pre_build()
+        for lead in self.leads():
+            # важно! подменяем идентификатор лида на идентификатор с источника
+            lead['id'] = lead['id_on_source']
+            lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
+            # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
+            self.__fix_created_at_lead(lead=lead)
+            # подмешиваем время реакции и эффективность коммуникации в целом
+            self.Communication(
+                sub_domain=self.sub_domain,
+                time_shift_function=self._convert_date_time_from_unix_timestamp,
+                trying_to_get_in_touch=('1. TRYING TO GET IN TOUCH',),  # todo хардкод
+                closed=CLOSE_REASON_FAILED,
+                schedule=schedule,
+                pipelines_dict=self.pipelines_dict,
+                users_dict=self.users_dict,
+            ).process_lead(lead=lead)
+            # подмешиваем страны, определенные по номерам телефонов
+            self.__process_lead_country_by_phone_code(lead=lead)
+            yield lead
 
     def users(self) -> List[Dict]:
         return self.__get_data(table_name='User', date_field=None)
@@ -376,6 +400,39 @@ class DataProcessor:
         # fixme не нужно? смещение по неделям
         # self._weekly_offset(weekly=weekly, collection=result)
         return result
+
+    def _leads_data_generator(
+        self,
+        schedule: Optional[Dict] = None
+    ) -> Dict:
+        """ Получить обработанный список сделок
+
+        Args:
+            schedule: расписание работы
+
+        Yields:
+            обработанная сделка
+        """
+        pre_data = self._pre_build()
+        for lead in self.leads():
+            # важно! подменяем идентификатор лида на идентификатор с источника
+            lead['id'] = lead['id_on_source']
+            lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
+            # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
+            self.__fix_created_at_lead(lead=lead)
+            # подмешиваем время реакции и эффективность коммуникации в целом
+            self.Communication(
+                sub_domain=self.sub_domain,
+                time_shift_function=self._convert_date_time_from_unix_timestamp,
+                trying_to_get_in_touch=('1. TRYING TO GET IN TOUCH',),      # todo хардкод
+                closed=CLOSE_REASON_FAILED,
+                schedule=schedule,
+                pipelines_dict=self.pipelines_dict,
+                users_dict=self.users_dict,
+            ).process_lead(lead=lead)
+            # подмешиваем страны, определенные по номерам телефонов
+            self.__process_lead_country_by_phone_code(lead=lead)
+            yield lead
 
     # def _weekly_offset(self, weekly: bool, collection: List[Dict]):
     #     # искуственно смещаем отдельные самые ранние даты для построения адекватной картины по неделям
@@ -672,8 +729,7 @@ class DataProcessor:
         """ Возвращает кортеж причин закрытия, которые не соответствуют лидам """
         raise NotImplementedError
 
-    @staticmethod
-    def __fix_created_at(leads: List[Dict]):
+    def __fix_created_at(self, leads: List[Dict]):
         """ Сравнение времени самого раннего события, примечания или задачи с датой создания лида
 
         Args:
@@ -681,20 +737,24 @@ class DataProcessor:
         """
         # получаем самое раннее событие, примечание или задачу
         for lead in leads:
-            created_at = lead.get('created_at_ts')
-            earliest_ts = None
-            for key in (
-                    'events',
-                    # 'notes',
-                    # 'tasks'
-            ):
-                collection = sorted(lead.get(key) or [], key=lambda x: x['created_at'])
-                if not collection:
-                    continue
-                current_ts = collection[0]['created_at']
-                if not earliest_ts or current_ts < earliest_ts:
-                    earliest_ts = current_ts
-            lead['created_at_offset'] = 1 if not earliest_ts or earliest_ts - created_at < -3600 * 1 else ''
+            self.__fix_created_at_lead(lead=lead)
+
+    @staticmethod
+    def __fix_created_at_lead(lead: Dict):
+        created_at = lead.get('created_at_ts')
+        earliest_ts = None
+        for key in (
+                'events',
+                # 'notes',
+                # 'tasks'
+        ):
+            collection = sorted(lead.get(key) or [], key=lambda x: x['created_at'])
+            if not collection:
+                continue
+            current_ts = collection[0]['created_at']
+            if not earliest_ts or current_ts < earliest_ts:
+                earliest_ts = current_ts
+        lead['created_at_offset'] = 1 if not earliest_ts or earliest_ts - created_at < -3600 * 1 else ''
 
     @staticmethod
     def __get_stage_if_reached(stages_priority, status):
@@ -717,6 +777,19 @@ class DataProcessor:
             if not phone or len(phone) < 6:
                 continue
             lead['country'] = get_country_by_code(country_codes=country_codes, phone=phone) or 'Other'
+
+    @staticmethod
+    def __process_lead_country_by_phone_code(lead):
+        default_country = 'Other'
+        if lead.get('country'):
+            return default_country
+        phones = lead.get('phone')
+        if not phones:
+            return default_country
+        phone = phones[0]
+        if not phone or len(phone) < 6:
+            return default_country
+        lead['country'] = get_country_by_code(country_codes=get_country_codes(), phone=phone) or default_country
 
 
 class SMDataProcessor(DataProcessor):

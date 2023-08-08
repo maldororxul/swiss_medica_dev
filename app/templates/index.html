@@ -97,16 +97,28 @@
                             <span class="input-group-text mr-3" id="inputGroup-sizing-default-sm">{{ sm_df }} - {{ sm_dt }}</span>
                             <input type="datetime-local" id="time-sm" value="{{ sm_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-sm">
                         </div>
-                        <button class="btn btn-custom" id="get_amo_data_sm">Load Amo data SM</button>
-                        <button class="btn btn-custom mt-3" id="build_pivot_data_sm">Build pivot data SM</button>
+                        <div class="d-flex justify-content-between mt-3">
+                            <button class="btn btn-custom mr-3" id="get_amo_data_sm">Load Amo data SM</button>
+                            <button class="btn btn-custom" id="stop_get_amo_data_sm">Stop Loading Amo data SM</button>
+                        </div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <button class="btn btn-custom mr-3" id="build_pivot_data_sm">Build pivot data SM</button>
+                            <button class="btn btn-custom" id="stop_build_pivot_data_sm">Stop building pivot data SM</button>
+                        </div>
                     </div>
                     <div class="button-group">
                         <div class="input-group mb-3">
                             <span class="input-group-text mr-3" id="inputGroup-sizing-default-cdv">{{ cdv_df }} - {{ cdv_dt }}</span>
                             <input type="datetime-local" id="time-cdv" value="{{ cdv_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-cdv">
                         </div>
-                        <button class="btn btn-custom" id="get_amo_data_cdv">Load Amo data CDV</button>
-                        <button class="btn btn-custom mt-3" id="build_pivot_data_cdv">Build pivot data CDV</button>
+                        <div class="d-flex justify-content-between mt-3">
+                            <button class="btn btn-custom mr-3" id="get_amo_data_cdv">Load Amo data CDV</button>
+                            <button class="btn btn-custom" id="stop_get_amo_data_cdv">Stop Loading Amo data CDV</button>
+                        </div>
+                        <div class="d-flex justify-content-between mt-3">
+                            <button class="btn btn-custom mr-3" id="build_pivot_data_cdv">Build pivot data CDV</button>
+                            <button class="btn btn-custom" id="stop_build_pivot_data_cdv">Stop building pivot data CDV</button>
+                        </div>
                     </div>
                     <button class="btn btn-custom mt-3" id="start_autocalls">Start autocalls</button>
                     <button class="btn btn-custom mt-3" id="set_telegram_webhooks">Set Telegram webhooks</button>
@@ -191,37 +203,30 @@
           $(document).ready(function() {
             const getAmoDataSm = () => makeGetRequest('/get_amo_data_sm', { time: $('#time-sm').val() }, 'get_amo_data_sm');
             const getAmoDataCdv = () => makeGetRequest('/get_amo_data_cdv', { time: $('#time-cdv').val() }, 'get_amo_data_cdv');
+            const stopGetAmoDataSm = () => makeGetRequest('/stop_get_amo_data_sm', {}, 'stop_get_amo_data_sm');
+            const stopGetAmoDataCdv = () => makeGetRequest('/stop_get_amo_data_cdv', {}, 'stop_get_amo_data_cdv');
             const startAutocalls = () => makeGetRequest('/start_autocalls', {}, 'start_autocalls');
             const setTelegramWebhooks = () => makeGetRequest('/set_telegram_webhooks', {}, 'set_telegram_webhooks');
             const buildPivotDataSm = () => makeGetRequest('/start_update_pivot_data_sm', {}, 'start_update_pivot_data_sm');
             const buildPivotDataCdv = () => makeGetRequest('/start_update_pivot_data_cdv', {}, 'start_update_pivot_data_cdv');
+            const stopBuildPivotDataSm = () => makeGetRequest('/stop_update_pivot_data_sm', {}, 'start_update_pivot_data_sm');
+            const stopBuildPivotDataCdv = () => makeGetRequest('/stop_update_pivot_data_cdv', {}, 'start_update_pivot_data_cdv');
             const downloadPivotDataSm = () => makeGetRequest('/data_excel_sm', {}, 'data_excel_sm');
             const downloadPivotDataCdv = () => makeGetRequest('/data_excel_cdv', {}, 'data_excel_cdv');
 
             $('#download_pivot_data_sm').on('click', downloadPivotDataSm);
             $('#download_pivot_data_cdv').on('click', downloadPivotDataCdv);
             $('#get_amo_data_sm').on('click', getAmoDataSm);
+            $('#stop_get_amo_data_sm').on('click', stopGetAmoDataSm);
             $('#build_pivot_data_sm').on('click', buildPivotDataSm);
+            $('#stop_build_pivot_data_sm').on('click', stopBuildPivotDataSm);
             $('#get_amo_data_cdv').on('click', getAmoDataCdv);
+            $('#stop_get_amo_data_cdv').on('click', stopGetAmoDataCdv);
             $('#build_pivot_data_cdv').on('click', buildPivotDataCdv);
+            $('#stop_build_pivot_data_cdv').on('click', stopBuildPivotDataCdv);
             $('#start_autocalls').on('click', startAutocalls);
             $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
           });
         </script>
-    
-        <!--Start of Tawk.to Script-->
-        <script type="text/javascript">
-        var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-        (function(){
-        var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-        s1.async=true;
-        s1.src='https://embed.tawk.to/64d0945994cf5d49dc68dd99/1h77c6vne';
-        s1.charset='UTF-8';
-        s1.setAttribute('crossorigin','*');
-        s0.parentNode.insertBefore(s1,s0);
-        })();
-        </script>
-        <!--End of Tawk.to Script-->
-
     </body>
 </html>

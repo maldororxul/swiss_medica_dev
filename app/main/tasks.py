@@ -2,7 +2,7 @@
 __author__ = 'ke.mizonov'
 import json
 from datetime import datetime, timedelta, date
-from flask import Flask
+from flask import Flask, current_app
 from app import socketio
 from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
@@ -62,50 +62,36 @@ def sync_generator(data_processor, date_from, date_to):
 
 
 def update_pivot_data(app: Flask, branch: str):
-    interval = 5
-    empty_steps_limit = 100
+    interval = 10
+    empty_steps_limit = 20
     empty_steps = 0
     # starting_date = datetime(2023, 5, 26, 15, 0, 0)
     starting_date = datetime.now()
     date_from = starting_date - timedelta(minutes=interval)
     date_to = starting_date
-    data_processor_class = DATA_PROCESSOR.get(branch)
-    data_processor = data_processor_class()
+    data_processor = DATA_PROCESSOR.get(branch)()
+    app = current_app._get_current_object()
     with app.app_context():
         controller = SYNC_CONTROLLER.get(branch)()
         while True:
-            for item in sync_generator(
-                data_processor=data_processor,
-                date_from=date_from,
-                date_to=date_to
-            ):
-                has_new = controller.sync_record(item, table_name='Data')
-                if has_new:
-                    empty_steps += 1
-        #     # collection = []
-        #     for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
-        #         item = {key.split('_(')[0]: value for key, value in line.items()}
-        #         yield controller.sync_record({
-        #             'id': line['id'],
-        #             'created_at': line['created_at_ts'],
-        #             'updated_at': line['updated_at_ts'],
-        #             'data': json.dumps(item, cls=DateTimeEncoder)
-        #         })
-                # collection.append({
-                #     'id': line['id'],
-                #     'created_at': line['created_at_ts'],
-                #     'updated_at': line['updated_at_ts'],
-                #     'data': json.dumps(item, cls=DateTimeEncoder)
-                # })
-            # has_new = controller.update_data(collection=collection, date_from=date_from, date_to=date_to)
-            # del collection
-            # with app.app_context():
-            data_processor.log.add(f'updating pivot data :: {date_from} :: {date_to}')
-            # if not has_new:
-            #     empty_steps += 1
-            # else:
-            #     empty_steps = 0
+            not_updated = 0
+            total = 0
+            for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
+                item = {key.split('_(')[0]: value for key, value in line.items()}
+                if not controller.sync_record({
+                    'id': line['id'],
+                    'created_at': line['created_at_ts'],
+                    'updated_at': line['updated_at_ts'],
+                    'data': json.dumps(item, cls=DateTimeEncoder)
+                }):
+                    not_updated += 1
+                total += 1
+            if total == not_updated:
+                empty_steps += 1
+            data_processor.log.add(text=f'updating pivot data :: {date_from} :: {date_to}', log_type=1)
             if empty_steps_limit == empty_steps:
                 break
+            else:
+                empty_steps = 0
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)

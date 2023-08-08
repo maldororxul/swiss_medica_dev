@@ -51,6 +51,44 @@ def start_get_data_from_amo_scheduler(branch: str):
     # return render_template('index.html')
 
 
+def stop_get_data_from_amo_scheduler(branch: str):
+    scheduler_id = f'get_data_from_amo_{branch}'
+    # current_app - это проксированный экземпляр приложения,
+    # _get_current_object - доступ к объекту приложения напрямую
+    # с проксированным объектом получается некорректный контекст => костыляем
+    app = current_app._get_current_object()
+    # загрузка данных из Amo CDV
+    try:
+        app.scheduler.remove_job(scheduler_id)
+    except JobLookupError:
+        pass
+    processor = DATA_PROCESSOR.get(branch)()
+    if not app.scheduler.running:
+        app.scheduler.start()
+    with app.app_context():
+        processor.log.add(text=f'Amo data loader has stopped', log_type=1)
+    return Response(status=204)
+
+
+def stop_update_pivot_data(branch: str):
+    scheduler_id = f'update_pivot_data_{branch}'
+    # current_app - это проксированный экземпляр приложения,
+    # _get_current_object - доступ к объекту приложения напрямую
+    # с проксированным объектом получается некорректный контекст => костыляем
+    app = current_app._get_current_object()
+    # загрузка данных из Amo CDV
+    try:
+        app.scheduler.remove_job(scheduler_id)
+    except JobLookupError:
+        pass
+    processor = DATA_PROCESSOR.get(branch)()
+    if not app.scheduler.running:
+        app.scheduler.start()
+    with app.app_context():
+        processor.log.add(text=f'Amo data builder has stopped', log_type=1)
+    return Response(status=204)
+
+
 def start_update_pivot_data(branch: str):
     scheduler_id = f'update_pivot_data_{branch}'
     # current_app - это проксированный экземпляр приложения,
@@ -210,6 +248,16 @@ def get_amo_data_cdv():
     return start_get_data_from_amo_scheduler(branch='cdv')
 
 
+@bp.route('/stop_get_amo_data_sm')
+def stop_get_amo_data_sm():
+    return stop_get_data_from_amo_scheduler(branch='sm')
+
+
+@bp.route('/stop_get_amo_data_cdv')
+def stop_get_amo_data_cdv():
+    return stop_get_data_from_amo_scheduler(branch='cdv')
+
+
 @bp.route('/start_update_pivot_data_sm')
 def start_update_pivot_data_sm():
     return start_update_pivot_data(branch='sm')
@@ -218,6 +266,16 @@ def start_update_pivot_data_sm():
 @bp.route('/start_update_pivot_data_cdv')
 def start_update_pivot_data_cdv():
     return start_update_pivot_data(branch='cdv')
+
+
+@bp.route('/stop_update_pivot_data_sm')
+def stop_update_pivot_data_sm():
+    return stop_update_pivot_data(branch='sm')
+
+
+@bp.route('/stop_update_pivot_data_cdv')
+def stop_update_pivot_data_cdv():
+    return stop_update_pivot_data(branch='cdv')
 
 
 @bp.route('/create_all')

@@ -8,7 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient, APIClient
 from app.engine import get_engine
 from app.logger import DBLogger
-from app.models.log import SMLog
+from app.models.log import SMLog, CDVLog
 
 
 class SyncController:
@@ -134,6 +134,7 @@ class SyncController:
                 values(**db_data)
             )
             connection.execute(update_stmt)
+            return True
         elif not db_record:
             # Insert new record
             insert_stmt = insert(target_table).values(
@@ -142,7 +143,8 @@ class SyncController:
             )
             connection.execute(insert_stmt)
             return True
-        return False
+        else:
+            return False
 
 
 class SMSyncController(SyncController):
@@ -159,3 +161,7 @@ class CDVSyncController(SyncController):
     """ Контроллер синхронизации данных Amo: CDV """
     schema = 'cdv'
     api_client: APIClient = DrvorobjevAPIClient
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.log = DBLogger(log_model=CDVLog, branch='cdv')
