@@ -66,8 +66,8 @@ def update_pivot_data(app: Flask, branch: str):
     interval = 10
     empty_steps_limit = 20
     empty_steps = 0
-    # starting_date = datetime(2023, 5, 26, 15, 0, 0)
-    starting_date = datetime.now()
+    starting_date = datetime(2023, 8, 3, 15, 0, 0)
+    # starting_date = datetime.now()
     date_from = starting_date - timedelta(minutes=interval)
     date_to = starting_date
     data_processor = DATA_PROCESSOR.get(branch)()
@@ -88,7 +88,7 @@ def update_pivot_data(app: Flask, branch: str):
                     print('not updated')
                     not_updated += 1
                 total += 1
-            if total == not_updated:
+            if total != 0 and total == not_updated:
                 empty_steps += 1
             data_processor.log.add(text=f'updating pivot data :: {date_from} :: {date_to}', log_type=1)
             if empty_steps_limit == empty_steps:
