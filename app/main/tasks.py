@@ -3,12 +3,13 @@ __author__ = 'ke.mizonov'
 import json
 import time
 from datetime import datetime, timedelta, date
-from flask import Flask, current_app
+from flask import Flask
 from app import socketio
 from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
 
-is_running = False
+get_data_from_amo_is_running = False
+update_pivot_data_is_running = False
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -19,10 +20,10 @@ class DateTimeEncoder(json.JSONEncoder):
 
 def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
 
-    global is_running
-    if is_running:
+    global get_data_from_amo_is_running
+    if get_data_from_amo_is_running:
         return
-    is_running = True
+    get_data_from_amo_is_running = True
 
     interval = 60
     empty_steps_limit = 20
@@ -32,8 +33,11 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
     processor = DATA_PROCESSOR.get(branch)()
     with app.app_context():
         while True:
+            if not get_data_from_amo_is_running:
+                break
             controller = SYNC_CONTROLLER.get(branch)(date_from=date_from, date_to=date_to)
             has_new = controller.run()
+            print(f"getting data from amo {branch} {date_from} - {date_to} {has_new}")
             if not has_new:
                 empty_steps += 1
             else:
@@ -45,7 +49,7 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             # запись лога в БД
             processor.log.add(text=msg, log_type=1)
             if empty_steps_limit == empty_steps:
-                is_running = False
+                get_data_from_amo_is_running = False
                 break
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)
@@ -63,17 +67,25 @@ def sync_generator(data_processor, date_from, date_to):
 
 
 def update_pivot_data(app: Flask, branch: str):
+
+    global update_pivot_data_is_running
+    if update_pivot_data_is_running:
+        return
+    update_pivot_data_is_running = True
+
     interval = 60
     empty_steps_limit = 20
     empty_steps = 0
-    starting_date = datetime(2023, 8, 3, 15, 0, 0)
-    # starting_date = datetime.now()
+    # starting_date = datetime(2023, 8, 3, 15, 0, 0)
+    starting_date = datetime.now()
     date_from = starting_date - timedelta(minutes=interval)
     date_to = starting_date
     data_processor = DATA_PROCESSOR.get(branch)()
     with app.app_context():
         controller = SYNC_CONTROLLER.get(branch)()
         while True:
+            if not update_pivot_data_is_running:
+                break
             not_updated = 0
             total = 0
             for line in data_processor.update(date_from=date_from, date_to=date_to):
@@ -92,6 +104,7 @@ def update_pivot_data(app: Flask, branch: str):
                 empty_steps += 1
             data_processor.log.add(text=f'updating pivot data :: {date_from} :: {date_to}', log_type=1)
             if empty_steps_limit == empty_steps:
+                update_pivot_data_is_running = False
                 break
             else:
                 empty_steps = 0

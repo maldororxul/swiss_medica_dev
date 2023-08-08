@@ -769,6 +769,7 @@ class APIClient:
                     json_response = json.loads(response.text)
                 # print(response.status_code, json_response)
                 if json_response.get('status') == 401:
+                    print('refreshing token')
                     self.refresh_token()
                     self._set_auth_headers()
             except requests.exceptions.ConnectionError:
