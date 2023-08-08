@@ -76,7 +76,7 @@ def update_pivot_data(app: Flask, branch: str):
         while True:
             not_updated = 0
             total = 0
-            for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
+            for line in data_processor.update(date_from=date_from, date_to=date_to):
                 item = {key.split('_(')[0]: value for key, value in line.items()}
                 print('updating', item)
                 if not controller.sync_record({

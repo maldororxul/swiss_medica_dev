@@ -139,8 +139,12 @@ class DataProcessor:
             self.__date_from = date_from
         if date_to:
             self.__date_to = date_to
+        leads = self.leads()
+        print('leads', len(leads))
+        if not leads:
+            return None
         pre_data = self._pre_build()
-        for lead in self.leads():
+        for lead in leads:
             # важно! подменяем идентификатор лида на идентификатор с источника
             lead['id'] = lead['id_on_source']
             lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
