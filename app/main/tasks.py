@@ -78,12 +78,14 @@ def update_pivot_data(app: Flask, branch: str):
             total = 0
             for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
                 item = {key.split('_(')[0]: value for key, value in line.items()}
+                print('updating', item)
                 if not controller.sync_record({
                     'id': line['id'],
                     'created_at': line['created_at_ts'],
                     'updated_at': line['updated_at_ts'],
                     'data': json.dumps(item, cls=DateTimeEncoder)
                 }):
+                    print('not updated')
                     not_updated += 1
                 total += 1
             if total == not_updated:
@@ -93,6 +95,6 @@ def update_pivot_data(app: Flask, branch: str):
                 break
             else:
                 empty_steps = 0
-            time.sleep(0.5)
+            time.sleep(10)
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)
