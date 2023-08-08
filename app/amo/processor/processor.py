@@ -527,7 +527,7 @@ class DataProcessor:
             'date_fields': [field.Key for field in self.lead_models[0].get_date_fields()],
             # данные по звонкам
             'calls': calls,
-            'utm_rules': GoogleAPIClient(book_id=self.utm_rules_book_id, sheet_title='rules').get_sheet()
+            'utm_rules': []     # GoogleAPIClient(book_id=self.utm_rules_book_id, sheet_title='rules').get_sheet()
         }
 
     def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):

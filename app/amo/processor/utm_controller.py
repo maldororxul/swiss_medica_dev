@@ -110,6 +110,8 @@ def build_final_utm(lead: Dict, rules: List[Dict]):
         lead: словарь лида
         rules: данные онлайн-таблицы с правилами обработки меток и тегов
     """
+    if not rules:
+        return {}
     utm_dict = {x: '' for x in UTM_MAP.values()}
     utm_dict['final_utm_channel'] = ''
     for field in lead.get('custom_fields_values') or []:
