@@ -77,7 +77,7 @@ class SyncController:
         return any([
             self.pipelines(),
             self.users(),
-            self.companies(),
+            # self.companies(),
             self.contacts(),
             self.events(),
             self.leads(),
