@@ -63,7 +63,7 @@ def sync_generator(data_processor, date_from, date_to):
 
 
 def update_pivot_data(app: Flask, branch: str):
-    interval = 10
+    interval = 60
     empty_steps_limit = 20
     empty_steps = 0
     starting_date = datetime(2023, 8, 3, 15, 0, 0)
@@ -78,14 +78,14 @@ def update_pivot_data(app: Flask, branch: str):
             total = 0
             for line in data_processor.update(date_from=date_from, date_to=date_to):
                 item = {key.split('_(')[0]: value for key, value in line.items()}
-                print('updating', item)
+                # print('updating', item)
                 if not controller.sync_record({
                     'id': line['id'],
                     'created_at': line['created_at_ts'],
                     'updated_at': line['updated_at_ts'],
                     'data': json.dumps(item, cls=DateTimeEncoder)
                 }):
-                    print('not updated')
+                    # print('not updated')
                     not_updated += 1
                 total += 1
             if total != 0 and total == not_updated:
@@ -95,6 +95,6 @@ def update_pivot_data(app: Flask, branch: str):
                 break
             else:
                 empty_steps = 0
-            time.sleep(10)
+            time.sleep(0.5)
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)
