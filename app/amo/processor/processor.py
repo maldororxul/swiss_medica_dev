@@ -69,8 +69,8 @@ class DataProcessor:
     def __init__(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None):
         self.__date_from = date_from
         self.__date_to = date_to
-        self.__date_from_ts = int(date_from.timestamp()) if date_from else 0
-        self.__date_to_ts = int(date_to.timestamp()) if date_to else 0
+        # self.__date_from_ts = int(date_from.timestamp()) if date_from else 0
+        # self.__date_to_ts = int(date_to.timestamp()) if date_to else 0
         self.lead: Lead = self.lead_models[0]()
         self.engine = get_engine()
         # загрузка справочников
@@ -85,6 +85,14 @@ class DataProcessor:
             for pipeline in self.pipelines()
         }
         self.users_dict = {x['id_on_source']: x for x in self.users()}
+
+    @property
+    def __date_from_ts(self):
+        return int(self.__date_from.timestamp()) if self.__date_from else 0
+
+    @property
+    def __date_to_ts(self):
+        return int(self.__date_to.timestamp()) if self.__date_to else 0
 
     def companies(self) -> List[Dict]:
         return self.__get_data(table_name='Company')
@@ -588,6 +596,7 @@ class DataProcessor:
         else:
             dt_field = None
         with self.engine.begin() as connection:
+            print('getting leads from DB', dt_field, self.__date_from_ts, self.__date_to_ts)
             if date_field:
                 stmt = select(table).where(
                     self.__date_from_ts <= dt_field,

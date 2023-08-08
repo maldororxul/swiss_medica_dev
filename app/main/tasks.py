@@ -54,15 +54,15 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             date_to = date_to - timedelta(minutes=interval)
 
 
-def sync_generator(data_processor, date_from, date_to):
-    for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
-        item = {key.split('_(')[0]: value for key, value in line.items()}
-        yield {
-            'id': line['id'],
-            'created_at': line['created_at_ts'],
-            'updated_at': line['updated_at_ts'],
-            'data': json.dumps(item, cls=DateTimeEncoder)
-        }
+# def sync_generator(data_processor, date_from, date_to):
+#     for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
+#         item = {key.split('_(')[0]: value for key, value in line.items()}
+#         yield {
+#             'id': line['id'],
+#             'created_at': line['created_at_ts'],
+#             'updated_at': line['updated_at_ts'],
+#             'data': json.dumps(item, cls=DateTimeEncoder)
+#         }
 
 
 def update_pivot_data(app: Flask, branch: str):
