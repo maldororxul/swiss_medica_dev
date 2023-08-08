@@ -682,7 +682,7 @@ class APIClient:
             # exit()
             # print(endpoint, page, len(chunk))
             result.extend(chunk)
-            print(endpoint, entity, len(result))
+            print(endpoint, entity, len(result), print(params))
             if has_page:
                 # print('has page => break')
                 break
