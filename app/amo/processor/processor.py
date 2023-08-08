@@ -654,7 +654,8 @@ class DataProcessor:
         df, dt = self.get_data_borders()
         date_from = datetime.fromtimestamp(df) if df else None
         date_to = datetime.fromtimestamp(dt) if dt else None
-        date_curr = date_from + timedelta(minutes=60) if date_from else datetime.now()
+        # date_curr = date_from + timedelta(minutes=60) if date_from else datetime.now()
+        date_curr = datetime.now()
         return date_from, date_to, date_curr.strftime("%Y-%m-%dT%H:%M")
 
     def __get_data_borders(self, table_name: str, field: str = 'updated_at') -> Tuple[Optional[int], Optional[int]]:

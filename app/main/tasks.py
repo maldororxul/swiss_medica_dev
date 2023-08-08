@@ -35,7 +35,6 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
         while True:
             if not get_data_from_amo_is_running:
                 break
-            print(f"getting data from amo {branch} {date_from} - {date_to}")
             controller = SYNC_CONTROLLER.get(branch)(date_from=date_from, date_to=date_to)
             has_new = controller.run()
             if not has_new:
