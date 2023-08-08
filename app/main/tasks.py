@@ -70,7 +70,6 @@ def update_pivot_data(app: Flask, branch: str):
     date_from = starting_date - timedelta(minutes=interval)
     date_to = starting_date
     data_processor = DATA_PROCESSOR.get(branch)()
-    app = current_app._get_current_object()
     with app.app_context():
         controller = SYNC_CONTROLLER.get(branch)()
         while True:
