@@ -8,6 +8,7 @@ from config import Config
 
 
 def send_wahtsapp_message(
+    # https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#examples
     number_to: str,
     number_id_from: str,
     template: Optional[str] = None,
@@ -16,6 +17,7 @@ def send_wahtsapp_message(
     if template:
         data = {
             'messaging_product': 'whatsapp',
+            "recipient_type": "individual",
             'to': number_to,
             'type': 'template',
             'template': template
@@ -23,6 +25,7 @@ def send_wahtsapp_message(
     elif message:
         data = {
             'messaging_product': 'whatsapp',
+            "recipient_type": "individual",
             'to': number_to,
             'type': 'text',
             "text": {
