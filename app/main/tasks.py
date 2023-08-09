@@ -89,7 +89,7 @@ def update_pivot_data(app: Flask, branch: str):
             total = 0
             for line in data_processor.update(date_from=date_from, date_to=date_to):
                 item = {key.split('_(')[0]: value for key, value in line.items()}
-                # print('updating', item)
+                print('updating', item)
                 if not controller.sync_record(
                     record={
                         'id': line['id'],
@@ -104,14 +104,16 @@ def update_pivot_data(app: Flask, branch: str):
                 total += 1
             if total == 0 or total == not_updated:
                 empty_steps += 1
+                print('empty steps', empty_steps)
+            if empty_steps_limit == empty_steps:
+                print('updating pivot data stopped')
+                update_pivot_data_is_running = False
+                return
+            else:
+                empty_steps = 0
             data_processor.log.add(
                 text=f'updating pivot data :: {date_from.replace(microsecond=0)} :: {date_to.replace(microsecond=0)}',
                 log_type=1
             )
-            if empty_steps_limit == empty_steps:
-                update_pivot_data_is_running = False
-                break
-            else:
-                empty_steps = 0
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)

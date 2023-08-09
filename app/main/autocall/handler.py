@@ -14,6 +14,7 @@ from app import db
 from app.amo.processor.functions import clear_phone
 from app.main.autocall.error import SipuniConfigError
 from app.main.browser import KmBrowser
+from app.main.routes.whatsapp import send_wahtsapp_message
 from config import Config
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
@@ -196,6 +197,21 @@ class Autocall:
                     db.session.commit()
         except Exception as exc:
             processor.log.add(text=f'Error [parse_webhook_data]: {exc}')
+            return
+        # отправляем сообщение в WhatsApp
+        whatsapp_config = Config().whatsapp.get(self.__branch)
+        if not whatsapp_config:
+            return
+        number_from = (whatsapp_config.get('numbers') or [None])[0] or {}
+        if not number_from:
+            return
+        template = None
+        for item in whatsapp_config.get('templates') or []:
+            # хардкод пока что, т.к. не ясно, как ассоциировать номер автообзвона с шаблоном
+            if item['name'] in ("couldnt_reach_you_serbian", ):
+                template = item
+                break
+        send_wahtsapp_message(number_id_from=number_from['id'], template=template, number_to=number)
 
     def start_autocall(self, autocall_id: int):
         """ Начинает автообзвон

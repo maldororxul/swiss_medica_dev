@@ -28,7 +28,7 @@ def get_data_from_external_api(handler_func: Callable, request, **args):
     return 'success', 200
 
 
-def handle_autocall_success(data: Dict) -> Tuple[str, str]:
+def handle_autocall_success(data: Dict) -> Tuple[str, str, str]:
     """
     leads[status][0][id] :: 23802129
     leads[status][0][status_id] :: 58841526
@@ -44,6 +44,7 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str]:
         status_id=data.get('leads[status][0][status_id]')
     )
     return (
+        'NEW_LEAD',
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
         f"URGENT! Answered autocall: "
@@ -51,7 +52,7 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str]:
     )
 
 
-def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
+def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     lead_id = data.get('leads[add][0][id]')
     event = 'New lead'
     key = 'add'
@@ -60,7 +61,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         key = 'status'
         lead_id = data.get(f'leads[{key}][0][id]')
     if not lead_id:
-        return None, None
+        return None, None, None
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
@@ -116,6 +117,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         existing_tags.append({'name': dup_tag})
         amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': existing_tags}})
     return (
+        'NEW_LEAD',
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
         f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
@@ -123,7 +125,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     )
 
 
-def handle_get_in_touch(data: Dict) -> Tuple[Optional[str], Optional[str]]:
+def handle_get_in_touch(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """
     leads[status][0][id] :: 23802129
     leads[status][0][status_id] :: 58841526
@@ -133,7 +135,7 @@ def handle_get_in_touch(data: Dict) -> Tuple[Optional[str], Optional[str]]:
     """
     lead_id = data.get('leads[status][0][id]')
     if not lead_id:
-        return None, None
+        return None, None, None
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get('leads[status][0][pipeline_id]')
@@ -154,6 +156,7 @@ def handle_get_in_touch(data: Dict) -> Tuple[Optional[str], Optional[str]]:
         else:
             reaction_time = 'over 12 hours'
     return (
+        'GET_IN_TOUCH',
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''}\n"
         f"Lead: https://{branch}.amocrm.ru/leads/detail/{lead_id} "

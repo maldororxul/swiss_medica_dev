@@ -27,7 +27,7 @@ def reply_on_lead_event(_request, msg_builder: Callable):
     data = get_data_from_post_request(_request=_request)
     if not data:
         return 'Unsupported Media Type', 415
-    pipeline_id, message = msg_builder(data=data)
+    chat_key, pipeline_id, message = msg_builder(data=data)
     if not message:
         # если сообщения нет, ничего не делаем
         return 'Ok', 200
@@ -42,7 +42,7 @@ def reply_on_lead_event(_request, msg_builder: Callable):
         bot_key = branch
     if not params:
         return 'Bot not found', 404
-    BOTS[bot_key].send_message(params.get('CHAT_ID'), message)
+    BOTS[bot_key].send_message(params.get(chat_key), message)
     return 'Ok', 200
 
 

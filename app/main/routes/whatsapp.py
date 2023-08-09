@@ -1,23 +1,39 @@
 """ Маршруты для работы WhatsApp-ботов """
 __author__ = 'ke.mizonov'
+from typing import Optional
 import requests
 from flask import request, jsonify
 from app.main import bp
 from config import Config
 
 
-def reply(msg: str, number: str):
-    res = requests.post(
-        url='https://graph.facebook.com/v13.0/PHONE_NUMBER_ID/messages',
-        headers={'Authorization': f"Bearer {Config().meta_system_user_token}"},
-        json={
+def send_wahtsapp_message(number_to: str, number_id_from: str, template: Optional[str] = None, message: Optional[str] = None):
+    if template:
+        data = {
             'messaging_product': 'whatsapp',
-            'to': number,
+            'to': number_to,
+            'type': 'template',
+            'template': template
+        }
+    elif message:
+        data = {
+            'messaging_product': 'whatsapp',
+            'to': number_to,
             'type': 'text',
             "text": {
-                "body": msg
+                "body": message
             }
         }
+    else:
+        return None
+    headers = {
+        'Authorization': f"Bearer {Config().meta_system_user_token}",
+        'Content-Type': 'application/json'
+    }
+    res = requests.post(
+        url=f'https://graph.facebook.com/v17.0/{number_id_from}/messages',
+        headers=headers,
+        json=data
     )
     print(res.text)
 

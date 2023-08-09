@@ -20,6 +20,7 @@ class Config:
         self.NEW_LEAD_TELEGRAM = self.new_lead_telegram
         self.META_WHATSAPP_TOKEN = self.meta_whatsapp_token
         self.META_SYSTEM_USER_TOKEN = self.meta_system_user_token
+        self.WHATSAPP = self.whatsapp
 
     @property
     def sqlalchemy_database_uri(self):
@@ -67,3 +68,7 @@ class Config:
     @property
     def meta_system_user_token(self):
         return os.environ.get('META_SYSTEM_USER_TOKEN')
+
+    @property
+    def whatsapp(self):
+        return json.loads(os.environ.get('WHATSAPP') or '')
