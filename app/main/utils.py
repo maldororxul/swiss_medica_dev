@@ -52,6 +52,30 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str, str]:
     )
 
 
+def handle_new_lead_slow_reaction(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    lead_id = data.get('leads[add][0][id]')
+    event = 'Need to insure'
+    key = 'add'
+    if not lead_id:
+        key = 'status'
+        lead_id = data.get(f'leads[{key}][0][id]')
+    if not lead_id:
+        return None, None, None
+    branch = data.get('account[subdomain]')
+    processor = DATA_PROCESSOR.get(branch)()
+    pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
+    pipeline = processor.get_pipeline_and_status_by_id(
+        pipeline_id=pipeline_id,
+        status_id=data.get(f'leads[{key}][0][status_id]')
+    )
+    return (
+        'NEED_TO_INSURE',
+        str(pipeline_id),
+        f"{pipeline.get('pipeline') or ''}\n"
+        f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
+    )
+
+
 def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     lead_id = data.get('leads[add][0][id]')
     event = 'New lead'

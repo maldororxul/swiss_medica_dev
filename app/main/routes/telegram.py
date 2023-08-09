@@ -4,7 +4,8 @@ from typing import Optional, Dict, Callable
 import telebot
 from flask import request, current_app, render_template, Response
 from app.main import bp
-from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR
+from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR, \
+    handle_new_lead_slow_reaction
 from config import Config
 
 BOTS = {
@@ -99,6 +100,11 @@ def set_telegram_webhooks():
 @bp.route('/new_lead', methods=['POST'])
 def new_lead():
     return reply_on_lead_event(_request=request, msg_builder=handle_new_lead)
+
+
+@bp.route('/new_lead_slow_reaction', methods=['POST'])
+def new_lead_slow_reaction():
+    return reply_on_lead_event(_request=request, msg_builder=handle_new_lead_slow_reaction)
 
 
 @bp.route('/autocall_success', methods=['POST'])

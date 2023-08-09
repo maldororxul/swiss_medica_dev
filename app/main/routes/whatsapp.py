@@ -7,7 +7,12 @@ from app.main import bp
 from config import Config
 
 
-def send_wahtsapp_message(number_to: str, number_id_from: str, template: Optional[str] = None, message: Optional[str] = None):
+def send_wahtsapp_message(
+    number_to: str,
+    number_id_from: str,
+    template: Optional[str] = None,
+    message: Optional[str] = None
+):
     if template:
         data = {
             'messaging_product': 'whatsapp',
