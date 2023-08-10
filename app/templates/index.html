@@ -172,6 +172,7 @@
             }
 
             if (event.data && event.data.length > 0) {
+                console.log('pipeline_name ' + event.data[0]['pipeline_name']);
               dataAccumulated.push(...event.data);
             }
 
