@@ -121,8 +121,7 @@
             </div>
         </div>
         <!-- Include SheetJS (XLSX) library -->
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
+        <script src="path_to_node_modules/exceljs/dist/exceljs.min.js"></script>
         <script type="text/javascript" charset="utf-8">
           let protocol = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "http" : "https";
           let socket = io.connect(protocol + '://' + document.domain + ':' + location.port);
@@ -189,13 +188,16 @@
                     return Object.values(newItem);
                 });
 
-              const wb = XLSX.utils.book_new();
-              const ws = XLSX.utils.aoa_to_sheet(sanitizedData, { dateNF: "YYYY-MM-DD HH:MM:SS" });
-              XLSX.utils.book_append_sheet(wb, ws, 'Data');
-
-              const binaryData = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
-              const blob = new Blob([new Uint8Array([...binaryData].map(char => char.charCodeAt(0)))], { type: "application/octet-stream" });
-              saveAs(blob, event.file_name + '.xlsx');
+                const workbook = new ExcelJS.Workbook();
+                const worksheet = workbook.addWorksheet('Data');
+                // Add data to worksheet
+                sanitizedData.forEach(row => {
+                    worksheet.addRow(row);
+                });
+                // Save to blob
+                workbook.xlsx.writeBuffer().then(function(buffer) {
+                    saveAs(new Blob([buffer]), `${event.file_name}.xlsx`);
+                });
             }
           });
 
