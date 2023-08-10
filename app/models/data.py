@@ -1,8 +1,21 @@
 """ Данные сводной таблицы """
 __author__ = 'ke.mizonov'
+from datetime import datetime, date
 from sqlalchemy.dialects.postgresql import JSON
 from app.extensions import db
-from app.main.utils import DateTimeEncoder
+
+
+def decode(obj):
+    for k, v in obj.items():
+        if isinstance(v, str):
+            try:
+                obj[k] = datetime.fromisoformat(v)
+            except ValueError:
+                try:
+                    obj[k] = date.fromisoformat(v)
+                except ValueError:
+                    pass
+    return obj
 
 
 class DataBase(db.Model):
@@ -19,7 +32,7 @@ class DataBase(db.Model):
 
     def to_dict(self):
         line = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        line['data'] = DateTimeEncoder.decode(line['data'])
+        line['data'] = decode(line['data'])
         return line
 
 
