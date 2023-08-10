@@ -643,7 +643,7 @@ class APIClient:
         Returns:
             данные из AMO
         """
-        result = []
+        # result = []
         has_page = page is not None
         page = page or 0
         base_params = params
@@ -681,8 +681,10 @@ class APIClient:
             #     print(x['created_at'])
             # exit()
             # print(endpoint, page, len(chunk))
-            result.extend(chunk)
-            print(endpoint, entity, len(result))
+            # result.extend(chunk)
+            for item in chunk:
+                yield item
+            # print(endpoint, entity, len(result))
             if has_page:
                 # print('has page => break')
                 break
@@ -691,7 +693,7 @@ class APIClient:
             if len(chunk) < limit:
                 # print(endpoint, 'limit', len(chunk), limit)
                 break
-        return result
+        # return result
 
     def __get_url(self, endpoint: str, params: str = '', entity: str = '', entity_id: Optional[int] = None):
         """ Адрес для запроса в AMO

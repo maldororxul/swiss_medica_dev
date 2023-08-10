@@ -25,11 +25,11 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
     date_to = starting_date
     processor = DATA_PROCESSOR.get(branch)()
     with app.app_context():
+        controller = SYNC_CONTROLLER.get(branch)
         while True:
             if not get_data_from_amo_is_running:
                 break
-            controller = SYNC_CONTROLLER.get(branch)(date_from=date_from, date_to=date_to)
-            has_new = controller.run()
+            has_new = controller.run(date_from=date_from, date_to=date_to)
             if not has_new:
                 empty_steps += 1
             else:
@@ -55,7 +55,7 @@ def update_pivot_data(app: Flask, branch: str):
     update_pivot_data_is_running = True
 
     interval = 60
-    empty_steps_limit = 100
+    empty_steps_limit = 20
     empty_steps = 0
     # starting_date = datetime(2023, 8, 3, 15, 0, 0)
     starting_date = datetime.now()
@@ -83,17 +83,18 @@ def update_pivot_data(app: Flask, branch: str):
                     # print('not updated')
                     not_updated += 1
                 total += 1
-            if total == 0 or total == not_updated:
+            if total == not_updated:
                 empty_steps += 1
-                print('empty steps', empty_steps)
             if empty_steps_limit == empty_steps:
                 print('updating pivot data stopped')
                 update_pivot_data_is_running = False
                 return
             else:
                 empty_steps = 0
+            df = date_from.replace(microsecond=0)
+            r = f' R{empty_steps}' if empty_steps > 0 else ''
             data_processor.log.add(
-                text=f'updating pivot data :: {date_from.replace(microsecond=0)} :: {date_to.replace(microsecond=0)}',
+                text=f'updating pivot data :: {df.date()} {df.time()} - {date_to.replace(microsecond=0).time()}{r}',
                 log_type=1
             )
             date_from = date_from - timedelta(minutes=interval)

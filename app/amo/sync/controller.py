@@ -69,11 +69,15 @@ class SyncController:
             table_name='Pipeline',
         )
 
-    def run(self) -> bool:
+    def run(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None) -> bool:
         """
         Returns:
             True - если на источнике была обнаружена хотя бы одна новая запись за период
         """
+        if date_from:
+            self.__date_from = date_from
+        if date_to:
+            self.__date_to = date_to
         return any([
             self.pipelines(),
             self.users(),
