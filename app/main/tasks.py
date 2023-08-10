@@ -13,6 +13,8 @@ update_pivot_data_is_running = False
 
 def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
 
+    print('get_data_from_amo start working', branch)
+
     global get_data_from_amo_is_running
     if get_data_from_amo_is_running:
         return
@@ -32,8 +34,8 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             has_new = controller.run(date_from=date_from, date_to=date_to)
             if not has_new:
                 empty_steps += 1
-            else:
-                empty_steps = 0
+            # else:
+            #     empty_steps = 0
             df = date_from.strftime("%Y-%m-%d %H:%M:%S")
             dt = date_to.strftime("%H:%M:%S")
             repeated_iteration = "" if has_new else f" :: R{empty_steps}"
@@ -41,13 +43,16 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             # запись лога в БД
             processor.log.add(text=msg, log_type=1)
             if empty_steps_limit == empty_steps:
+                print('get_data_from_amo', branch)
                 get_data_from_amo_is_running = False
-                break
+                return
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)
 
 
 def update_pivot_data(app: Flask, branch: str):
+
+    print('update_pivot_data start working', branch)
 
     global update_pivot_data_is_running
     if update_pivot_data_is_running:
@@ -86,11 +91,12 @@ def update_pivot_data(app: Flask, branch: str):
             if total == not_updated:
                 empty_steps += 1
             if empty_steps_limit == empty_steps:
-                print('updating pivot data stopped')
+                # starting_date = datetime.now()
+                print('updating pivot data stopped', branch)
                 update_pivot_data_is_running = False
                 return
-            else:
-                empty_steps = 0
+            # else:
+            #     empty_steps = 0
             df = date_from.replace(microsecond=0)
             r = f' R{empty_steps}' if empty_steps > 0 else ''
             data_processor.log.add(
