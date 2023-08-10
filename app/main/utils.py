@@ -23,6 +23,7 @@ class DateTimeEncoder:
         for k, v in obj.items():
             if isinstance(v, (date, datetime)):
                 obj[k] = v.isoformat()
+        return obj
 
     @staticmethod
     def decode(obj):
