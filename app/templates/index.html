@@ -172,12 +172,12 @@
             }
 
             if (event.data && event.data.length > 0) {
-                console.log('pipeline_name ' + event.data[0]['pipeline_name']);
               dataAccumulated.push(...event.data);
             }
 
             if (event.done) {
               dataAccumulated.unshift(headers);
+              console.log("Original Data:", dataAccumulated);
 
                 let sanitizedData = dataAccumulated.map(item => {
                     let newItem = {...item};
@@ -188,7 +188,7 @@
                     }
                     return Object.values(newItem);
                 });
-              console.log(sanitizedData)
+              console.log("Sanitized Data:", sanitizedData)
               const wb = XLSX.utils.book_new();
               const ws = XLSX.utils.aoa_to_sheet(sanitizedData, { dateNF: "YYYY-MM-DD HH:MM:SS" });
               XLSX.utils.book_append_sheet(wb, ws, 'Data');
