@@ -8,7 +8,7 @@ class EventBase(db.Model):
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
-    id_on_source = db.Column(db.String(100), nullable=False)
+    id_on_source = db.Column(db.String(100), nullable=False, unique=True, index=True)
     type = db.Column(db.String(100), nullable=False)
     entity_id = db.Column(db.Integer, nullable=False)
     entity_type = db.Column(db.String(100), nullable=False)

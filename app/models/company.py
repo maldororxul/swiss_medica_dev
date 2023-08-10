@@ -8,7 +8,7 @@ class CompanyBase(db.Model):
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
-    id_on_source = db.Column(db.Integer)
+    id_on_source = db.Column(db.Integer, unique=True, index=True)
     name = db.Column(db.String(255), nullable=False)
     responsible_user_id = db.Column(db.Integer, nullable=False)
     group_id = db.Column(db.Integer, nullable=False)

@@ -9,7 +9,7 @@ class TaskBase(db.Model):
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
-    id_on_source = db.Column(db.Integer)
+    id_on_source = db.Column(db.Integer, unique=True, index=True)
     created_by = db.Column(db.Integer, nullable=False)
     updated_by = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.Integer, nullable=False, default=lambda: int(datetime.now().timestamp()))

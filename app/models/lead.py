@@ -8,7 +8,7 @@ class LeadBase(db.Model):
     __abstract__ = True
 
     id = db.Column(db.Integer, primary_key=True)
-    id_on_source = db.Column(db.Integer)
+    id_on_source = db.Column(db.Integer, unique=True, index=True)
     source_id = db.Column(db.Integer)
     name = db.Column(db.String(255), nullable=False)
     price = db.Column(db.Integer, nullable=False)

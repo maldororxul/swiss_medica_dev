@@ -596,7 +596,7 @@ class DataProcessor:
         else:
             dt_field = None
         with self.engine.begin() as connection:
-            print('getting leads from DB', dt_field, self.__date_from_ts, self.__date_to_ts)
+            # print('getting leads from DB', dt_field, self.__date_from_ts, self.__date_to_ts)
             if date_field:
                 stmt = select(table).where(
                     self.__date_from_ts <= dt_field,
