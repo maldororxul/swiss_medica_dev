@@ -7,18 +7,18 @@ from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
 from app.main.utils import DateTimeEncoder
 
-get_data_from_amo_is_running = False
-update_pivot_data_is_running = False
+# get_data_from_amo_is_running = False
+# update_pivot_data_is_running = False
 
 
 def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
 
     # print('get_data_from_amo start working', branch)
 
-    global get_data_from_amo_is_running
-    if get_data_from_amo_is_running:
-        return
-    get_data_from_amo_is_running = True
+    # global get_data_from_amo_is_running
+    # if get_data_from_amo_is_running:
+    #     return
+    # get_data_from_amo_is_running = True
 
     interval = 60
     empty_steps_limit = 20
@@ -33,8 +33,8 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
         )
         controller = SYNC_CONTROLLER.get(branch)()
         while True:
-            if not get_data_from_amo_is_running:
-                break
+            # if not get_data_from_amo_is_running:
+            #     break
             has_new = controller.run(date_from=date_from, date_to=date_to)
             if not has_new:
                 empty_steps += 1
@@ -52,7 +52,7 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
                     text='reading data :: iteration finished',
                     log_type=1
                 )
-                get_data_from_amo_is_running = False
+                # get_data_from_amo_is_running = False
                 return
             date_from = date_from - timedelta(minutes=interval)
             date_to = date_to - timedelta(minutes=interval)
@@ -62,10 +62,10 @@ def update_pivot_data(app: Flask, branch: str):
 
     # print('update_pivot_data start working', branch)
 
-    global update_pivot_data_is_running
-    if update_pivot_data_is_running:
-        return
-    update_pivot_data_is_running = True
+    # global update_pivot_data_is_running
+    # if update_pivot_data_is_running:
+    #     return
+    # update_pivot_data_is_running = True
 
     interval = 60
     empty_steps_limit = 20
@@ -82,8 +82,8 @@ def update_pivot_data(app: Flask, branch: str):
         )
         controller = SYNC_CONTROLLER.get(branch)()
         while True:
-            if not update_pivot_data_is_running:
-                break
+            # if not update_pivot_data_is_running:
+            #     break
             not_updated = 0
             total = 0
             for line in data_processor.update(date_from=date_from, date_to=date_to):
@@ -109,7 +109,7 @@ def update_pivot_data(app: Flask, branch: str):
                     text='updating pivot data :: iteration finished',
                     log_type=1
                 )
-                update_pivot_data_is_running = False
+                # update_pivot_data_is_running = False
                 return
             # else:
             #     empty_steps = 0
