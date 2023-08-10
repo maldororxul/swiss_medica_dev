@@ -1,0 +1,66 @@
+body {
+    background-color: #000;
+    color: #7FDBFF;
+    font-family: 'Courier New', Courier, monospace;
+}
+#events {
+    height: 300px;
+    overflow-y: scroll;
+    background-color: #1B1C1D;
+    color: #7FDBFF;
+    padding: 20px;
+    border: solid 2px #7FDBFF;
+    border-radius: 5px;
+}
+#events::-webkit-scrollbar {
+    width: 6px;
+}
+#events::-webkit-scrollbar-thumb {
+    background-color: #7FDBFF;
+    border-radius: 3px;
+}
+.header {
+    text-align: center;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+.btn {
+    background-color: #1B1C1D;
+    color: #7FDBFF;
+    width: 100%;
+}
+.btn:active {
+    background-color: #2F4F4F;
+    color: #7FDBFF;
+    border-color: #2F4F4F;
+}
+.btn:focus {
+  outline: none;
+}
+/* Remove the active styles when the button is no longer in focus */
+.btn:not(.active) {
+    background-color: #1B1C1D;
+    border-color: #1B1C1D;
+    color: #7FDBFF;
+}
+.btn-custom:hover, .btn-custom:active, .btn-custom:focus {
+    background-color: #2F4F4F;
+    color: #7FDBFF;
+    border-color: #2F4F4F;
+}
+.input-group {
+    margin-top: 20px;
+}
+.input-group label {
+    display: block;
+    color: #7FDBFF;
+}
+.input-group input {
+    width: 100%;
+    color: #000;
+    margin-bottom: 10px;
+}
+.input-group-text {
+    background-color: #1B1C1D;
+    color: #7FDBFF;
+}
