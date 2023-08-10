@@ -30,10 +30,10 @@ def start_get_data_from_amo_scheduler(branch: str):
     # с проксированным объектом получается некорректный контекст => костыляем
     app = current_app._get_current_object()
     # загрузка данных из Amo CDV
-    # try:
-    #     app.scheduler.remove_job(scheduler_id)
-    # except JobLookupError:
-    #     pass
+    try:
+        app.scheduler.remove_job(scheduler_id)
+    except JobLookupError:
+        pass
     processor = DATA_PROCESSOR.get(branch)()
     if not app.scheduler.get_job(scheduler_id):
         app.scheduler.add_job(
@@ -81,10 +81,10 @@ def start_update_pivot_data(branch: str):
     # с проксированным объектом получается некорректный контекст => костыляем
     app = current_app._get_current_object()
     # загрузка данных из Amo CDV
-    # try:
-    #     app.scheduler.remove_job(scheduler_id)
-    # except JobLookupError:
-    #     pass
+    try:
+        app.scheduler.remove_job(scheduler_id)
+    except JobLookupError:
+        pass
     processor = DATA_PROCESSOR.get(branch)()
     if not app.scheduler.get_job(scheduler_id):
         app.scheduler.add_job(
