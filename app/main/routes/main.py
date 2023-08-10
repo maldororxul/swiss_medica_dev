@@ -220,7 +220,6 @@ def data_to_excel(branch: str):
         'file_name': f'data_{branch}'
     })
     return Response(status=204)
-    # return render_template('index.html')
 
 
 @bp.route('/data_excel_sm')

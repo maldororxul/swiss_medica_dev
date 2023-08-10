@@ -1,7 +1,7 @@
 """ Прочие полезные функции """
 __author__ = 'ke.mizonov'
-
 import time
+from datetime import date, datetime
 from typing import Dict, Callable, Tuple, Optional
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
@@ -15,6 +15,27 @@ DATA_PROCESSOR = {
     'drvorobjev': CDVDataProcessor,
     'swissmedica': SMDataProcessor,
 }
+
+
+class DateTimeEncoder:
+    @staticmethod
+    def encode(obj):
+        for k, v in obj.items():
+            if isinstance(v, (date, datetime)):
+                obj[k] = v.isoformat()
+
+    @staticmethod
+    def decode(obj):
+        for k, v in obj.items():
+            if isinstance(v, str):
+                try:
+                    obj[k] = datetime.fromisoformat(v)
+                except ValueError:
+                    try:
+                        obj[k] = date.fromisoformat(v)
+                    except ValueError:
+                        pass
+        return obj
 
 
 def get_data_from_external_api(handler_func: Callable, request, **args):

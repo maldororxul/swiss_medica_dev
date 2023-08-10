@@ -1,21 +1,14 @@
 """ Фоновые задачи: загрузка данных с источников, обновление pivot data и проч. """
 __author__ = 'ke.mizonov'
-import json
-import time
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta
 from flask import Flask
 from app import socketio
 from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
+from app.main.utils import DateTimeEncoder
 
 get_data_from_amo_is_running = False
 update_pivot_data_is_running = False
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, (date, datetime)):
-            return obj.isoformat()
 
 
 def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
@@ -54,17 +47,6 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
             date_to = date_to - timedelta(minutes=interval)
 
 
-# def sync_generator(data_processor, date_from, date_to):
-#     for line in data_processor.update(date_from=date_from, date_to=date_to) or []:
-#         item = {key.split('_(')[0]: value for key, value in line.items()}
-#         yield {
-#             'id': line['id'],
-#             'created_at': line['created_at_ts'],
-#             'updated_at': line['updated_at_ts'],
-#             'data': json.dumps(item, cls=DateTimeEncoder)
-#         }
-
-
 def update_pivot_data(app: Flask, branch: str):
 
     global update_pivot_data_is_running
@@ -89,13 +71,12 @@ def update_pivot_data(app: Flask, branch: str):
             total = 0
             for line in data_processor.update(date_from=date_from, date_to=date_to):
                 item = {key.split('_(')[0]: value for key, value in line.items()}
-                print('updating', item)
                 if not controller.sync_record(
                     record={
                         'id': line['id'],
                         'created_at': line['created_at_ts'],
                         'updated_at': line['updated_at_ts'],
-                        'data': json.dumps(item, cls=DateTimeEncoder)
+                        'data': DateTimeEncoder.encode(item)
                     },
                     table_name='Data'
                 ):
