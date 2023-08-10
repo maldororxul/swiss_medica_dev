@@ -25,7 +25,7 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
     date_to = starting_date
     processor = DATA_PROCESSOR.get(branch)()
     with app.app_context():
-        controller = SYNC_CONTROLLER.get(branch)
+        controller = SYNC_CONTROLLER.get(branch)()
         while True:
             if not get_data_from_amo_is_running:
                 break
