@@ -193,19 +193,19 @@
                 const ws = XLSX.utils.json_to_sheet(sanitizedData, { dateNF: "YYYY-MM-DD HH:MM:SS" });
                 XLSX.utils.book_append_sheet(wb, ws, 'Data');
 
-                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-
-                // Use ArrayBuffer for Blob creation
-                const buffer = new ArrayBuffer(wbout.length);
-                const view = new Uint8Array(buffer);
-                for (let i = 0; i < wbout.length; i++) {
-                    view[i] = wbout[i];
-                }
-
-                // Adjusted MIME type
-                saveAs(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), event.file_name + '.xlsx');
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+                const blob = new Blob([s2ab(wbout)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                console.log(blob.size);
+                saveAs(blob, event.file_name + '.xlsx');
             }
           });
+
+          function s2ab(s) {
+              const buf = new ArrayBuffer(s.length);
+              const view = new Uint8Array(buf);
+              for (let i = 0; i < s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+              return buf;
+          }
 
           function makeGetRequest(endpoint, params, msg) {
             $.get(endpoint, params, function(response) {
