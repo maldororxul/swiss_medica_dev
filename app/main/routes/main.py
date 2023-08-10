@@ -167,12 +167,17 @@ def send_auth_code():
     return redirect(url_for('main.get_token'))
 
 
-def convert_date_to_str(obj):
-    if isinstance(obj, date):
-        return obj.strftime("%Y-%m-%d")
-    elif isinstance(obj, datetime):
-        return obj.strftime("%Y-%m-%d %H:%M:%S")
-    raise TypeError("Type not serializable")
+def decode(obj):
+    for k, v in obj.items():
+        if isinstance(v, str):
+            try:
+                obj[k] = datetime.fromisoformat(v)
+            except ValueError:
+                try:
+                    obj[k] = date.fromisoformat(v)
+                except ValueError:
+                    pass
+    return obj
 
 
 def data_to_excel(branch: str):
@@ -198,7 +203,7 @@ def data_to_excel(branch: str):
             headers = [x for x in collection[0].to_dict().get('data').keys()]
             # print(f'headers: {headers} ')
         data = [
-            x.get('data')
+            decode(x.data)
             for x in collection
         ]
         num += 1
