@@ -9,16 +9,19 @@ from app.main.utils import DateTimeEncoder
 
 # get_data_from_amo_is_running = False
 # update_pivot_data_is_running = False
+is_running = {
+    'get_data_from_amo': {'sm': False, 'cdv': False},
+    'update_pivot_data': {'sm': False, 'cdv': False},
+}
 
 
 def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
 
     # print('get_data_from_amo start working', branch)
-
-    # global get_data_from_amo_is_running
-    # if get_data_from_amo_is_running:
-    #     return
-    # get_data_from_amo_is_running = True
+    _is_running = is_running.get('get_data_from_amo').get(branch)
+    if _is_running:
+        return
+    is_running.get('get_data_from_amo')[branch] = True
 
     interval = 60
     empty_steps_limit = 20
@@ -66,6 +69,10 @@ def update_pivot_data(app: Flask, branch: str):
     # if update_pivot_data_is_running:
     #     return
     # update_pivot_data_is_running = True
+    _is_running = is_running.get('update_pivot_data').get(branch)
+    if _is_running:
+        return
+    is_running.get('update_pivot_data')[branch] = True
 
     interval = 60
     empty_steps_limit = 20

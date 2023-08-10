@@ -21,18 +21,8 @@ DATA_MODEL = {
     'cdv': CDVData
 }
 
-is_running = {
-    'get_data_from_amo': {'sm': False, 'cdv': False},
-    'update_pivot_data': {'sm': False, 'cdv': False},
-}
-
 
 def start_get_data_from_amo_scheduler(branch: str):
-
-    _is_running = is_running.get('get_data_from_amo').get(branch)
-    if _is_running:
-        return
-    is_running.get('get_data_from_amo')[branch] = True
 
     scheduler_id = f'get_data_from_amo_{branch}'
     lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
@@ -86,12 +76,6 @@ def stop_get_data_from_amo_scheduler(branch: str):
 
 
 def start_update_pivot_data(branch: str):
-
-    _is_running = is_running.get('update_pivot_data').get(branch)
-    if _is_running:
-        return
-    is_running.get('update_pivot_data')[branch] = True
-
     scheduler_id = f'update_pivot_data_{branch}'
     # current_app - это проксированный экземпляр приложения,
     # _get_current_object - доступ к объекту приложения напрямую
