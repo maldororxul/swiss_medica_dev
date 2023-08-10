@@ -21,8 +21,19 @@ DATA_MODEL = {
     'cdv': CDVData
 }
 
+is_running = {
+    'get_data_from_amo': {'sm': False, 'cdv': False},
+    'update_pivot_data': {'sm': False, 'cdv': False},
+}
+
 
 def start_get_data_from_amo_scheduler(branch: str):
+
+    _is_running = is_running.get('get_data_from_amo').get(branch)
+    if _is_running:
+        return
+    is_running.get('get_data_from_amo')[branch] = True
+
     scheduler_id = f'get_data_from_amo_{branch}'
     lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
     # current_app - это проксированный экземпляр приложения,
@@ -46,9 +57,9 @@ def start_get_data_from_amo_scheduler(branch: str):
         )
         if not app.scheduler.running:
             app.scheduler.start()
-            with app.app_context():
-                processor.log.add(text=f'Amo data loader has started', log_type=1)
-                return Response(status=204)
+        with app.app_context():
+            processor.log.add(text=f'Amo data loader has started', log_type=1)
+            return Response(status=204)
     with app.app_context():
         processor.log.add(text=f'Amo data loader is already running', log_type=1)
     return Response(status=204)
@@ -75,6 +86,12 @@ def stop_get_data_from_amo_scheduler(branch: str):
 
 
 def start_update_pivot_data(branch: str):
+
+    _is_running = is_running.get('update_pivot_data').get(branch)
+    if _is_running:
+        return
+    is_running.get('update_pivot_data')[branch] = True
+
     scheduler_id = f'update_pivot_data_{branch}'
     # current_app - это проксированный экземпляр приложения,
     # _get_current_object - доступ к объекту приложения напрямую
@@ -97,9 +114,9 @@ def start_update_pivot_data(branch: str):
         )
         if not app.scheduler.running:
             app.scheduler.start()
-            with app.app_context():
-                processor.log.add(text=f'Amo data builder has started', log_type=1)
-                return Response(status=204)
+        with app.app_context():
+            processor.log.add(text=f'Amo data builder has started', log_type=1)
+            return Response(status=204)
     with app.app_context():
         processor.log.add(text=f'Amo data builder is already running', log_type=1)
     return Response(status=204)

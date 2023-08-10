@@ -17,12 +17,11 @@ def start_autocalls():
     app = current_app._get_current_object()
     for branch in ('drvorobjev', 'swissmedica'):
         scheduler_id = f'autocalls_{branch}'
-        # try:
-        #     app.scheduler.remove_job(f'autocalls_{branch}')
-        # except JobLookupError:
-        #     pass
+        try:
+            app.scheduler.remove_job(f'autocalls_{branch}')
+        except JobLookupError:
+            pass
         processor = DATA_PROCESSOR.get(branch)()
-        is_running = False
         if not app.scheduler.get_job(scheduler_id):
             app.scheduler.add_job(
                 id=f'autocalls_{branch}',
@@ -34,13 +33,9 @@ def start_autocalls():
             )
             if not app.scheduler.running:
                 app.scheduler.start()
-                with app.app_context():
-                    processor.log.add(text=f'Autocalls scheduler started')
-            else:
-                is_running = True
+            with app.app_context():
+                processor.log.add(text=f'Autocalls scheduler started')
         else:
-            is_running = True
-        if is_running:
             with app.app_context():
                 processor.log.add(text=f'Autocalls scheduler is already running')
     return Response(status=204)
