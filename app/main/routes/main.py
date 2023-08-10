@@ -30,23 +30,27 @@ def start_get_data_from_amo_scheduler(branch: str):
     # с проксированным объектом получается некорректный контекст => костыляем
     app = current_app._get_current_object()
     # загрузка данных из Amo CDV
-    try:
-        app.scheduler.remove_job(scheduler_id)
-    except JobLookupError:
-        pass
-    app.scheduler.add_job(
-        id=scheduler_id,
-        func=socketio.start_background_task,
-        args=[get_data_from_amo, app, branch, lowest_dt],
-        trigger='interval',
-        seconds=60,
-        max_instances=1
-    )
+    # try:
+    #     app.scheduler.remove_job(scheduler_id)
+    # except JobLookupError:
+    #     pass
     processor = DATA_PROCESSOR.get(branch)()
-    if not app.scheduler.running:
-        app.scheduler.start()
+    if not app.scheduler.get_job(scheduler_id):
+        app.scheduler.add_job(
+            id=scheduler_id,
+            func=socketio.start_background_task,
+            args=[get_data_from_amo, app, branch, lowest_dt],
+            trigger='interval',
+            seconds=60,
+            max_instances=1
+        )
+        if not app.scheduler.running:
+            app.scheduler.start()
+            with app.app_context():
+                processor.log.add(text=f'Amo data loader has started', log_type=1)
+                return Response(status=204)
     with app.app_context():
-        processor.log.add(text=f'Amo data loader has started', log_type=1)
+        processor.log.add(text=f'Amo data loader is already running', log_type=1)
     return Response(status=204)
     # return render_template('index.html')
 
@@ -70,6 +74,37 @@ def stop_get_data_from_amo_scheduler(branch: str):
     return Response(status=204)
 
 
+def start_update_pivot_data(branch: str):
+    scheduler_id = f'update_pivot_data_{branch}'
+    # current_app - это проксированный экземпляр приложения,
+    # _get_current_object - доступ к объекту приложения напрямую
+    # с проксированным объектом получается некорректный контекст => костыляем
+    app = current_app._get_current_object()
+    # загрузка данных из Amo CDV
+    # try:
+    #     app.scheduler.remove_job(scheduler_id)
+    # except JobLookupError:
+    #     pass
+    processor = DATA_PROCESSOR.get(branch)()
+    if not app.scheduler.get_job(scheduler_id):
+        app.scheduler.add_job(
+            id=scheduler_id,
+            func=socketio.start_background_task,
+            args=[update_pivot_data, app, branch],
+            trigger='interval',
+            seconds=60,
+            max_instances=1
+        )
+        if not app.scheduler.running:
+            app.scheduler.start()
+            with app.app_context():
+                processor.log.add(text=f'Amo data builder has started', log_type=1)
+                return Response(status=204)
+    with app.app_context():
+        processor.log.add(text=f'Amo data builder is already running', log_type=1)
+    return Response(status=204)
+
+
 def stop_update_pivot_data(branch: str):
     scheduler_id = f'update_pivot_data_{branch}'
     # current_app - это проксированный экземпляр приложения,
@@ -87,34 +122,6 @@ def stop_update_pivot_data(branch: str):
     with app.app_context():
         processor.log.add(text=f'Amo data builder has stopped', log_type=1)
     return Response(status=204)
-
-
-def start_update_pivot_data(branch: str):
-    scheduler_id = f'update_pivot_data_{branch}'
-    # current_app - это проксированный экземпляр приложения,
-    # _get_current_object - доступ к объекту приложения напрямую
-    # с проксированным объектом получается некорректный контекст => костыляем
-    app = current_app._get_current_object()
-    # загрузка данных из Amo CDV
-    try:
-        app.scheduler.remove_job(scheduler_id)
-    except JobLookupError:
-        pass
-    app.scheduler.add_job(
-        id=scheduler_id,
-        func=socketio.start_background_task,
-        args=[update_pivot_data, app, branch],
-        trigger='interval',
-        seconds=60,
-        max_instances=1
-    )
-    processor = DATA_PROCESSOR.get(branch)()
-    if not app.scheduler.running:
-        app.scheduler.start()
-    with app.app_context():
-        processor.log.add(text=f'Amo data builder has started', log_type=1)
-    return Response(status=204)
-    # return render_template('index.html')
 
 
 @bp.route('/')

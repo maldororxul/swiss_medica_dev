@@ -4,7 +4,7 @@ __author__ = 'ke.mizonov'
 import time
 
 from apscheduler.jobstores.base import JobLookupError
-from flask import request, current_app, render_template
+from flask import request, current_app, render_template, Response
 from app import socketio
 from app.main import bp
 from app.main.autocall.handler import Autocall
@@ -16,24 +16,34 @@ from config import Config
 def start_autocalls():
     app = current_app._get_current_object()
     for branch in ('drvorobjev', 'swissmedica'):
-        try:
-            app.scheduler.remove_job(f'autocalls_{branch}')
-        except JobLookupError:
-            pass
-        app.scheduler.add_job(
-            id=f'autocalls_{branch}',
-            func=socketio.start_background_task,
-            args=[Autocall(branch=branch).start_autocalls, app],
-            trigger='interval',
-            seconds=int(Config().autocall_interval),
-            max_instances=1
-        )
+        scheduler_id = f'autocalls_{branch}'
+        # try:
+        #     app.scheduler.remove_job(f'autocalls_{branch}')
+        # except JobLookupError:
+        #     pass
         processor = DATA_PROCESSOR.get(branch)()
-        if not app.scheduler.running:
-            app.scheduler.start()
-        with app.app_context():
-            processor.log.add(text=f'Autocalls scheduler started')
-    return render_template('index.html')
+        is_running = False
+        if not app.scheduler.get_job(scheduler_id):
+            app.scheduler.add_job(
+                id=f'autocalls_{branch}',
+                func=socketio.start_background_task,
+                args=[Autocall(branch=branch).start_autocalls, app],
+                trigger='interval',
+                seconds=int(Config().autocall_interval),
+                max_instances=1
+            )
+            if not app.scheduler.running:
+                app.scheduler.start()
+                with app.app_context():
+                    processor.log.add(text=f'Autocalls scheduler started')
+            else:
+                is_running = True
+        else:
+            is_running = True
+        if is_running:
+            with app.app_context():
+                processor.log.add(text=f'Autocalls scheduler is already running')
+    return Response(status=204)
 
 
 @bp.route('/autocall_handler', methods=['POST'])
