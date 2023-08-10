@@ -32,7 +32,7 @@ class DataBase(db.Model):
 
     def to_dict(self):
         line = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        line['data'] = decode(line['data'])
+        # line['data'] = decode(line['data'])
         return line
 
 

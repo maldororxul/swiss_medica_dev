@@ -143,9 +143,17 @@
           }
 
           // This function tries to parse a string to Date, and if it succeeds, it returns the Date, otherwise, the original string.
-            function parseDate(str) {
-              const date = new Date(str);
-              return isNaN(date.getTime()) ? str : date;
+            function parseISODate(isoString) {
+                const regexDate = /^\d{4}-\d{2}-\d{2}$/;
+                const regexDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+
+                if (regexDate.test(isoString)) {
+                    return new Date(isoString).toLocaleDateString("en-US"); // or other appropriate locale
+                } else if (regexDateTime.test(isoString)) {
+                    return new Date(isoString).toLocaleString("en-US"); // or other appropriate locale
+                } else {
+                    return isoString;
+                }
             }
 
           let dataAccumulated = [];
@@ -171,13 +179,13 @@
               dataAccumulated.unshift(headers);
 
                 let sanitizedData = dataAccumulated.map(item => {
-                  let newItem = {...item};
-                  for(let key in newItem) {
-                    if(typeof newItem[key] === 'string') {
-                      newItem[key] = parseDate(sanitize(newItem[key]));
+                    let newItem = {...item};
+                    for(let key in newItem) {
+                        if(typeof newItem[key] === 'string') {
+                            newItem[key] = parseISODate(sanitize(newItem[key]));
+                        }
                     }
-                  }
-                  return Object.values(newItem);
+                    return Object.values(newItem);
                 });
 
               const wb = XLSX.utils.book_new();
