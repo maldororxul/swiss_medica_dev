@@ -120,12 +120,9 @@
                 </div>
             </div>
         </div>
-        <!-- Include SheetJS (XLSX) library -->
-        <script src="path_to_node_modules/exceljs/dist/exceljs.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/sheetjs/0.16.0/xlsx.full.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
         <script type="text/javascript" charset="utf-8">
-
-          import * as ExcelJS from 'exceljs';
-
           let protocol = (location.hostname === "localhost" || location.hostname === "127.0.0.1") ? "http" : "https";
           let socket = io.connect(protocol + '://' + document.domain + ':' + location.port);
 
@@ -191,16 +188,22 @@
                     return Object.values(newItem);
                 });
 
-                const workbook = new ExcelJS.Workbook();
-                const worksheet = workbook.addWorksheet('Data');
-                // Add data to worksheet
-                sanitizedData.forEach(row => {
-                    worksheet.addRow(row);
-                });
-                // Save to blob
-                workbook.xlsx.writeBuffer().then(function(buffer) {
-                    saveAs(new Blob([buffer]), `${event.file_name}.xlsx`);
-                });
+                // Create a new workbook
+                const wb = XLSX.utils.book_new();
+
+                // Create a new worksheet from your sanitized data (assuming sanitizedData is a list of dictionaries)
+                const ws = XLSX.utils.json_to_sheet(sanitizedData);
+
+                // Append the worksheet to the workbook
+                XLSX.utils.book_append_sheet(wb, ws, "Data");
+
+                // Write the workbook and save it
+                const wopts = { bookType: 'xlsx', bookSST: false, type: 'array' };
+
+                const wbout = XLSX.write(wb, wopts);
+
+                // Use FileSaver.js to save the generated XLSX
+                saveAs(new Blob([wbout], {type: "application/octet-stream"}), event.file_name + ".xlsx");
             }
           });
 
