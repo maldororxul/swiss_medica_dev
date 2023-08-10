@@ -55,6 +55,7 @@ def get_data_from_amo(app: Flask, branch: str, starting_date: datetime):
                     text='reading data :: iteration finished',
                     log_type=1
                 )
+                is_running.get('get_data_from_amo')[branch] = False
                 # get_data_from_amo_is_running = False
                 return
             date_from = date_from - timedelta(minutes=interval)
@@ -112,6 +113,7 @@ def update_pivot_data(app: Flask, branch: str):
             if empty_steps_limit == empty_steps:
                 # starting_date = datetime.now()
                 # print('updating pivot data stopped', branch)
+                is_running.get('update_pivot_data')[branch] = False
                 data_processor.log.add(
                     text='updating pivot data :: iteration finished',
                     log_type=1
