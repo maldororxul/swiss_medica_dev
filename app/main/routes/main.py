@@ -212,6 +212,8 @@ def data_to_excel(branch: str):
         ]
         num += 1
         # print(f'sending {branch} pivot data [{num} :: {len(data)}]')
+        if len(data) > 0:
+            print('sending', data[0]['pipeline_name'])
         socketio.emit('pivot_data', {
             'start': False,
             'data': data,
