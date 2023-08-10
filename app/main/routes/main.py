@@ -8,7 +8,7 @@ from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
-from app.main.tasks import get_data_from_amo, update_pivot_data
+from app.main.tasks import get_data_from_amo, update_pivot_data, get_data_from_amo_is_running
 from app.models.data import SMData, CDVData
 
 API_CLIENT = {
@@ -63,8 +63,8 @@ def stop_get_data_from_amo_scheduler(branch: str):
     except JobLookupError:
         pass
     processor = DATA_PROCESSOR.get(branch)()
-    if not app.scheduler.running:
-        app.scheduler.start()
+    # if not app.scheduler.running:
+    #     app.scheduler.start()
     with app.app_context():
         processor.log.add(text=f'Amo data loader has stopped', log_type=1)
     return Response(status=204)
@@ -82,8 +82,8 @@ def stop_update_pivot_data(branch: str):
     except JobLookupError:
         pass
     processor = DATA_PROCESSOR.get(branch)()
-    if not app.scheduler.running:
-        app.scheduler.start()
+    # if not app.scheduler.running:
+    #     app.scheduler.start()
     with app.app_context():
         processor.log.add(text=f'Amo data builder has stopped', log_type=1)
     return Response(status=204)
@@ -176,6 +176,7 @@ def convert_date_to_str(obj):
 
 
 def data_to_excel(branch: str):
+
     model = DATA_MODEL.get(branch)
     portion_size = 1000
     offset = 0

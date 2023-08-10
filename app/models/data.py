@@ -32,7 +32,7 @@ class DataBase(db.Model):
 
     def to_dict(self):
         line = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        line['data'] = json.loads(line['data'], object_hook=datetime_parser)
+        # line['data'] = json.loads(line['data'], object_hook=datetime_parser)
         return line
 
 
