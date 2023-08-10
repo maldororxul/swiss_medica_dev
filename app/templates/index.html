@@ -192,7 +192,8 @@
               const ws = XLSX.utils.aoa_to_sheet(sanitizedData, { dateNF: "YYYY-MM-DD HH:MM:SS" });
               XLSX.utils.book_append_sheet(wb, ws, 'Data');
 
-              const blob = new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: "application/octet-stream" });
+              const binaryData = XLSX.write(wb, { bookType: 'xlsx', type: 'binary' });
+              const blob = new Blob([new Uint8Array([...binaryData].map(char => char.charCodeAt(0)))], { type: "application/octet-stream" });
               saveAs(blob, event.file_name + '.xlsx');
             }
           });
