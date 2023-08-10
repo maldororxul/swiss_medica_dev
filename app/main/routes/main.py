@@ -8,7 +8,7 @@ from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
-from app.main.tasks import get_data_from_amo, update_pivot_data, get_data_from_amo_is_running
+from app.main.tasks import get_data_from_amo, update_pivot_data
 from app.models.data import SMData, CDVData
 
 API_CLIENT = {
