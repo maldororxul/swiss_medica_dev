@@ -138,19 +138,12 @@
             }
           });
 
-          function sanitize(str) {
-            return str.replace(/[^\x20-\x7E]/g, '');
-          }
-
           // This function tries to parse a string to Date, and if it succeeds, it returns the Date, otherwise, the original string.
             function parseISODate(isoString) {
                 const regexDate = /^\d{4}-\d{2}-\d{2}$/;
                 const regexDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
-
-                if (regexDate.test(isoString)) {
-                    return new Date(isoString).toLocaleDateString("en-US"); // or other appropriate locale
-                } else if (regexDateTime.test(isoString)) {
-                    return new Date(isoString).toLocaleString("en-US"); // or other appropriate locale
+                if (regexDate.test(isoString) || regexDateTime.test(isoString)) {
+                    return new Date(isoString);
                 } else {
                     return isoString;
                 }
@@ -183,7 +176,7 @@
                     let newItem = {...item};
                     for(let key in newItem) {
                         if(typeof newItem[key] === 'string') {
-                            newItem[key] = parseISODate(sanitize(newItem[key]));
+                            newItem[key] = parseISODate(newItem[key]);
                         }
                     }
                     return Object.values(newItem);
