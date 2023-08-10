@@ -167,21 +167,21 @@ def send_auth_code():
     return redirect(url_for('main.get_token'))
 
 
-class DateTimeDecoder(json.JSONDecoder):
-    def __init__(self, *args, **kwargs):
-        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
-
-    def object_hook(self, dct):
-        for k, v in dct.items():
-            if isinstance(v, str):
-                try:
-                    dct[k] = datetime.fromisoformat(v)
-                except ValueError:
-                    try:
-                        dct[k] = date.fromisoformat(v)
-                    except ValueError:
-                        pass
-        return dct
+# class DateTimeDecoder(json.JSONDecoder):
+#     def __init__(self, *args, **kwargs):
+#         json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+#
+#     def object_hook(self, dct):
+#         for k, v in dct.items():
+#             if isinstance(v, str):
+#                 try:
+#                     dct[k] = datetime.fromisoformat(v)
+#                 except ValueError:
+#                     try:
+#                         dct[k] = date.fromisoformat(v)
+#                     except ValueError:
+#                         pass
+#         return dct
 
 
 def data_to_excel(branch: str):
@@ -207,7 +207,7 @@ def data_to_excel(branch: str):
             headers = [x for x in collection[0].to_dict().get('data').keys()]
             # print(f'headers: {headers} ')
         data = [
-            json.loads(x.data, cls=DateTimeDecoder)
+            x.to_dict().get('data')
             for x in collection
         ]
         num += 1
