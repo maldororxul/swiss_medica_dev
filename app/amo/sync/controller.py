@@ -129,11 +129,9 @@ class SyncController:
         source_id = target_table.c.id_on_source
         stmt = select(target_table).where(source_id == record['id'])
         db_record = connection.execute(stmt).fetchone()
-        print(db_record)
         # Prepare data for database (remove id from dict to prevent its overwriting)
         db_data = {key: value for key, value in record.items() if key != 'id'}
         if db_record and (not record.get('updated_at') or db_record.updated_at < record['updated_at']):
-            print(1)
             # Update existing record
             update_stmt = (
                 target_table.update().
@@ -143,7 +141,6 @@ class SyncController:
             connection.execute(update_stmt)
             return True
         elif not db_record:
-            print(2)
             # Insert new record
             insert_stmt = insert(target_table).values(
                 id_on_source=record['id'],
