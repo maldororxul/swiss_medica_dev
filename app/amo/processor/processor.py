@@ -1119,8 +1119,9 @@ class CDVDataProcessor(DataProcessor):
                     if name not in stage.IncludeFields and name.lower() not in stage.IncludeFields:
                         continue
                     line[stage.Key] = value
+                    lead_model_instance = lead_model()
                     if value == 1:
-                        line[lead_model.ReachedStage.Key] = stage.DisplayName
+                        line[lead_model_instance.ReachedStage.Key] = stage.DisplayName
 
     # def _process_pipelines(self, line: Dict, lead: Dict, pre_data: Dict):
     #     for lead_model in self.lead_models:
