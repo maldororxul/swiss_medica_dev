@@ -1107,9 +1107,8 @@ class CDVDataProcessor(DataProcessor):
                 continue
             # приоритеты стадий воронки
             stages_priority = lead_model.get_stages_priority()
-            print(lead_model, lead_model.Stage)
-            print(lead_model.Stage.__dict__.items())
-            if not line[lead_model.Stage.Lead.Key]:
+            stage_instance = lead_model.Stage()
+            if not line[stage_instance.Lead.Key]:
                 continue
             # определяем достигнутые этапы сделки по доп. полям
             for field in custom_fields:
