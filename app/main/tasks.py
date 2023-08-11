@@ -1,6 +1,8 @@
 """ Фоновые задачи: загрузка данных с источников, обновление pivot data и проч. """
 __author__ = 'ke.mizonov'
 import gc
+import random
+import time
 from datetime import datetime, timedelta
 from flask import Flask
 from app.main.controllers import SYNC_CONTROLLER
@@ -68,6 +70,7 @@ class SchedulerTask:
                     return
                 date_from = date_from - timedelta(minutes=interval)
                 date_to = date_to - timedelta(minutes=interval)
+                time.sleep(random.uniform(0.01, 1.5))
 
     @staticmethod
     def __update_pivot_data(app: Flask, branch: str, key: str):
@@ -118,3 +121,4 @@ class SchedulerTask:
                 )
                 date_from = date_from - timedelta(minutes=interval)
                 date_to = date_to - timedelta(minutes=interval)
+                time.sleep(random.uniform(0.01, 1.5))

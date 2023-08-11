@@ -148,8 +148,8 @@ class DataProcessor:
         if date_to:
             self.__date_to = date_to
         leads = self.leads()
-        if len(leads) > 0:
-            print('leads', self.__date_from, self.__date_to, len(leads))
+        # if len(leads) > 0:
+        #     print('leads', self.__date_from, self.__date_to, len(leads))
         if not leads:
             return None
         pre_data = self._pre_build()
