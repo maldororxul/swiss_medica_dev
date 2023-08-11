@@ -7,22 +7,23 @@ from app.main import bp
 from config import Config
 
 
-@bp.route('/send_test_msg', methods=['GET', 'POST'])
-def send_test_msg():
-    whatsapp_config = Config().whatsapp.get('drvorobjev')
-    template = None
-    for item in whatsapp_config.get('templates') or []:
-        # хардкод пока что, т.к. не ясно, как ассоциировать номер автообзвона с шаблоном
-        if item['name'] in ("couldnt_reach_you_serbian",):
-            template = item
-            break
-    number_from = (whatsapp_config.get('numbers') or [None])[0] or {}
-    send_wahtsapp_message(number_to='995591058618', number_id_from=number_from['id'], template=template)
-    return Response(status=204)
+# @bp.route('/send_test_msg', methods=['GET', 'POST'])
+# def send_test_msg():
+#     whatsapp_config = Config().whatsapp.get('drvorobjev')
+#     template = None
+#     for item in whatsapp_config.get('templates') or []:
+#         # хардкод пока что, т.к. не ясно, как ассоциировать номер автообзвона с шаблоном
+#         if item['name'] in ("couldnt_reach_you_serbian",):
+#             template = item
+#             break
+#     number_from = (whatsapp_config.get('numbers') or [None])[0] or {}
+#     send_wahtsapp_message(number_to='995591058618', number_id_from=number_from['id'], template=template)
+#     return Response(status=204)
 
 
 def send_wahtsapp_message(
     # https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#examples
+    # https://developers.facebook.com/docs/whatsapp/api/messages/message-templates#supported-languages
     number_to: str,
     number_id_from: str,
     template: Optional[str] = None,

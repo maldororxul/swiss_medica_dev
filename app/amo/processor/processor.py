@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from enum import Enum
 from functools import reduce
-from typing import Dict, List, Optional, Any, Type, Tuple, Union, Generator
+from typing import Dict, List, Optional, Any, Type, Tuple, Union
 from sqlalchemy import Table, MetaData, select, and_
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
@@ -1107,6 +1107,8 @@ class CDVDataProcessor(DataProcessor):
                 continue
             # приоритеты стадий воронки
             stages_priority = lead_model.get_stages_priority()
+            print(lead_model, lead_model.Stage)
+            print(lead_model.Stage.__dict__())
             if not line[lead_model.Stage.Lead.Key]:
                 continue
             # определяем достигнутые этапы сделки по доп. полям

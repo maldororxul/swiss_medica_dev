@@ -211,7 +211,7 @@ class Autocall:
             if item['name'] in ("couldnt_reach_you_serbian", ):
                 template = item
                 break
-        send_wahtsapp_message(number_id_from=number_from['id'], message='test me', number_to=number)
+        send_wahtsapp_message(number_id_from=number_from['id'], template=template, number_to=number)
 
     def start_autocall(self, autocall_id: int):
         """ Начинает автообзвон
