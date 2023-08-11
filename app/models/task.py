@@ -16,7 +16,7 @@ class TaskBase(db.Model):
     updated_at = db.Column(db.Integer, nullable=False, default=lambda: int(datetime.now().timestamp()))
     responsible_user_id = db.Column(db.Integer, nullable=False)
     group_id = db.Column(db.Integer, nullable=False)
-    entity_id = db.Column(db.Integer, nullable=False)
+    entity_id = db.Column(db.Integer)
     entity_type = db.Column(db.String, nullable=False)
     is_completed = db.Column(db.Boolean, default=False)
     task_type_id = db.Column(db.Integer, nullable=False)

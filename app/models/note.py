@@ -9,7 +9,7 @@ class NoteBase(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     id_on_source = db.Column(db.Integer, unique=True, index=True)
-    entity_id = db.Column(db.Integer, nullable=False)
+    entity_id = db.Column(db.Integer)
     created_by = db.Column(db.Integer, nullable=False)
     updated_by = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.Integer, nullable=False)

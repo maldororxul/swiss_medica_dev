@@ -1,14 +1,13 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
-import json
-from datetime import date, datetime
+from datetime import datetime
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
-from app.main.tasks import get_data_from_amo, update_pivot_data
+from app.main.tasks import SchedulerTask
 from app.models.data import SMData, CDVData
 
 API_CLIENT = {
@@ -40,7 +39,7 @@ def start_get_data_from_amo_scheduler(branch: str):
         app.scheduler.add_job(
             id=scheduler_id,
             func=socketio.start_background_task,
-            args=[get_data_from_amo, app, branch, lowest_dt],
+            args=[SchedulerTask().get_data_from_amo, app, branch, lowest_dt],
             trigger='interval',
             seconds=60,
             max_instances=1
@@ -91,7 +90,7 @@ def start_update_pivot_data(branch: str):
         app.scheduler.add_job(
             id=scheduler_id,
             func=socketio.start_background_task,
-            args=[update_pivot_data, app, branch],
+            args=[SchedulerTask().update_pivot_data, app, branch],
             trigger='interval',
             seconds=60,
             max_instances=1
