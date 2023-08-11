@@ -40,7 +40,7 @@ class SchedulerTask:
     @staticmethod
     def __get_data_from_amo(app: Flask, branch: str, starting_date: datetime, key: str):
         interval = 60
-        empty_steps_limit = 20
+        empty_steps_limit = 0
         empty_steps = 0
         date_from = starting_date - timedelta(minutes=interval)
         date_to = starting_date
@@ -57,11 +57,9 @@ class SchedulerTask:
                     empty_steps += 1
                 df = date_from.strftime("%Y-%m-%d %H:%M:%S")
                 dt = date_to.strftime("%H:%M:%S")
-                repeated_iteration = "" if has_new else f" :: R{empty_steps}"
-                msg = f'reading Amo data :: {df} - {dt}{repeated_iteration}'
                 # запись лога в БД
-                processor.log.add(text=msg, log_type=1)
-                if empty_steps_limit == empty_steps:
+                processor.log.add(text=f'reading Amo data :: {df} - {dt} :: R{empty_steps}', log_type=1)
+                if empty_steps_limit > 0 and empty_steps_limit == empty_steps:
                     processor.log.add(
                         text='reading Amo data :: iteration finished',
                         log_type=1
@@ -74,7 +72,7 @@ class SchedulerTask:
     @staticmethod
     def __update_pivot_data(app: Flask, branch: str, key: str):
         interval = 60
-        empty_steps_limit = 20
+        empty_steps_limit = 0
         empty_steps = 0
         # starting_date = datetime(2023, 8, 3, 15, 0, 0)
         starting_date = datetime.now()
@@ -103,20 +101,19 @@ class SchedulerTask:
                     ):
                         not_updated += 1
                     total += 1
-                print(total, not_updated)
                 if total == not_updated:
                     empty_steps += 1
-                if empty_steps_limit == empty_steps:
+                if empty_steps_limit > 0 and empty_steps_limit == empty_steps:
                     is_running.get(key)[branch] = False
                     data_processor.log.add(
                         text='updating pivot data :: iteration finished',
                         log_type=1
                     )
                     return
-                df = date_from.replace(microsecond=0)
-                r = f' R{empty_steps}' if empty_steps > 0 else ''
+                df = date_from.strftime("%Y-%m-%d %H:%M:%S")
+                dt = date_to.strftime("%H:%M:%S")
                 data_processor.log.add(
-                    text=f'updating pivot data :: {df.date()} {df.time()} - {date_to.replace(microsecond=0).time()}{r}',
+                    text=f'updating pivot data :: {df} - {dt} :: R{empty_steps}',
                     log_type=1
                 )
                 date_from = date_from - timedelta(minutes=interval)
