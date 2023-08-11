@@ -92,7 +92,7 @@ class SchedulerTask:
                 total = 0
                 for line in data_processor.update(date_from=date_from, date_to=date_to):
                     item = {key.split('_(')[0]: value for key, value in line.items()}
-                    if not controller.sync_record(
+                    tmp = controller.sync_record(
                         record={
                             'id': line['id'],
                             'created_at': line['created_at_ts'],
@@ -100,7 +100,9 @@ class SchedulerTask:
                             'data': DateTimeEncoder.encode(item)
                         },
                         table_name='Data'
-                    ):
+                    )
+                    print(tmp)
+                    if not tmp:
                         not_updated += 1
                     total += 1
                 if total == not_updated:
