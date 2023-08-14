@@ -326,8 +326,8 @@ def tawk():
         lead_added = amo_client.add_lead_simple(
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
-            pipeline_id=config.get('pipeline_id'),
-            status_id=config.get('status_id'),
+            pipeline_id=int(config.get('pipeline_id')),
+            status_id=int(config.get('status_id')),
             contacts=[
                 {'value': phone, 'field_name': 'Телефон', 'enum_code': 'WORK'}
             ]
