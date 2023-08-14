@@ -336,19 +336,22 @@ def tawk():
             ]
         )
         # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
-        added_lead_data = lead_added.json()
+        added_lead_data = lead_added.json
+        print('added_lead_data', added_lead_data)
         if not added_lead_data or 'lead_id' not in added_lead_data[0]:
+            print(8)
             return Response(status=204)
         entity_id = added_lead_data[0]['lead_id']
         note_data = [{
-            "entity_id": entity_id,
+            "entity_id": int(entity_id),
+            "created_by": 0,
             "note_type": "common",
             "params": {
                 "text": f"Incoming chat https://dashboard.tawk.to/#/inbox/{prop.get('id')}/all/chat/{data['chatId']}"
             }
         }]
         note_added = amo_client.add_note(entity_id=entity_id, data=note_data)
-        print(note_added.text)
+        print('note_added', note_added.text)
     return Response(status=204)
 
 
