@@ -2,6 +2,7 @@
 __author__ = 'ke.mizonov'
 import json
 import os
+import threading
 from typing import Optional, List, Dict
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -19,13 +20,22 @@ WAIT_TIME = 60
 
 class KmBrowser:
     """ Selenium и все, что связано с управлением браузером """
+    _instance = None
+    _lock = threading.Lock()  # This will be the lock to ensure one function at a time can use the browser
 
     def __init__(self, hidden: bool = True):
         self.browser = self.start_browser(hidden=hidden)
 
+    def __new__(cls, *args, **kwargs):
+        with cls._lock:
+            if not cls._instance:
+                cls._instance = super().__new__(cls)
+        return cls._instance
+
     def close(self):
         """ Закрывает браузер """
-        self.browser.close()
+        with self._lock:
+            self.browser.close()
 
     def find_element_by_selector(self, selector: str, timeout: int = WAIT_TIME) -> Optional[WebElement]:
         """ Пытается найти элемент по CSS-селектору
@@ -116,7 +126,8 @@ class KmBrowser:
         Args:
             url: адрес сайта
         """
-        self.browser.get(url=url)
+        with self._lock:
+            self.browser.get(url=url)
 
     def wait(self, selector: str, timeout: int = WAIT_TIME) -> bool:
         """ Ждем прогрузки всех элментов, удовлетворяющих селектору
