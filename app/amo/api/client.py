@@ -239,10 +239,8 @@ class APIClient:
         contacts_fileds = []
         for contact in contacts or []:
             contacts_fileds.append({
-                # "field_id": 448965,
-                "field_name": contact['field_name'],
+                "field_id": contact['field_id'],
                 "values": [{
-                    # "enum_id": 241645,
                     "value": contact['value'],
                     "enum_code": contact['enum_code']
                 }]

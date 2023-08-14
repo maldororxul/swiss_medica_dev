@@ -329,7 +329,7 @@ def tawk():
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),
             contacts=[
-                {'value': phone, 'field_name': 'Телефон', 'enum_code': 'WORK'}
+                {'value': phone, 'field_id': int(config.get('phone_field_id')), 'enum_code': 'WORK'}
             ]
         )
         print('response from Amo', lead_added.text)
