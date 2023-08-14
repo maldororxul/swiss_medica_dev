@@ -9,6 +9,7 @@ from app.main import bp
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import SchedulerTask
 from app.models.data import SMData, CDVData
+from config import Config
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
@@ -268,7 +269,61 @@ def get_amo_data_cdv():
 
 @bp.route('/tawk', methods=['POST'])
 def tawk():
-    print(request.json)
+    """
+    {
+        'chatId': 'aaf4ff90-3a7d-11ee-86b6-71ef2c3aef2f',
+        'visitor': {'name': 'Test Name', 'city': 'batumi', 'country': 'GE'},
+        'message': {'sender': {'type': 'visitor'}, 'text': 'Name : Test Name\r\nPhone : 79216564906', 'type': 'msg'},
+        'time': '2023-08-14T08:37:11.874Z',
+        'event': 'chat:start',
+        'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'CDV'} <-- это название чата, с ним будем мапать
+    }
+    """
+    data = request.json or {}
+    # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
+    chat_name = (data.get('property') or {}).get('name')
+    if not chat_name:
+        return Response(status=204)
+    msg_data = data.get('message')
+    if not msg_data:
+        return Response(status=204)
+    sender = (msg_data.get('sender') or {}).get('type')
+    if sender != 'visitor':
+        return Response(status=204)
+    # имя и телефон клиента
+    spl_text = (msg_data.get('text') or '').split('\r\n')
+    if len(spl_text) != 2:
+        return Response(status=204)
+    name, phone = spl_text
+    if 'Name : ' not in name:
+        return Response(status=204)
+    if 'Phone : ' not in phone:
+        return Response(status=204)
+    name = name.replace('Name : ', '')
+    phone = phone.replace('Phone : ', '')
+    # по имени чата определяем филиал, инициализируем amo клиент
+    config = Config().TAWK.get(chat_name) or {}
+    branch = config.get('branch')
+    if not branch:
+        return Response(status=204)
+    amo_client = API_CLIENT.get(branch)()
+    # пытаемся найти лид по номеру телефона
+    existing_leads = list(amo_client.find_leads(query=phone, limit=1))
+    if existing_leads:
+        # лид найден - дописываем чат в ленту событий / примечаний
+        existing_lead = existing_leads[0]
+    else:
+        # лид не найден - создаем
+        lead_added = amo_client.add_lead_simple(
+            name=f'TEST! Lead from Tawk: {name}',
+            tags=['Tawk', chat_name],
+            pipeline_id=config.get('pipeline_id'),
+            status_id=config.get('status_id'),
+            contacts=[
+                {'value': phone, 'field_name': 'Телефон', 'emun_code': 'WORK'}
+            ]
+        )
+        print('response from Amo', lead_added)
     return Response(status=204)
 
 

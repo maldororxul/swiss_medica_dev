@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 import random
 import requests
-from time import sleep
+from time import sleep, time
 from typing import Dict, List, Optional, Union
 from app.extensions import db
 from app.amo.api.constants import AmoEvent
@@ -226,6 +226,46 @@ class APIClient:
 
     def add_lead(self, data: Union[Dict, List]):
         return self.__execute(endpoint='leads/complex', method='POST', data=data)
+
+    def add_lead_simple(
+        self,
+        name: str,
+        pipeline_id: int,
+        status_id: int,
+        contacts: Optional[List[Dict]] = None,
+        tags: Optional[List[str]] = None,
+        custom_fields_values: Optional[List] = None
+    ):
+        contacts_fileds = []
+        for contact in contacts or []:
+            contacts_fileds.append({
+                # "field_id": 448965,
+                "field_name": contact['field_name'],
+                "values": [{
+                    # "enum_id": 241645,
+                    "value": contact['value'],
+                    "enum_code": contact['enum_code']
+                }]
+            })
+        lead_data = [{
+            "name": name,
+            "created_by": 0,
+            'created_at': int(time()),
+            'pipeline_id': pipeline_id,
+            'status_id': status_id,
+            'custom_fields_values': custom_fields_values,
+            # 'responsible_user_id': self.calls[_id]['responsible_user_id'],
+            "_embedded": {
+                "tags": [{"name": tag} for tag in tags or []],
+                'contacts': [{
+                    "name": name,
+                    "created_at": int(time()),
+                    "custom_fields_values": contacts_fileds,
+                    "updated_by": 0
+                }]
+            }
+        }]
+        return self.add_lead(data=lead_data)
 
     def add_note(self, entity_id: int, data: Union[Dict, List]):
         return self.__execute(endpoint=f'leads/{entity_id}/notes', method='POST', data=data)
