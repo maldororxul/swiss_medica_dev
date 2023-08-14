@@ -266,7 +266,7 @@ def get_amo_data_cdv():
     return start_get_data_from_amo_scheduler(branch='cdv')
 
 
-@bp.route('/tawk')
+@bp.route('/tawk', methods=['POST'])
 def tawk():
     print(request.json)
     return Response(status=204)
