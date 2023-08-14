@@ -332,7 +332,7 @@ def tawk():
                 {'value': phone, 'field_name': 'Телефон', 'enum_code': 'WORK'}
             ]
         )
-        print('response from Amo', lead_added)
+        print('response from Amo', lead_added.text)
     return Response(status=204)
 
 
