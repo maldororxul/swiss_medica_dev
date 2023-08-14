@@ -338,12 +338,12 @@ def tawk():
         # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
         added_lead_data = lead_added.json()
         print('added_lead_data', added_lead_data)
-        if not added_lead_data or 'lead_id' not in added_lead_data[0]:
+        if not added_lead_data or 'id' not in added_lead_data[0]:
             print(8)
             return Response(status=204)
-        entity_id = added_lead_data[0]['lead_id']
+        entity_id = int(added_lead_data[0]['id'])
         note_data = [{
-            "entity_id": int(entity_id),
+            "entity_id": entity_id,
             "created_by": 0,
             "note_type": "common",
             "params": {
