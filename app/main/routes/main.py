@@ -320,9 +320,11 @@ def tawk():
     amo_client = API_CLIENT.get(branch)()
     # пытаемся найти лид по номеру телефона
     existing_leads = list(amo_client.find_leads(query=phone, limit=1))
+    note_msg = f"Incoming chat https://dashboard.tawk.to/#/inbox/{prop.get('id')}/all/chat/{data['chatId']}"
     if existing_leads:
         # лид найден - дописываем чат в ленту событий / примечаний
         existing_lead = existing_leads[0]
+        amo_client.add_note_simple(entity_id=int(existing_lead['id']), text=note_msg)
     else:
         # лид не найден - создаем
         # print('creating new lead')
@@ -337,21 +339,9 @@ def tawk():
         )
         # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
         added_lead_data = lead_added.json()
-        print('added_lead_data', added_lead_data)
-        if not added_lead_data or 'id' not in added_lead_data[0]:
-            print(8)
+        if added_lead_data and 'id' in added_lead_data[0]:
+            amo_client.add_note_simple(entity_id=int(added_lead_data[0]['id']), text=note_msg)
             return Response(status=204)
-        entity_id = int(added_lead_data[0]['id'])
-        note_data = [{
-            "entity_id": entity_id,
-            "created_by": 0,
-            "note_type": "common",
-            "params": {
-                "text": f"Incoming chat https://dashboard.tawk.to/#/inbox/{prop.get('id')}/all/chat/{data['chatId']}"
-            }
-        }]
-        note_added = amo_client.add_note(entity_id=entity_id, data=note_data)
-        print('note_added', note_added.text)
     return Response(status=204)
 
 

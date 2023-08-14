@@ -268,6 +268,17 @@ class APIClient:
     def add_note(self, entity_id: int, data: Union[Dict, List]):
         return self.__execute(endpoint=f'leads/{entity_id}/notes', method='POST', data=data)
 
+    def add_note_simple(self, entity_id: int, text: str):
+        note_data = [{
+            "entity_id": entity_id,
+            "created_by": 0,
+            "note_type": "common",
+            "params": {
+                "text": text
+            }
+        }]
+        return self.add_note(entity_id=entity_id, data=note_data)
+
     def update_lead(self, lead_id: int, data: Dict):
         self.__execute(endpoint='leads', method='PATCH', data=data, entity_id=lead_id)
 
