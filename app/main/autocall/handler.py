@@ -230,6 +230,10 @@ class Autocall:
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
+            try:
+                browser.close()
+            except:
+                pass
             return
         browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
         time.sleep(10)
@@ -326,9 +330,17 @@ class Autocall:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
             processor.log.add(text=f'SipuniConfigError')
+            try:
+                browser.close()
+            except:
+                pass
             return
         except Exception as exc:
             processor.log.add(text=f'browser error: {exc}')
+            try:
+                browser.close()
+            except:
+                pass
             return
         # удаляем все номера из всех автообзвонов Sipuni (через браузер)
         for autocall_id in autocall_ids:

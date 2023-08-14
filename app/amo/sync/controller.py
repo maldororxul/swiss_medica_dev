@@ -108,6 +108,8 @@ class SyncController:
         has_new_records = False
         with engine.begin() as connection:
             for record in collection:
+                if not record:
+                    continue
                 try:
                     if record.get('_links'):
                         record.pop('_links')
@@ -142,11 +144,14 @@ class SyncController:
             return True
         elif not db_record:
             # Insert new record
-            insert_stmt = insert(target_table).values(
-                id_on_source=record['id'],
-                **db_data
-            )
-            connection.execute(insert_stmt)
+            try:
+                insert_stmt = insert(target_table).values(
+                    id_on_source=record['id'],
+                    **db_data
+                )
+                connection.execute(insert_stmt)
+            except Exception as exc:
+                print(f'insert {target_table.name} error {exc}')
             return True
         return False
 

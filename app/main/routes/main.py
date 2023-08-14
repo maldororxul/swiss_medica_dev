@@ -266,6 +266,12 @@ def get_amo_data_cdv():
     return start_get_data_from_amo_scheduler(branch='cdv')
 
 
+@bp.route('/tawk')
+def tawk():
+    print(request.json)
+    return Response(status=204)
+
+
 @bp.route('/stop_get_amo_data_sm')
 def stop_get_amo_data_sm():
     return stop_get_data_from_amo_scheduler(branch='sm')
