@@ -280,24 +280,31 @@ def tawk():
     }
     """
     data = request.json or {}
+    print(data)
     # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
     chat_name = (data.get('property') or {}).get('name')
     if not chat_name:
+        print(1)
         return Response(status=204)
     msg_data = data.get('message')
     if not msg_data:
+        print(2)
         return Response(status=204)
     sender = (msg_data.get('sender') or {}).get('type')
     if sender != 'visitor':
+        print(3)
         return Response(status=204)
     # имя и телефон клиента
     spl_text = (msg_data.get('text') or '').split('\r\n')
     if len(spl_text) != 2:
+        print(4)
         return Response(status=204)
     name, phone = spl_text
     if 'Name : ' not in name:
+        print(5)
         return Response(status=204)
     if 'Phone : ' not in phone:
+        print(6)
         return Response(status=204)
     name = name.replace('Name : ', '')
     phone = phone.replace('Phone : ', '')
@@ -305,6 +312,7 @@ def tawk():
     config = Config().TAWK.get(chat_name) or {}
     branch = config.get('branch')
     if not branch:
+        print(7)
         return Response(status=204)
     amo_client = API_CLIENT.get(branch)()
     # пытаемся найти лид по номеру телефона
@@ -314,6 +322,7 @@ def tawk():
         existing_lead = existing_leads[0]
     else:
         # лид не найден - создаем
+        print('creating new lead')
         lead_added = amo_client.add_lead_simple(
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
