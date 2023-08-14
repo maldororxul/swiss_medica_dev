@@ -1,5 +1,7 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
+
+import uuid
 from datetime import datetime
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
@@ -282,7 +284,8 @@ def tawk():
     data = request.json or {}
     print(data)
     # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
-    chat_name = (data.get('property') or {}).get('name')
+    prop = data.get('property') or {}
+    chat_name = prop.get('name')
     if not chat_name:
         print(1)
         return Response(status=204)
@@ -322,7 +325,7 @@ def tawk():
         existing_lead = existing_leads[0]
     else:
         # лид не найден - создаем
-        print('creating new lead')
+        # print('creating new lead')
         lead_added = amo_client.add_lead_simple(
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
@@ -332,7 +335,20 @@ def tawk():
                 {'value': phone, 'field_id': int(config.get('phone_field_id')), 'enum_code': 'WORK'}
             ]
         )
-        print('response from Amo', lead_added.text)
+        # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
+        added_lead_data = lead_added.json()
+        if not added_lead_data or 'lead_id' not in added_lead_data[0]:
+            return Response(status=204)
+        entity_id = added_lead_data[0]['lead_id']
+        note_data = [{
+            "entity_id": entity_id,
+            "note_type": "common",
+            "params": {
+                "text": f"Incoming chat https://dashboard.tawk.to/#/inbox/{prop.get('id')}/all/chat/{data['chatId']}"
+            }
+        }]
+        note_added = amo_client.add_note(entity_id=entity_id, data=note_data)
+        print(note_added.text)
     return Response(status=204)
 
 
