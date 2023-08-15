@@ -7,8 +7,11 @@ from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
+from app.amo.processor.processor import GoogleSheets
+from app.google_api.client import GoogleAPIClient
 from app.main import bp
 from app.main.processors import DATA_PROCESSOR
+from app.main.routes.telegram import get_data_from_post_request
 from app.main.tasks import SchedulerTask
 from app.models.data import SMData, CDVData
 from config import Config
@@ -342,6 +345,33 @@ def tawk():
         if added_lead_data and 'id' in added_lead_data[0]:
             amo_client.add_note_simple(entity_id=int(added_lead_data[0]['id']), text=note_msg)
             return Response(status=204)
+    return Response(status=204)
+
+
+@bp.route('/agree_for_treatment', methods=['POST'])
+def agree_for_treatment():
+    data = get_data_from_post_request(_request=request)
+    if not data:
+        return 'Unsupported Media Type', 415
+    branch = data.get('account[subdomain]')
+    processor = DATA_PROCESSOR.get(branch)()
+    pipeline_id = data.get('leads[status][0][pipeline_id]')
+    # pipeline = processor.get_pipeline_and_status_by_id(
+    #     pipeline_id=pipeline_id,
+    #     status_id=data.get('leads[status][0][status_id]')
+    # )
+    # получаем лид из Amo
+    amo_client = API_CLIENT.get(branch)()
+    lead_id = data.get('leads[status][0][id]')
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    # получаем пользователя, ответственного за лид
+    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
+    # print('agree_for_treatment lead', lead)
+    # print('agree_for_treatment user', user)
+    GoogleAPIClient(
+        book_id=GoogleSheets.ArrivalSM.value,
+        sheet_title='Draft'
+    ).write_data_to_sheet(data=[{'lead': lead, 'user': user}])
     return Response(status=204)
 
 

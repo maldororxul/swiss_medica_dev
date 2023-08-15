@@ -7,7 +7,7 @@ from apscheduler.jobstores.base import JobLookupError
 from flask import request, current_app, render_template, Response
 from app import socketio
 from app.main import bp
-from app.main.autocall.handler import Autocall
+from app.main.autocall.handler import Autocall, start_autocall_iteration
 from app.main.utils import get_data_from_external_api, DATA_PROCESSOR
 from config import Config
 
@@ -26,7 +26,7 @@ def start_autocalls():
             app.scheduler.add_job(
                 id=f'autocalls_{branch}',
                 func=socketio.start_background_task,
-                args=[Autocall(branch=branch).start_autocalls, app],
+                args=[start_autocall_iteration, app, branch],
                 trigger='interval',
                 seconds=int(Config().autocall_interval),
                 max_instances=1

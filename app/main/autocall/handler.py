@@ -4,6 +4,8 @@ Notes:
     Ограничение! Один и тот же номер не может участвовать в нескольких автообзвонах!
 """
 __author__ = 'ke.mizonov'
+
+import gc
 import json
 import time
 import uuid
@@ -46,6 +48,14 @@ WEEKDAY = {
     6: "Saturday",
     0: "Sunday"
 }
+
+
+def start_autocall_iteration(app: Flask, branch: str):
+    """ Перезапускает все автообзвоны """
+    autocall_controller = Autocall(branch=branch)
+    autocall_controller.start_autocalls(app=app)
+    del autocall_controller
+    gc.collect()
 
 
 class Autocall:
@@ -353,6 +363,10 @@ class Autocall:
             try:
                 browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
             except Exception as exc:
+                try:
+                    browser.close()
+                except:
+                    pass
                 processor.log.add(text=f'browser error: {exc}')
             time.sleep(10)
         browser.close()

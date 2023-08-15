@@ -69,6 +69,28 @@
         s1.setAttribute('crossorigin','*');
         s0.parentNode.insertBefore(s1,s0);
         })();
+        function getUTMParameters() {
+            var params = {};
+            window.location.search.substring(1).split('&').forEach(function(pair) {
+                var keyValue = pair.split('=');
+                params[keyValue[0]] = decodeURIComponent(keyValue[1] || '');
+            });
+            return params;
+        }
+        var utmParams = getUTMParameters();
+        Tawk_API.onChatStarted = function(){
+            // Set custom variables for UTM parameters
+            for (var key in utmParams) {
+                if (utmParams.hasOwnProperty(key) && key.startsWith('utm_')) {
+                    Tawk_API.setAttributes({
+                        key: utmParams[key]
+                    }, false);
+                }
+            }
+            if (typeof(gtag) !== 'undefined') {
+                gtag('send', 'event', 'Tawk', 'Chat Started');
+            }
+        };
         </script>
         <!--End of Tawk.to Script-->
 

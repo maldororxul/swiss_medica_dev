@@ -30,6 +30,7 @@ class GoogleSheets(Enum):
     UtmRulesCDV = '1blEKCs2rkNVlo7E61xvAwgrGeW3H_du-3nblbJCn6rs'
     UtmRulesSM = '11IDgZXK8LBA9UGIira8QWOlqjnPOKMV5F6y6ZEZujCE'
     ScheduleSM = '1ZnQwx14FMhzFogbvsc86AWAqY9XhRsMo7Y8kGbrrIEE'
+    ArrivalSM = '1USpNOW2evtLYR73glcQOy1yEErvixBrc0UiGPOtcQog'
 
 
 CLOSE_REASON_FAILED = (
