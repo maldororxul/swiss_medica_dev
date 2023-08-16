@@ -360,6 +360,7 @@ def agree_for_treatment():
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get('leads[status][0][pipeline_id]')
+    print(data)
     pipeline = processor.get_pipeline_and_status_by_id(
         pipeline_id=pipeline_id,
         status_id=data.get('leads[status][0][status_id]')
@@ -374,14 +375,12 @@ def agree_for_treatment():
     contact = amo_client.get_contact_by_id(contact_id=contacts[0]['id']) if contacts else {}
     # получаем пользователя, ответственного за лид
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id')) or (None, None, '')
-    print(user)
-    print(pipeline)
     # print('agree_for_treatment lead', lead)
     # print('agree_for_treatment user', user)
     link_to_amo = (((lead.get('_links') or {}).get('self') or {}).get('href') or '').split('?')[0]
     cf_dict = processor.get_cf_dict(lead=lead)
-    arrival_dt = datetime.fromtimestamp(cf_dict.get('Дата начала лечения'))
-    departure_dt = datetime.fromtimestamp(cf_dict.get('Дата завершения лечения'))
+    arrival_dt = str(datetime.fromtimestamp(cf_dict.get('Дата начала лечения')).date())
+    departure_dt = str(datetime.fromtimestamp(cf_dict.get('Дата завершения лечения')).date())
     data = {
         'Amo Link': link_to_amo,
         'Google Drive Link': cf_dict.get('Папка Пациента'),
