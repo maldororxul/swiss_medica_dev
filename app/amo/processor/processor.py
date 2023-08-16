@@ -104,6 +104,12 @@ class DataProcessor:
     def events(self) -> List[Dict]:
         return self.__get_data(table_name='Event')
 
+    def get_cf_dict(self, lead: Dict) -> Dict:
+        result = {}
+        for field in lead.get('custom_fields_values') or []:
+            result[field['field_name']] = self._get_cf_values(field=field)
+        return result
+
     def get_lead_phones(self, lead: Dict, forced_contacts_update: bool = False) -> List[str]:
         """ Получить список телефонов из контактов лида """
         result = []
@@ -519,6 +525,14 @@ class DataProcessor:
             дату-время с учетом текущих настроек часового пояса
         """
         return datetime.fromtimestamp(unix_ts, timezone(+timedelta(hours=self.time_shift)))
+
+    @staticmethod
+    def _get_cf_values(field: Dict) -> Any:
+        """ Конкатенирует значения доп. поля, либо возвращает единственное значение """
+        values = field.get('values') or []
+        if len(values) == 1:
+            return values[0]['value']
+        return ', '.join([str(value['value']) for value in values])
 
     def _pre_build(self) -> Dict:
         """ Предзагрузка словарей, необходимых для построения данных по лидам

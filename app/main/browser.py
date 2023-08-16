@@ -13,7 +13,7 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
-from config import Config
+# from webdriver_manager.chrome import ChromeDriverManager
 
 WAIT_TIME = 60
 
@@ -175,6 +175,13 @@ class KmBrowser:
         # capabilities['goog:loggingPrefs'] = {'performance': 'ALL'}
 
         # options.set_capability("loggingPrefs", {'performance': 'ALL'})
+
+        # driver = webdriver.Chrome(
+        #     # executable_path='chromedriver.exe',
+        #     service=ChromeDriverManager().install(),
+        #     options=options,
+        #     # desired_capabilities=capabilities
+        # )
 
         # инициализируем экземпляр браузера
         service = Service(executable_path=Config().chromedriver_path)
