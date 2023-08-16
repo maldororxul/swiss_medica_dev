@@ -360,10 +360,10 @@ def agree_for_treatment():
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get('leads[status][0][pipeline_id]')
-    print(data)
+    status_id = data.get('leads[status][0][status_id]')
     pipeline = processor.get_pipeline_and_status_by_id(
-        pipeline_id=pipeline_id,
-        status_id=data.get('leads[status][0][status_id]')
+        pipeline_id=int(pipeline_id) if str(pipeline_id).isnumeric() else None,
+        status_id=int(status_id) if str(status_id).isnumeric() else None
     ) or {}
     # получаем лид из Amo
     amo_client = API_CLIENT.get(branch)()
@@ -382,23 +382,26 @@ def agree_for_treatment():
     arrival_dt = datetime.fromtimestamp(cf_dict.get('Дата начала лечения')).date()
     departure_dt = datetime.fromtimestamp(cf_dict.get('Дата завершения лечения')).date()
     data = {
+        'Arrival': str(arrival_dt),
+        'Departure': str(departure_dt),
+        'Arrival Month': arrival_dt.month,
+        'Departure Month': departure_dt.month,
         'Amo Link': link_to_amo,
         'Google Drive Link': cf_dict.get('Папка Пациента'),
         'Этап в АМО': pipeline.get('status'),
         "Client's Name": contact.get('name'),
         'Disease': cf_dict.get('Disease'),
         'Clinic': cf_dict.get('Клиника'),
-        'Arrival': str(arrival_dt),
-        'Departure': str(departure_dt),
         'Duration': cf_dict.get('Days in Clinic (Stay duration)'),
         'Language': cf_dict.get('Spoken language'),
-        'Gender': '',
         'Manager': user[2],
         'Final Cost': lead.get('price'),
         'Discount': cf_dict.get('Размер  скидки'),
         'Country': cf_dict.get('Country_from_Jivo'),
         'New or Repeated': 'Repeated' if pipeline.get('pipeline') in ('Re-sales to Client SM', '') else 'New',
         'Doctor Consultant': cf_dict.get('Консультирующий доктор'),
+        'Arrival chance in the current month': cf_dict.get('(%) Arrival chance'),
+        'Gender': '',
 
         'Arrival flight details: flight number, airport, date and time': '',
         'Departure flight details: flight number, airport, date and time': '',
@@ -408,9 +411,6 @@ def agree_for_treatment():
         'Prepayment Date': '',
         'Prepayment confirmation': '',
         'Stem Cell Procedures: List the number of procedures': '',
-        'Arrival Month': arrival_dt.month,
-        'Departure Month': departure_dt.month,
-        'Arrival chance in the current month': cf_dict.get('(%) Arrival chance'),
         'Wheelchair required': '',
         'Number of Companions': ''
     }
