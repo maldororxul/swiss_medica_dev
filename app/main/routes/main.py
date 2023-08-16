@@ -379,8 +379,8 @@ def agree_for_treatment():
     # print('agree_for_treatment user', user)
     link_to_amo = (((lead.get('_links') or {}).get('self') or {}).get('href') or '').split('?')[0]
     cf_dict = processor.get_cf_dict(lead=lead)
-    arrival_dt = str(datetime.fromtimestamp(cf_dict.get('Дата начала лечения')).date())
-    departure_dt = str(datetime.fromtimestamp(cf_dict.get('Дата завершения лечения')).date())
+    arrival_dt = datetime.fromtimestamp(cf_dict.get('Дата начала лечения')).date()
+    departure_dt = datetime.fromtimestamp(cf_dict.get('Дата завершения лечения')).date()
     data = {
         'Amo Link': link_to_amo,
         'Google Drive Link': cf_dict.get('Папка Пациента'),
@@ -388,8 +388,8 @@ def agree_for_treatment():
         "Client's Name": contact.get('name'),
         'Disease': cf_dict.get('Disease'),
         'Clinic': cf_dict.get('Клиника'),
-        'Arrival': arrival_dt,
-        'Departure': departure_dt,
+        'Arrival': str(arrival_dt),
+        'Departure': str(departure_dt),
         'Duration': cf_dict.get('Days in Clinic (Stay duration)'),
         'Language': cf_dict.get('Spoken language'),
         'Gender': '',
