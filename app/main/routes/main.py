@@ -19,6 +19,10 @@ from config import Config
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
     'CDV': DrvorobjevAPIClient,
+    'sm': SwissmedicaAPIClient,
+    'cdv': DrvorobjevAPIClient,
+    'swissmedica': SwissmedicaAPIClient,
+    'drvorobjev': DrvorobjevAPIClient,
 }
 
 DATA_MODEL = {
