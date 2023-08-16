@@ -369,12 +369,10 @@ def agree_for_treatment():
     amo_client = API_CLIENT.get(branch)()
     lead_id = data.get('leads[status][0][id]')
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
-    _embeded = lead.get('_embeded') or {}
+    _embedded = lead.get('_embedded') or {}
     # получаем контакт из Amo
-    contacts = _embeded.get('contacts')
-    tmp = amo_client.get_contact_by_id(contact_id=contacts[0]['id'])
-    print(tmp)
-    contact = tmp if contacts else {}
+    contacts = _embedded.get('contacts')
+    contact = amo_client.get_contact_by_id(contact_id=contacts[0]['id']) if contacts else {}
     # получаем пользователя, ответственного за лид
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id')) or (None, None, '')
     # print('agree_for_treatment lead', lead)
