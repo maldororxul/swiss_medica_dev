@@ -402,7 +402,6 @@ def agree_for_treatment():
         'Doctor Consultant': cf_dict.get('Консультирующий доктор'),
         'Arrival chance in the current month': cf_dict.get('(%) Arrival chance'),
         'Gender': '',
-
         'Arrival flight details: flight number, airport, date and time': '',
         'Departure flight details: flight number, airport, date and time': '',
         'Comments': '',
