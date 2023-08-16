@@ -360,22 +360,61 @@ def agree_for_treatment():
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get('leads[status][0][pipeline_id]')
-    # pipeline = processor.get_pipeline_and_status_by_id(
-    #     pipeline_id=pipeline_id,
-    #     status_id=data.get('leads[status][0][status_id]')
-    # )
+    pipeline = processor.get_pipeline_and_status_by_id(
+        pipeline_id=pipeline_id,
+        status_id=data.get('leads[status][0][status_id]')
+    ) or {}
     # получаем лид из Amo
     amo_client = API_CLIENT.get(branch)()
     lead_id = data.get('leads[status][0][id]')
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    _embeded = lead.get('_embeded') or {}
+    # получаем контакт из Amo
+    contacts = _embeded.get('contacts')
+    contact = amo_client.get_contact_by_id(contact_id=contacts[0]['id']) if contacts else {}
     # получаем пользователя, ответственного за лид
-    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
+    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id')) or (None, None, '')
     # print('agree_for_treatment lead', lead)
     # print('agree_for_treatment user', user)
+    link_to_amo = (((lead.get('_links') or {}).get('self') or {}).get('href') or '').split('?')[0]
+    cf_dict = processor.get_cf_dict(lead=lead)
+    data = {
+        'Amo Link': link_to_amo,
+        'Google Drive Link': cf_dict.get('Папка Пациента'),
+        'Этап в АМО': pipeline.get('status'),
+        "Client's Name": contact.get('name'),
+        'Disease': cf_dict.get('Disease'),
+        'Clinic': cf_dict.get('Клиника'),
+        'Arrival': '',
+        'Departure': '',
+        'Duration': cf_dict.get('Days in Clinic (Stay duration)'),
+        'Language': cf_dict.get('Spoken language'),
+        'Gender': '',
+        'Manager': user[2],
+        'Final Cost': lead.get('price'),
+        'Discount': cf_dict.get('Размер  скидки'),
+        'Country': cf_dict.get('Country_from_Jivo'),
+        'New or Repeated': 'Repeated' if pipeline.get('pipeline') in ('Re-sales to Client SM', '') else 'New',
+        'Doctor Consultant': cf_dict.get('Консультирующий доктор'),
+
+        'Arrival flight details: flight number, airport, date and time': '',
+        'Departure flight details: flight number, airport, date and time': '',
+        'Comments': '',
+        'Статус приезда': '',
+        'Prepayment amount': '',
+        'Prepayment Date': '',
+        'Prepayment confirmation': '',
+        'Stem Cell Procedures: List the number of procedures': '',
+        'Arrival Month': '',
+        'Departure Month': '',
+        'Arrival chance in the current month': cf_dict.get('(%) Arrival chance'),
+        'Wheelchair required': '',
+        'Number of Companions': ''
+    }
     GoogleAPIClient(
         book_id=GoogleSheets.ArrivalSM.value,
         sheet_title='Draft'
-    ).write_data_to_sheet(data=[{'lead': str(lead), 'user': str(user)}])
+    ).write_data_to_sheet(data=[data])
     return Response(status=204)
 
 

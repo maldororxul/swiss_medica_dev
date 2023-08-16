@@ -200,7 +200,7 @@ class AmoProcessor:
             file_name=f'{self.leads_file_name}_pivot'
         ).write_pivot(data=data, worker=worker)
 
-    @profile
+    # @profile
     def build_cluster_data(
         self,
         selected_variable: str,
@@ -219,6 +219,12 @@ class AmoProcessor:
             worker: экземпляр воркера
         """
         raise NotImplementedError
+
+    def get_cf_dict(self, lead: Dict) -> Dict:
+        result = {}
+        for field in lead.get('custom_fields_values') or []:
+            result[field['field_name']] = self._get_cf_values(field=field)
+        return result
 
     def __process_combination(self, combined_dict: Dict, combination: Tuple, line: Dict, curr_month: datetime.date):
         title = ' && '.join(combination)
