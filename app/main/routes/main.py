@@ -375,7 +375,7 @@ def agree_for_treatment():
     GoogleAPIClient(
         book_id=GoogleSheets.ArrivalSM.value,
         sheet_title='Draft'
-    ).write_data_to_sheet(data=[{'lead': lead, 'user': user}])
+    ).write_data_to_sheet(data=[{'lead': str(lead), 'user': str(user)}])
     return Response(status=204)
 
 
