@@ -372,7 +372,9 @@ def agree_for_treatment():
     _embeded = lead.get('_embeded') or {}
     # получаем контакт из Amo
     contacts = _embeded.get('contacts')
-    contact = amo_client.get_contact_by_id(contact_id=contacts[0]['id']) if contacts else {}
+    tmp = amo_client.get_contact_by_id(contact_id=contacts[0]['id'])
+    print(tmp)
+    contact = tmp if contacts else {}
     # получаем пользователя, ответственного за лид
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id')) or (None, None, '')
     # print('agree_for_treatment lead', lead)
