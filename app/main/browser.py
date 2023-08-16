@@ -188,3 +188,8 @@ class KmBrowser:
         driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(WAIT_TIME)
         return driver
+
+
+"""
+browser error: Message: session not created: This version of ChromeDriver only supports Chrome version 114 Current browser version is 116.0.5845.96 with binary path /app/.apt/opt/google/chrome/chrome Stacktrace: #0 0x5575aaaf84e3 #1 0x5575aa827c76 #2 0x5575aa85504a #3 0x5575aa8504a1 #4 0x5575aa84d029 #5 0x5575aa88bccc #6 0x5575aa88b47f #7 0x5575aa882de3 #8 0x5575aa8582dd #9 0x5575aa85934e #10 0x5575aaab83e4 #11 0x5575aaabc3d7 #12 0x5575aaac6b20 #13 0x5575aaabd023 #14 0x5575aaa8b1aa #15 0x5575aaae16b8 #16 0x5575aaae1847 #17 0x5575aaaf1243 #18 0x7fa9e6115b43
+"""

@@ -374,10 +374,14 @@ def agree_for_treatment():
     contact = amo_client.get_contact_by_id(contact_id=contacts[0]['id']) if contacts else {}
     # получаем пользователя, ответственного за лид
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id')) or (None, None, '')
+    print(user)
+    print(pipeline)
     # print('agree_for_treatment lead', lead)
     # print('agree_for_treatment user', user)
     link_to_amo = (((lead.get('_links') or {}).get('self') or {}).get('href') or '').split('?')[0]
     cf_dict = processor.get_cf_dict(lead=lead)
+    arrival_dt = datetime.fromtimestamp(cf_dict.get('Дата начала лечения'))
+    departure_dt = datetime.fromtimestamp(cf_dict.get('Дата завершения лечения'))
     data = {
         'Amo Link': link_to_amo,
         'Google Drive Link': cf_dict.get('Папка Пациента'),
@@ -385,8 +389,8 @@ def agree_for_treatment():
         "Client's Name": contact.get('name'),
         'Disease': cf_dict.get('Disease'),
         'Clinic': cf_dict.get('Клиника'),
-        'Arrival': '',
-        'Departure': '',
+        'Arrival': arrival_dt,
+        'Departure': departure_dt,
         'Duration': cf_dict.get('Days in Clinic (Stay duration)'),
         'Language': cf_dict.get('Spoken language'),
         'Gender': '',
@@ -405,8 +409,8 @@ def agree_for_treatment():
         'Prepayment Date': '',
         'Prepayment confirmation': '',
         'Stem Cell Procedures: List the number of procedures': '',
-        'Arrival Month': '',
-        'Departure Month': '',
+        'Arrival Month': arrival_dt.month,
+        'Departure Month': departure_dt.month,
         'Arrival chance in the current month': cf_dict.get('(%) Arrival chance'),
         'Wheelchair required': '',
         'Number of Companions': ''
