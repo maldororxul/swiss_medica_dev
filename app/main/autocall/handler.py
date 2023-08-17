@@ -319,7 +319,7 @@ class Autocall:
                 processor.log.add(text=f'schedule not found {line.autocall_id} number {line.number}')
                 continue
             # сейчас время, подходящее для звонка
-            processor.log.add(text=f'schedule: {weekday_schedule}, current {curr_dt}')
+            # processor.log.add(text=f'schedule: {weekday_schedule}, current {curr_dt}')
             for period in weekday_schedule:
                 _from, _to = period.split(' - ')
                 _from = self.__build_datetime_from_timestring(timestring=_from)
@@ -327,7 +327,7 @@ class Autocall:
                 if _from <= curr_dt <= _to:
                     break
             else:
-                processor.log.add(text=f'out of schedule {line.autocall_id} number {line.number}')
+                # processor.log.add(text=f'out of schedule {line.autocall_id} number {line.number}')
                 continue
             # processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
             numbers_added.append({'number': line.number, 'autocall_id': line.autocall_id})
