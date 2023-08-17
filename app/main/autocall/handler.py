@@ -293,6 +293,7 @@ class Autocall:
                 continue
             schedule = autocall_config.get('schedule')
             # существует расписание для данного автообзвона
+            #
             if not schedule:
                 processor.log.add(text=f'schedule not found (0) {line.autocall_id} number {line.number}')
                 continue
