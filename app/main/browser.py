@@ -187,6 +187,7 @@ class KmBrowser:
         # )
 
         # инициализируем экземпляр браузера
+        options.binary_location = Config().chromedriver_binary_location
         service = Service(executable_path=Config().chromedriver_path)
         driver = webdriver.Chrome(service=service, options=options)
         driver.set_page_load_timeout(WAIT_TIME)

@@ -43,6 +43,10 @@ class Config:
         return os.environ.get('CHROMEDRIVER_PATH')
 
     @property
+    def chromedriver_binary_location(self):
+        return os.environ.get('GOOGLE_CHROME_SHIM')
+
+    @property
     def google_credentials(self):
         return json.loads(os.environ.get('GOOGLE_CREDENTIALS') or '')
 
