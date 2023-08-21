@@ -90,6 +90,7 @@ class Autocall:
                     "treeName": "Тестирование CRM", "treeNumber": "000960393"
                 }
         """
+        print(data)
         status = data.get('status')
         # получаем экземпляр номера автообзвона из нашей БД
         app = current_app._get_current_object()
@@ -100,17 +101,21 @@ class Autocall:
             number_entity.calls += 1
             number_entity.last_call_timestamp = int(time.time())
             # получаем идентификаторы обзвона и лида, связанные с этим номером
-            autocall_id = number_entity.autocall_id
-            autocall_config = self.__sipuni_branch_config.get('autocall').get(str(autocall_id))
-            if status == 'Исходящий, неотвеченный':
-                db.session.commit()
-            elif status == 'Исходящие, отвеченные':
-                # изменяем запись об автообзвоне в БД, перемещаем лид
+            autocall_config = self.__sipuni_branch_config.get('autocall').get(str(number_entity.autocall_id))
+            # if status == 'Исходящий, неотвеченный':
+            #     db.session.commit()
+            if status == 'Исходящие, отвеченные':
+                # изменяем запись об автообзвоне в БД
                 lead_id = number_entity.lead_id
                 # удаляем номер из нашей базы
                 db.session.delete(number_entity)
-                db.session.commit()
                 # перемещаем лид (факт перемещения вручную игнорируются, ошибки игнорируются)
+                print(
+                    'moving lead...',
+                    lead_id,
+                    autocall_config.get('success_pipeline_id'),
+                    autocall_config.get('success_status_id')
+                )
                 amo_client = API_CLIENT.get(self.__branch)()
                 amo_client.update_lead(
                     lead_id=lead_id,
@@ -119,24 +124,25 @@ class Autocall:
                         'status_id': int(autocall_config.get('success_status_id'))
                     }
                 )
-                # spl = (data.get('"call_record_link"') or '').split('href="')
-                # link = spl[1].split('">')[0] if len(spl) > 1 else ''
-                # duration = int(data.get('timestamp') or 0) - int(data.get('call_answer_timestamp') or 0)
-                # try:
-                #     note_data = [{
-                #         "entity_id": lead_id,
-                #         "note_type": "call_out",
-                #         "params": {
-                #             "uniq": str(uuid.uuid4()),
-                #             "duration": duration,
-                #             "source": "Autocall",
-                #             "link": link,
-                #             "phone": number_entity.number
-                #         }
-                #     }]
-                #     amo_client.add_note(entity_id=lead_id, data=note_data)
-                # except Exception as exc:
-                #     print(exc)
+            db.session.commit()
+            # spl = (data.get('"call_record_link"') or '').split('href="')
+            # link = spl[1].split('">')[0] if len(spl) > 1 else ''
+            # duration = int(data.get('timestamp') or 0) - int(data.get('call_answer_timestamp') or 0)
+            # try:
+            #     note_data = [{
+            #         "entity_id": lead_id,
+            #         "note_type": "call_out",
+            #         "params": {
+            #             "uniq": str(uuid.uuid4()),
+            #             "duration": duration,
+            #             "source": "Autocall",
+            #             "link": link,
+            #             "phone": number_entity.number
+            #         }
+            #     }]
+            #     amo_client.add_note(entity_id=lead_id, data=note_data)
+            # except Exception as exc:
+            #     print(exc)
 
     def handle_lead_status_changed(self, data: Dict) -> None:
         """ Обработка смены статуса лида
