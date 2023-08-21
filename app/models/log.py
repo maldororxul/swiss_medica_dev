@@ -33,6 +33,7 @@ class LogBase(db.Model):
             oldest_record = cls.query.order_by(cls.id).first()
             db.session.delete(oldest_record)
             db.session.commit()
+        db.session.close()
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns if c.name != 'to_dict'}

@@ -90,7 +90,7 @@ class Autocall:
                     "treeName": "Тестирование CRM", "treeNumber": "000960393"
                 }
         """
-        print(data)
+        print('handle autocall result', data)
         status = data.get('status')
         # получаем экземпляр номера автообзвона из нашей БД
         app = current_app._get_current_object()
@@ -344,18 +344,23 @@ class Autocall:
         processor.log.add(text=f'got {len(numbers_added)} numbers for autocall')
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
+            print(self.__branch, 'browser started')
         except SipuniConfigError:
             processor.log.add(text=f'SipuniConfigError')
             try:
                 browser.close()
+                print(self.__branch, 'browser closed - config error')
             except:
+                print(self.__branch, 'failed to close browser - config error')
                 pass
             return
         except Exception as exc:
             processor.log.add(text=f'browser error: {exc}')
             try:
                 browser.close()
+                print(self.__branch, 'browser closed - common exc')
             except:
+                print(self.__branch, 'failed to close browser - common exc')
                 pass
             return
         # удаляем все номера из всех автообзвонов Sipuni (через браузер)
@@ -371,11 +376,18 @@ class Autocall:
             except Exception as exc:
                 try:
                     browser.close()
+                    print(self.__branch, 'browser closed - common exc 2')
                 except:
+                    print(self.__branch, 'failed to close browser - common exc 2')
                     pass
                 processor.log.add(text=f'browser error: {exc}')
             time.sleep(10)
-        browser.close()
+        try:
+            browser.close()
+            print(self.__branch, 'browser closed - autocall iteration done')
+        except:
+            print(self.__branch, 'failed to close browser - autocall iteration done')
+        db.session.close()
 
     def __get_autocall_id(self, pipeline_id: str, status_id: str) -> Optional[int]:
         """ Получает идентификатор автообзвона в Sipuni на основе идентификаторов воронки и статуса
