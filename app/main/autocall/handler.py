@@ -282,6 +282,8 @@ class Autocall:
         sipuni_client = Sipuni(sipuni_config=branch_config)
         numbers_added = []
         for line in all_numbers:
+            db.session.add(line)
+            db.session.refresh(line)
             # с момента last_call_timestamp должно пройти не менее 23 часов (если звонок не первый)
             if line.last_call_timestamp + 23 * 3600 > time.time() and line.calls > 0:
                 waiting_for = f"waiting for {line.last_call_timestamp + 23 * 3600}, now {time.time()}"
