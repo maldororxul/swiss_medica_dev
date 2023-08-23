@@ -126,7 +126,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[
     duplicated = None
     for field_code in ('PHONE', 'EMAIL'):
         for contact in processor.get_lead_contacts(lead=lead, field_code=field_code):
-            if len(contact) < 6:
+            if not contact or len(contact) < 6:
                 continue
             if field_code == 'EMAIL' and '@' not in contact:
                 continue
