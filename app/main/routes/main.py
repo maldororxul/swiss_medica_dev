@@ -276,6 +276,11 @@ def get_amo_data_cdv():
     return start_get_data_from_amo_scheduler(branch='cdv')
 
 
+@socketio.on('client_message')
+def handle_client_message(message):
+    print('Received message:', message['data'])
+
+
 @bp.route('/tawk', methods=['POST'])
 def tawk():
     """

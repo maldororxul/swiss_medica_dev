@@ -66,6 +66,45 @@ function makeGetRequest(endpoint, params, msg) {
     });
 }
 
+<!--Start of Tawk.to Script-->
+var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+(function() {
+    var s1 = document.createElement("script"),
+        s0 = document.getElementsByTagName("script")[0];
+    s1.async = true;
+    s1.src = 'https://embed.tawk.to/64d0945994cf5d49dc68dd99/1h77c6vne';
+    s1.charset = 'UTF-8';
+    s1.setAttribute('crossorigin', '*');
+    s0.parentNode.insertBefore(s1, s0);
+})();
+
+function getUTMParameters() {
+    var params = {};
+    window.location.search.substring(1).split('&').forEach(function(pair) {
+        var keyValue = pair.split('=');
+        params[keyValue[0]] = decodeURIComponent(keyValue[1] || '');
+    });
+    return params;
+}
+
+var utmParams = getUTMParameters();
+var referrer = document.referrer;
+
+Tawk_API.onChatStarted = function() {
+    if (typeof(gtag) !== 'undefined') {
+        gtag('send', 'event', 'Tawk', 'Chat Started');
+    }
+
+    // Send UTM and referrer data to your Flask backend
+    var dataToSend = {
+        utm: utmParams,
+        referrer: referrer
+    };
+
+    socket.emit('client_message', {data: dataToSend});
+};
+<!--End of Tawk.to Script-->
+
 $(document).ready(function() {
     const getAmoDataSm = () => makeGetRequest('/get_amo_data_sm', { time: $('#time-sm').val() }, 'get_amo_data_sm');
     const getAmoDataCdv = () => makeGetRequest('/get_amo_data_cdv', { time: $('#time-cdv').val() }, 'get_amo_data_cdv');
