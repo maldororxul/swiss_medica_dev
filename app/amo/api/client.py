@@ -577,9 +577,9 @@ class APIClient:
         response = self.__execute(endpoint='leads', params=params, entity_id=lead_id)
         print('get_lead_by_id', lead_id, response.status_code)
         try:
-            print(response.text)
             return response.json()
         except:
+            print(response.text)
             return {}
 
     def find_leads(self, query: str, limit: int = 1) -> List[Dict]:
