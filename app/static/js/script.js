@@ -67,12 +67,14 @@ function makeGetRequest(endpoint, params, msg) {
 }
 
 <!--Start of Tawk.to Script-->
+var CHANNEL_ID = '64d0945994cf5d49dc68dd99';
+var CHANNEL_NAME = 'CDV';
 var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 (function() {
     var s1 = document.createElement("script"),
         s0 = document.getElementsByTagName("script")[0];
     s1.async = true;
-    s1.src = 'https://embed.tawk.to/64d0945994cf5d49dc68dd99/1h77c6vne';
+    s1.src = 'https://embed.tawk.to/' + CHANNEL_ID + '/1h77c6vne';
     s1.charset = 'UTF-8';
     s1.setAttribute('crossorigin', '*');
     s0.parentNode.insertBefore(s1, s0);
@@ -95,13 +97,47 @@ Tawk_API.onChatStarted = function() {
         gtag('send', 'event', 'Tawk', 'Chat Started');
     }
 
-    // Send UTM and referrer data to your Flask backend
-    var dataToSend = {
-        utm: utmParams,
-        referrer: referrer
+    // Retrieve the Tawk chat details
+    var tawkData = {
+        chatId: Tawk_API.getChatId(),
+        visitor: Tawk_API.getVisitorDetails(),
+        message: {
+            // Assuming you can get the latest message via a method, or gather this some other way.
+            // The actual method/property to get the latest message might be different. Check Tawk's API.
+            text: Tawk_API.getLastMessage() || "No message available"
+        },
+        time: new Date().toISOString(),  // Current time as an example, adjust as needed.
+        event: 'chat:start',
+        property: {
+            id: CHANNEL_ID,
+            name: CHANNEL_NAME
+        }
     };
 
-    socket.emit('client_message', {data: dataToSend});
+    // Send UTM, referrer, and Tawk data to backend
+    var dataToSend = {
+        utm: utmParams,
+        referrer: referrer,
+        tawk: tawkData
+    };
+
+    // socket.emit('client_message', {data: dataToSend});
+
+    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+
 };
 <!--End of Tawk.to Script-->
 

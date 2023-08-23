@@ -276,9 +276,15 @@ def get_amo_data_cdv():
     return start_get_data_from_amo_scheduler(branch='cdv')
 
 
-@socketio.on('client_message')
-def handle_client_message(message):
-    print('Received message:', message['data'])
+# @socketio.on('client_message')
+# def handle_client_message(message):
+#     print('Received message:', message['data'])
+
+
+@bp.route('/tawk_data', methods=['POST'])
+def tawk():
+    data = request.json or {}
+    print(data)
 
 
 @bp.route('/tawk', methods=['POST'])
@@ -293,6 +299,7 @@ def tawk():
         'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'CDV'} <-- это название чата, с ним будем мапать
     }
     """
+    # handle data from Tawk here
     data = request.json or {}
     print(data)
     # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
