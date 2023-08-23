@@ -68,7 +68,7 @@ function makeGetRequest(endpoint, params, msg) {
 
 <!--Start of Tawk.to Script-->
 var CHANNEL_ID = '64d0945994cf5d49dc68dd99';
-var CHANNEL_NAME = 'CDV';
+var CHANNEL_NAME = 'cdv_main';
 var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 (function() {
     var s1 = document.createElement("script"),
