@@ -92,9 +92,16 @@ function getUTMParameters() {
 var utmParams = getUTMParameters();
 var referrer = document.referrer;
 
-Tawk_API.onMessageSent = function(data){
-    // 'data' contains the message details
-    console.log(data);  // This should give you the message content
+Tawk_API.onChatMessageVisitor = function(message){
+    console.log(message);
+};
+
+Tawk_API.onChatMessageAgent = function(message){
+    console.log(message);
+};
+
+Tawk_API.onChatMessageSystem = function(message){
+    console.log(message);
 };
 
 Tawk_API.onChatStarted = function() {

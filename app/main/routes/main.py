@@ -283,8 +283,9 @@ def get_amo_data_cdv():
 
 @bp.route('/tawk_data', methods=['POST'])
 def tawk_data():
-    data = request.json or {}
-    print(data)
+    pass
+    # data = request.json or {}
+    # print(data)
 
 
 @bp.route('/tawk', methods=['POST'])
@@ -299,6 +300,7 @@ def tawk():
         'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'CDV'} <-- это название чата, с ним будем мапать
     }
     """
+    return Response(status=204)
     # handle data from Tawk here
     data = request.json or {}
     print(data)
