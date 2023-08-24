@@ -7,6 +7,7 @@ https://www.digitalocean.com/community/tutorials/how-to-structure-a-large-flask-
 __author__ = 'ke.mizonov'
 import logging
 from flask import Flask
+from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.commands import create_tables
 from config import Config
@@ -20,6 +21,7 @@ def create_app() -> Flask:
         экземпляр приложения Flask
     """
     app = Flask(__name__)
+    CORS(app)
     app.config.from_object(Config())
     # Logging
     gunicorn_logger = logging.getLogger('gunicorn.error')

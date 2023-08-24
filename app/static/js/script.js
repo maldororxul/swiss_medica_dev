@@ -92,8 +92,17 @@ function getUTMParameters() {
 var utmParams = getUTMParameters();
 var referrer = document.referrer;
 
+window.Tawk_API.onLoad = function(){
+    window.Tawk_API.setAttributes({
+        'utm'    : utmParams,
+        'referrer' : referrer
+    }, function(error){});
+};
+
 Tawk_API.onChatMessageVisitor = function(message){
     console.log(message);
+    console.log(window.Tawk_API.visitor);
+    //console.log(window.Tawk_API);
 };
 
 Tawk_API.onChatMessageAgent = function(message){
@@ -147,7 +156,7 @@ Tawk_API.onChatStarted = function() {
         console.log('Success:', data);
     })
     .catch((error) => {
-        console.error('Error:', error);
+        console.error('Error:', {'error': error});
     });
 
 };
