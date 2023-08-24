@@ -100,15 +100,13 @@ function sendTawkData(dataToSend) {
     .then(response => response.json())
     .then(data => {
         console.log('Success:', data);
-    })
-    .catch((error) => {
-        console.error('Error: ' + error);
     });
 }
 
 var utmParams = getUTMParameters();
 var referrer = document.referrer;
 var visitor = null;
+var isFirstMessage = true;
 
 window.Tawk_API.onLoad = function(){
     window.Tawk_API.setAttributes({
@@ -118,6 +116,9 @@ window.Tawk_API.onLoad = function(){
 };
 
 Tawk_API.onChatMessageVisitor = function(message){
+    if (isFirstMessage) {
+        visitor = message;
+    };
     sendTawkData({
         'type': 'visitor',
         'visitor': visitor,
@@ -143,7 +144,6 @@ Tawk_API.onChatMessageAgent = function(message){
 
 Tawk_API.onChatMessageSystem = function(message){
 //    console.log(message);
-    visitor = message;
     sendTawkData({
         'type': 'agent',
         'visitor': visitor,
