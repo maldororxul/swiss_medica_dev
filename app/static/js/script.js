@@ -92,33 +92,38 @@ function getUTMParameters() {
 var utmParams = getUTMParameters();
 var referrer = document.referrer;
 
+Tawk_API.onMessageSent = function(data){
+    // 'data' contains the message details
+    console.log(data);  // This should give you the message content
+};
+
 Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {
         gtag('send', 'event', 'Tawk', 'Chat Started');
     }
 
-    // Retrieve the Tawk chat details
-    var tawkData = {
-        chatId: Tawk_API.getChatId(),
-        visitor: Tawk_API.getVisitorDetails(),
-        message: {
-            // Assuming you can get the latest message via a method, or gather this some other way.
-            // The actual method/property to get the latest message might be different. Check Tawk's API.
-            text: Tawk_API.getLastMessage() || "No message available"
-        },
-        time: new Date().toISOString(),  // Current time as an example, adjust as needed.
-        event: 'chat:start',
-        property: {
-            id: CHANNEL_ID,
-            name: CHANNEL_NAME
-        }
-    };
+//    // Retrieve the Tawk chat details
+//    var tawkData = {
+//        chatId: Tawk_API.getChatId(),
+//        visitor: Tawk_API.getVisitorDetails(),
+//        message: {
+//            // Assuming you can get the latest message via a method, or gather this some other way.
+//            // The actual method/property to get the latest message might be different. Check Tawk's API.
+//            text: Tawk_API.getLastMessage() || "No message available"
+//        },
+//        time: new Date().toISOString(),  // Current time as an example, adjust as needed.
+//        event: 'chat:start',
+//        property: {
+//            id: CHANNEL_ID,
+//            name: CHANNEL_NAME
+//        }
+//    };
 
     // Send UTM, referrer, and Tawk data to backend
     var dataToSend = {
         utm: utmParams,
         referrer: referrer,
-        tawk: tawkData
+        tawk: {}
     };
 
     // socket.emit('client_message', {data: dataToSend});
