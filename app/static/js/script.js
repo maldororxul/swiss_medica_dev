@@ -97,7 +97,7 @@ function sendTawkData(dataToSend) {
         },
         body: JSON.stringify(dataToSend)
     })
-    .then(response => response.json())
+    .then(response => response)
     .then(data => {
         console.log('Success:', data);
     })
