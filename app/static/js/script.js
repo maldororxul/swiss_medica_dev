@@ -89,8 +89,26 @@ function getUTMParameters() {
     return params;
 }
 
+function sendTawkData(dataToSend) {
+    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk_data', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch((error) => {
+        console.error('Error:', {'error': error});
+    });
+}
+
 var utmParams = getUTMParameters();
 var referrer = document.referrer;
+var visitor = null;
 
 window.Tawk_API.onLoad = function(){
     window.Tawk_API.setAttributes({
@@ -100,17 +118,39 @@ window.Tawk_API.onLoad = function(){
 };
 
 Tawk_API.onChatMessageVisitor = function(message){
-    console.log(message);
-    console.log('visitor' + window.Tawk_API.visitor);
-    //console.log(window.Tawk_API);
+    sendTawkData({
+        'type': 'visitor',
+        'visitor': visitor,
+        'message': message,
+        'utm': utmParams,
+        'referrer': referrer
+    });
+    // console.log(message);
+    // console.log('visitor' + window.Tawk_API.visitor);
+    // console.log(window.Tawk_API);
 };
 
 Tawk_API.onChatMessageAgent = function(message){
-    console.log(message);
+    // console.log(message);
+    sendTawkData({
+        'type': 'agent',
+        'visitor': visitor,
+        'message': message,
+        'utm': utmParams,
+        'referrer': referrer
+    });
 };
 
 Tawk_API.onChatMessageSystem = function(message){
-    console.log(message);
+//    console.log(message);
+    visitor = message;
+    sendTawkData({
+        'type': 'agent',
+        'visitor': visitor,
+        'message': message,
+        'utm': utmParams,
+        'referrer': referrer
+    });
 };
 
 Tawk_API.onChatStarted = function() {
@@ -143,21 +183,6 @@ Tawk_API.onChatStarted = function() {
 //    };
 
     // socket.emit('client_message', {data: dataToSend});
-
-//    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk_data', {
-//        method: 'POST',
-//        headers: {
-//            'Content-Type': 'application/json',
-//        },
-//        body: JSON.stringify(dataToSend)
-//    })
-//    .then(response => response.json())
-//    .then(data => {
-//        console.log('Success:', data);
-//    })
-//    .catch((error) => {
-//        console.error('Error:', {'error': error});
-//    });
 
 };
 <!--End of Tawk.to Script-->
