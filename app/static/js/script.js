@@ -117,7 +117,9 @@ window.Tawk_API.onLoad = function(){
 
 Tawk_API.onChatMessageVisitor = function(message){
     if (isFirstMessage) {
+        console.log('first msg! visitor:' + message)
         visitor = message;
+        isFirstMessage = false;
     };
     sendTawkData({
         'type': 'visitor',
