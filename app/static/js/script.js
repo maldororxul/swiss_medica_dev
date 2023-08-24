@@ -101,7 +101,7 @@ window.Tawk_API.onLoad = function(){
 
 Tawk_API.onChatMessageVisitor = function(message){
     console.log(message);
-    console.log(window.Tawk_API.visitor);
+    console.log('visitor' + window.Tawk_API.visitor);
     //console.log(window.Tawk_API);
 };
 
@@ -136,28 +136,28 @@ Tawk_API.onChatStarted = function() {
 //    };
 
     // Send UTM, referrer, and Tawk data to backend
-    var dataToSend = {
-        utm: utmParams,
-        referrer: referrer,
-        tawk: {}
-    };
+//    var dataToSend = {
+//        utm: utmParams,
+//        referrer: referrer,
+//        tawk: {}
+//    };
 
     // socket.emit('client_message', {data: dataToSend});
 
-    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk_data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend)
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Success:', data);
-    })
-    .catch((error) => {
-        console.error('Error:', {'error': error});
-    });
+//    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk_data', {
+//        method: 'POST',
+//        headers: {
+//            'Content-Type': 'application/json',
+//        },
+//        body: JSON.stringify(dataToSend)
+//    })
+//    .then(response => response.json())
+//    .then(data => {
+//        console.log('Success:', data);
+//    })
+//    .catch((error) => {
+//        console.error('Error:', {'error': error});
+//    });
 
 };
 <!--End of Tawk.to Script-->
