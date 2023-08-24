@@ -100,6 +100,9 @@ function sendTawkData(dataToSend) {
     .then(response => response.json())
     .then(data => {
         console.log('Success:', data);
+    })
+    .catch(error => {
+        console.error('Fetch Error:', error);
     });
 }
 
@@ -117,8 +120,12 @@ window.Tawk_API.onLoad = function(){
 
 Tawk_API.onChatMessageVisitor = function(message){
     if (isFirstMessage) {
-        console.log('first msg! visitor:' + message)
-        visitor = message;
+        console.log('first msg! visitor: ' + message)
+        var details = message.split('\r\n');
+        visitor = {
+            name: details[0].split(' : ')[1],
+            phone: details[1].split(' : ')[1]
+        };
         isFirstMessage = false;
     };
     sendTawkData({
@@ -128,13 +135,9 @@ Tawk_API.onChatMessageVisitor = function(message){
         'utm': utmParams,
         'referrer': referrer
     });
-    // console.log(message);
-    // console.log('visitor' + window.Tawk_API.visitor);
-    // console.log(window.Tawk_API);
 };
 
 Tawk_API.onChatMessageAgent = function(message){
-    // console.log(message);
     sendTawkData({
         'type': 'agent',
         'visitor': visitor,
@@ -145,7 +148,6 @@ Tawk_API.onChatMessageAgent = function(message){
 };
 
 Tawk_API.onChatMessageSystem = function(message){
-//    console.log(message);
     sendTawkData({
         'type': 'agent',
         'visitor': visitor,
@@ -159,33 +161,6 @@ Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {
         gtag('send', 'event', 'Tawk', 'Chat Started');
     }
-
-//    // Retrieve the Tawk chat details
-//    var tawkData = {
-//        chatId: Tawk_API.getChatId(),
-//        visitor: Tawk_API.getVisitorDetails(),
-//        message: {
-//            // Assuming you can get the latest message via a method, or gather this some other way.
-//            // The actual method/property to get the latest message might be different. Check Tawk's API.
-//            text: Tawk_API.getLastMessage() || "No message available"
-//        },
-//        time: new Date().toISOString(),  // Current time as an example, adjust as needed.
-//        event: 'chat:start',
-//        property: {
-//            id: CHANNEL_ID,
-//            name: CHANNEL_NAME
-//        }
-//    };
-
-    // Send UTM, referrer, and Tawk data to backend
-//    var dataToSend = {
-//        utm: utmParams,
-//        referrer: referrer,
-//        tawk: {}
-//    };
-
-    // socket.emit('client_message', {data: dataToSend});
-
 };
 <!--End of Tawk.to Script-->
 
