@@ -283,7 +283,10 @@ def get_amo_data_cdv():
 
 @bp.route('/tawk_data', methods=['POST'])
 def tawk_data():
-    data = request.json or {}
+    try:
+        data = request.json or {}
+    except:
+        data = request
     print(data)
     return Response(status=204)
 
