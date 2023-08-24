@@ -102,7 +102,7 @@ function sendTawkData(dataToSend) {
         console.log('Success:', data);
     })
     .catch((error) => {
-        console.error('Error:', {'error': error});
+        console.error('Error: ' + error);
     });
 }
 
