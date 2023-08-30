@@ -331,6 +331,7 @@ def create_lead_from_tawk_chat(data: Dict):
         added_lead_data = lead_added.json()
         if not added_lead_data:
             return
+        print(added_lead_data)
         lead_id = int(added_lead_data.get('id'))
     messages = sync_controller.chat(lead_id=lead_id, data=data)
     # note_msg = ''
