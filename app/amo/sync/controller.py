@@ -55,7 +55,7 @@ class SyncController:
         target_table = Table('Chat', MetaData(), autoload_with=engine, schema=self.schema)
         messages = []
         with engine.begin() as connection:
-            phone_field = target_table.c.id_on_source
+            phone_field = target_table.c.phone
             stmt = select(target_table).where(phone_field == phone)
             db_record = connection.execute(stmt).fetchone()
             if db_record:
