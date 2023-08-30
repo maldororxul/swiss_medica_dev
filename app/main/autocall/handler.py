@@ -6,38 +6,17 @@ Notes:
 __author__ = 'ke.mizonov'
 
 import gc
-import json
 import time
-import uuid
 from datetime import datetime
 from typing import Dict, Optional
 from flask import current_app, Flask
-from app import db
-from app.amo.processor.functions import clear_phone
-from app.main.autocall.error import SipuniConfigError
-from app.main.browser import KmBrowser
-from app.main.routes.whatsapp import send_wahtsapp_message
+# from app import db
+# from app.amo.processor.functions import clear_phone
+# from app.main.autocall.error import SipuniConfigError
+# from app.main.browser import KmBrowser
 from config import Config
-from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
-from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
-from app.models.autocall import SMAutocallNumber, CDVAutocallNumber
 from modules.external.sipuni.sipuni_api import Sipuni
 
-
-API_CLIENT = {
-    'swissmedica': SwissmedicaAPIClient,
-    'drvorobjev': DrvorobjevAPIClient,
-}
-
-DATA_PROCESSOR = {
-    'swissmedica': SMDataProcessor,
-    'drvorobjev': CDVDataProcessor,
-}
-
-AUTOCALL_NUMBER = {
-    'swissmedica': SMAutocallNumber,
-    'drvorobjev': CDVAutocallNumber,
-}
 
 WEEKDAY = {
     1: "Monday",
@@ -90,6 +69,8 @@ class Autocall:
                     "treeName": "Тестирование CRM", "treeNumber": "000960393"
                 }
         """
+        from app import db
+        from app.main.autocall.constants import API_CLIENT
         print('handle autocall result', data)
         status = data.get('status')
         # получаем экземпляр номера автообзвона из нашей БД
@@ -162,6 +143,9 @@ class Autocall:
                     'account[subdomain]': 'drvorobjev'
                 }
         """
+        from app import db
+        from app.amo.processor.functions import clear_phone
+        from app.main.autocall.constants import API_CLIENT, AUTOCALL_NUMBER, DATA_PROCESSOR
         self.__branch = data.get('account[subdomain]')
         processor = DATA_PROCESSOR.get(self.__branch)()
         # реагируем только на изменение статусов
@@ -235,6 +219,7 @@ class Autocall:
         Args:
             autocall_id: идентификатор автообзвона в Sipuni
         """
+        from app.main.autocall.constants import DATA_PROCESSOR
         processor = DATA_PROCESSOR.get(self.__branch)()
         processor.log.add(text='starting autocall')
         try:
@@ -243,6 +228,8 @@ class Autocall:
             processor.log.add(str(exc))
 
     def __start_autocall(self, autocall_id: int):
+        from app.main.autocall.error import SipuniConfigError
+        from app.main.browser import KmBrowser
         try:
             browser: KmBrowser = self.__get_sipuni_browser()
         except SipuniConfigError:
@@ -257,6 +244,7 @@ class Autocall:
 
     def start_autocalls(self, app: Flask):
         """ Перезапускает все автообзвоны """
+        from app.main.autocall.constants import DATA_PROCESSOR
         with app.app_context():
             processor = DATA_PROCESSOR.get(self.__branch)()
             processor.log.add(text=f'starting autocalls')
@@ -266,6 +254,10 @@ class Autocall:
             #     processor.log.add(str(exc))
 
     def __start_autocalls(self, processor):
+        from app import db
+        from app.main.autocall.error import SipuniConfigError
+        from app.main.browser import KmBrowser
+        from app.main.autocall.constants import API_CLIENT, AUTOCALL_NUMBER
         branch_config = self.__sipuni_branch_config
         if not branch_config:
             processor.log.add(text=f'no config for {self.__branch}')
@@ -406,7 +398,7 @@ class Autocall:
                 return int(autocall_id)
         return None
 
-    def __get_autocall_number_entity(self, number: str) -> Optional[db.Model]:
+    def __get_autocall_number_entity(self, number: str):
         """ Перебирает таблицы БД в поисках экземпляра номера автодозвона
 
         Args:
@@ -415,6 +407,7 @@ class Autocall:
         Returns:
             экземпляр номера автодозвона из БД
         """
+        from app.main.autocall.constants import AUTOCALL_NUMBER
         for autocall_model in AUTOCALL_NUMBER.values():
             number_entity = autocall_model.query.filter_by(number=number).first()
             if number_entity:
@@ -424,8 +417,10 @@ class Autocall:
         else:
             return None
 
-    def __get_sipuni_browser(self) -> KmBrowser:
+    def __get_sipuni_browser(self):
         """ Получить экземпляр браузера с авторизацией в личном кабинете Sipuni """
+        from app.main.autocall.error import SipuniConfigError
+        from app.main.browser import KmBrowser
         browser = KmBrowser()
         browser.open(url='https://sipuni.com/ru_RU/login')
         sipuni_config = self.__sipuni_branch_config
