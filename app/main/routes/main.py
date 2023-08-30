@@ -332,6 +332,9 @@ def create_lead_from_tawk_chat(data: Dict):
         if not added_lead_data:
             return
         print(added_lead_data)
+        """
+        {'validation-errors': [{'request_id': '0', 'errors': [{'code': 'TooFew', 'path': 'custom_fields_values', 'detail': 'This collection should contain 1 element or more.'}]}], 'title': 'Bad Request', 'type': 'https://httpstatus.es/400', 'status': 400, 'detail': 'Request validation failed'}
+        """
         lead_id = int(added_lead_data.get('id'))
     messages = sync_controller.chat(lead_id=lead_id, data=data)
     # note_msg = ''
