@@ -73,6 +73,7 @@ var CHANNEL_NAME = 'cdv_main';
 var utmParams = null;
 var referrer = null;
 var visitor = null;
+var agent = null;
 var isFirstMessage = true;
 var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 (function() {
@@ -130,6 +131,7 @@ Tawk_API.onChatMessageVisitor = function(message){
         'message': message,
         'utm': utmParams,
         'referrer': referrer,
+        'agent': agent,
         'create_lead': create_lead,
         'chat_name': CHANNEL_NAME
     });
@@ -142,6 +144,7 @@ Tawk_API.onChatMessageAgent = function(message){
         'message': message,
         'utm': utmParams,
         'referrer': referrer,
+        'agent': agent,
         'chat_name': CHANNEL_NAME
     });
 };
@@ -153,6 +156,7 @@ Tawk_API.onChatMessageSystem = function(message){
         'message': message,
         'utm': utmParams,
         'referrer': referrer,
+        'agent': agent,
         'chat_name': CHANNEL_NAME
     });
 };
@@ -164,7 +168,14 @@ Tawk_API.onChatStarted = function() {
 };
 
 window.Tawk_API.onAgentJoinChat = function(data){
-    console.log(data)
+    /*
+    id: "64d093bf2e85733b9e316f39"
+    image: "https://embed.tawk.to/_s/v4/assets/images/default-profile.svg"
+    name: "Kirill"
+    position: ""
+    */
+    agent = data.get('name')
+    //console.log(data)
 };
 
 <!--End of Tawk.to Script-->

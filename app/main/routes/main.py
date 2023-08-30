@@ -331,13 +331,17 @@ def create_lead_from_tawk_chat(data: Dict):
         added_lead_data = lead_added.json()
         if not added_lead_data:
             return
-        lead_id = int(added_lead_data[0].get('id'))
+        lead_id = int(added_lead_data.get('id'))
     messages = sync_controller.chat(lead_id=lead_id, data=data)
     # note_msg = ''
     # for message in messages:
     #     note_msg = f"{note_msg}\n{message['date']} :: {message['type']} :: {message['text']}"
     message = messages[-1]
-    note_msg = f"{message['date']} :: {message['type']} :: {message['text']}"
+    agent = message.get('agent')
+    name = message['type']
+    if name == 'agent' and agent:
+        name = agent
+    note_msg = f"{message['date']} :: {name} :: {message['text']}"
     existing_note = amo_client.get_tawk_lead_notes(lead_id=lead_id)
     if existing_note:
         # обновляем существующее примечание
