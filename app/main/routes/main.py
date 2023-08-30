@@ -3,16 +3,21 @@ __author__ = 'ke.mizonov'
 
 import uuid
 from datetime import datetime
+from typing import Dict
+
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
+from app.amo.processor.functions import clear_phone
 from app.amo.processor.processor import GoogleSheets
 from app.google_api.client import GoogleAPIClient
 from app.main import bp
+from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
 from app.main.routes.telegram import get_data_from_post_request
 from app.main.tasks import SchedulerTask
+from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
 from config import Config
 
@@ -23,6 +28,15 @@ API_CLIENT = {
     'cdv': DrvorobjevAPIClient,
     'swissmedica': SwissmedicaAPIClient,
     'drvorobjev': DrvorobjevAPIClient,
+}
+
+TAWK_CHAT_MODEL = {
+    'SM': SMChat,
+    'CDV': CDVChat,
+    'sm': SMChat,
+    'cdv': CDVChat,
+    'swissmedica': SMChat,
+    'drvorobjev': CDVChat,
 }
 
 DATA_MODEL = {
@@ -280,14 +294,91 @@ def get_amo_data_cdv():
 # def handle_client_message(message):
 #     print('Received message:', message['data'])
 
+def create_lead_from_tawk_chat(data: Dict):
+    # по имени чата определяем филиал, инициализируем amo клиент
+    chat_name = data.get('chat_name')
+    config = Config().TAWK.get(data.get('chat_name')) or {}
+    branch = config.get('branch')
+    if not branch:
+        return Response(status=204)
+    amo_client = API_CLIENT.get(branch)()
+    visitor = data.get('visitor')
+    name = visitor.get('name')
+    phone = clear_phone(visitor.get('phone'))
+    data['visitor'] = {'name': name, 'phone': phone}
+    # готовим сообщение
+    sync_controller = SYNC_CONTROLLER.get(branch)()
+    # пытаемся найти лид по номеру телефона
+    existing_leads = list(amo_client.find_leads(query=phone, limit=1))
+    if existing_leads:
+        # лид найден - дописываем чат в ленту событий / примечаний
+        existing_lead = existing_leads[0]
+        lead_id = int(existing_lead['id'])
+    else:
+        # лид не найден - создаем
+        lead_added = amo_client.add_lead_simple(
+            name=f'TEST! Lead from Tawk: {name}',
+            tags=['Tawk', chat_name],
+            referrer=data.get('refferer'),
+            utm=data.get('utm'),
+            pipeline_id=int(config.get('pipeline_id')),
+            status_id=int(config.get('status_id')),
+            contacts=[
+                {'value': phone, 'field_id': int(config.get('phone_field_id')), 'enum_code': 'WORK'}
+            ]
+        )
+        # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
+        added_lead_data = lead_added.json()
+        if not added_lead_data:
+            return
+        lead_id = int(added_lead_data[0].get('id'))
+    messages = sync_controller.chat(lead_id=lead_id, data=data)
+    # note_msg = ''
+    # for message in messages:
+    #     note_msg = f"{note_msg}\n{message['date']} :: {message['type']} :: {message['text']}"
+    message = messages[-1]
+    note_msg = f"{message['date']} :: {message['type']} :: {message['text']}"
+    existing_note = amo_client.get_tawk_lead_notes(lead_id=lead_id)
+    if existing_note:
+        # обновляем существующее примечание
+        text = (existing_note.get('params') or {}).get('text')
+        note_msg = f'{text}\n{note_msg.strip()}'
+        amo_client.update_note_simple(note_id=int(existing_note.get('id')), lead_id=lead_id, text=note_msg)
+        return
+    # добавляем новое примечание
+    note_msg = f'Tawk chat:\n{note_msg.strip()}'
+    amo_client.add_note_simple(entity_id=lead_id, text=note_msg)
+
 
 @bp.route('/tawk_data', methods=['POST'])
 def tawk_data():
-    try:
-        data = request.json or {}
-    except:
-        data = request
-    print(data)
+    """ Принимаем данные со стороны клиента
+    {
+        'type': 'visitor',
+        'visitor': {'name': str, 'phone': str},
+        'message': str,
+        'utm': dict,
+        'referrer': str,
+        'create_lead': bool,
+        'chat_name': str
+    }
+    """
+    data = request.json or {}
+    app = current_app._get_current_object()
+    with app.app_context():
+        create_lead_from_tawk_chat(data=data)
+    # # пишем в базу
+    # if data.get('create_lead'):
+    #     # создаем лид
+    #     pass
+    #     # создаем запись чата в БД: date/time, name, phone, messages, referrer, utm, lead_id
+    #     return Response(status=204)
+    # # вычитываем запись чата из БД
+    # pass
+    # # обновляем запись чата в БД
+    # pass
+    # # обновляем примечание лида
+    # pass
     return Response(status=204)
 
 
@@ -483,6 +574,7 @@ def create_all():
     from app.models.data import SMData, CDVData
     from app.models.log import SMLog, CDVLog
     from app.models.autocall import SMAutocallNumber, CDVAutocallNumber
+    from app.models.chat import SMChat, CDVChat
     with current_app.app_context():
         db.create_all()
     return 'tables created'

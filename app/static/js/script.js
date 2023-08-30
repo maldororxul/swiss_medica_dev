@@ -69,6 +69,11 @@ function makeGetRequest(endpoint, params, msg) {
 <!--Start of Tawk.to Script-->
 var CHANNEL_ID = '64d0945994cf5d49dc68dd99';
 var CHANNEL_NAME = 'cdv_main';
+
+var utmParams = null;
+var referrer = null;
+var visitor = null;
+var isFirstMessage = true;
 var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 (function() {
     var s1 = document.createElement("script"),
@@ -97,7 +102,7 @@ function sendTawkData(dataToSend) {
         },
         body: JSON.stringify(dataToSend)
     })
-    .then(response => response)
+    .then(response => response.status)
     .then(data => {
         console.log('Success:', data);
     })
@@ -106,34 +111,27 @@ function sendTawkData(dataToSend) {
     });
 }
 
-var utmParams = getUTMParameters();
-var referrer = document.referrer;
-var visitor = null;
-var isFirstMessage = true;
-
-window.Tawk_API.onLoad = function(){
-    window.Tawk_API.setAttributes({
-        'utm'    : utmParams,
-        'referrer' : referrer
-    }, function(error){});
-};
-
 Tawk_API.onChatMessageVisitor = function(message){
+    var create_lead = true;
     if (isFirstMessage) {
-        console.log('first msg! visitor: ' + message)
+        utmParams = getUTMParameters();
+        referrer = document.referrer;
         var details = message.split('\r\n');
         visitor = {
             name: details[0].split(' : ')[1],
             phone: details[1].split(' : ')[1]
         };
         isFirstMessage = false;
+        create_lead = false;
     };
     sendTawkData({
         'type': 'visitor',
         'visitor': visitor,
         'message': message,
         'utm': utmParams,
-        'referrer': referrer
+        'referrer': referrer,
+        'create_lead': create_lead,
+        'chat_name': CHANNEL_NAME
     });
 };
 
@@ -143,17 +141,19 @@ Tawk_API.onChatMessageAgent = function(message){
         'visitor': visitor,
         'message': message,
         'utm': utmParams,
-        'referrer': referrer
+        'referrer': referrer,
+        'chat_name': CHANNEL_NAME
     });
 };
 
 Tawk_API.onChatMessageSystem = function(message){
     sendTawkData({
-        'type': 'agent',
+        'type': 'system',
         'visitor': visitor,
         'message': message,
         'utm': utmParams,
-        'referrer': referrer
+        'referrer': referrer,
+        'chat_name': CHANNEL_NAME
     });
 };
 
@@ -162,6 +162,11 @@ Tawk_API.onChatStarted = function() {
         gtag('send', 'event', 'Tawk', 'Chat Started');
     }
 };
+
+window.Tawk_API.onAgentJoinChat = function(data){
+    console.log(data)
+};
+
 <!--End of Tawk.to Script-->
 
 $(document).ready(function() {

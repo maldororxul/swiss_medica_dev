@@ -2,7 +2,7 @@
 __author__ = 'ke.mizonov'
 from typing import Optional, Dict, Callable
 import telebot
-from flask import request, current_app, render_template, Response
+from flask import request, current_app, Response
 from app.main import bp
 from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR, \
     handle_new_lead_slow_reaction

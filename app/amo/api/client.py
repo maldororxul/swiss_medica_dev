@@ -36,6 +36,8 @@ class APIClient:
     note: db.Model = NotImplemented
     user: db.Model = NotImplemented
     sub_domain: str = NotImplemented
+    referrer_field_id: int = NotImplemented
+    utm_map: Dict = NotImplemented
 
     def __init__(self):
         # self.token_pkl: str = f'{self.sub_domain}_token'
@@ -234,8 +236,34 @@ class APIClient:
         status_id: int,
         contacts: Optional[List[Dict]] = None,
         tags: Optional[List[str]] = None,
+        referrer: Optional[str] = None,
+        utm: Optional[Dict] = None,
         custom_fields_values: Optional[List] = None
     ):
+        custom_fields_values = custom_fields_values or []
+        utm = utm or {}
+        if referrer and self.referrer_field_id:
+            custom_fields_values.append({
+                "field_id": self.referrer_field_id,
+                "values": [
+                    {
+                        "value": referrer
+                    }
+                ]
+            })
+        for key, value in utm.items():
+            lower_key = key.lower()
+            utm_field_id = self.utm_map.get(lower_key)
+            if not utm_field_id:
+                continue
+            custom_fields_values.append({
+                "field_id": utm_field_id,
+                "values": [
+                    {
+                        "value": value
+                    }
+                ]
+            })
         contacts_fileds = []
         for contact in contacts or []:
             contacts_fileds.append({
@@ -279,8 +307,32 @@ class APIClient:
         }]
         return self.add_note(entity_id=entity_id, data=note_data)
 
+    def get_tawk_lead_notes(self, lead_id: int) -> Optional[Dict]:
+        limit = 250
+        params = f'limit={limit}&order=created_at'
+        notes = self._get_entity_notes(params=params, limit=limit, entity='lead', entity_id=lead_id)
+        for note in notes:
+            params = note.get('params') or {}
+            text = params.get('text')
+            if 'Tawk chat' in text:
+                return note
+        return None
+
     def update_lead(self, lead_id: int, data: Dict):
         self.__execute(endpoint='leads', method='PATCH', data=data, entity_id=lead_id)
+
+    def update_note(self, lead_id: int, data: List):
+        self.__execute(endpoint='notes', method='PATCH', data=data, entity='lead', entity_id=lead_id)
+
+    def update_note_simple(self, note_id: int, lead_id: int, text: str):
+        note_data = {
+            "id": note_id,
+            "note_type": "common",
+            "params": {
+                "text": text
+            }
+        }
+        self.update_note(lead_id=lead_id, data=[note_data])
 
     def _get_notes(self, date_from: datetime, date_to: datetime) -> List[Dict]:
         """ Получить список примечаний
@@ -305,18 +357,19 @@ class APIClient:
                 result.extend(notes)
         return result
 
-    def _get_entity_notes(self, params: str, limit: int, entity: str) -> List[Dict]:
+    def _get_entity_notes(self, params: str, limit: int, entity: str, entity_id: Optional[int] = None) -> List[Dict]:
         """ Получить список примечаний
 
         Args:
             params: параметры запроса
             limit: ограничение по количеству примечаний в запросе
             entity: сущность
+            entity_id: идентификатор сущности
 
         Returns:
             список примечаний
         """
-        return self.__get_data(endpoint='notes', params=params, limit=limit, entity=entity)
+        return self.__get_data(endpoint='notes', params=params, limit=limit, entity=entity, entity_id=entity_id)
 
     def _save_entity_events(self, collection: List[Dict], entity: str) -> List[Dict]:
         """ Получить список примечаний
@@ -575,7 +628,7 @@ class APIClient:
         """ Получение лида по идентификатору  """
         params = 'with=contacts,loss_reason'
         response = self.__execute(endpoint='leads', params=params, entity_id=lead_id)
-        print('get_lead_by_id', lead_id, response.status_code)
+        # print('get_lead_by_id', lead_id, response.status_code)
         try:
             return response.json()
         except:
@@ -684,6 +737,7 @@ class APIClient:
         page: Optional[int] = None,
         limit: int = DATA_LIMIT,
         entity: str = '',
+        entity_id: Optional[int] = None,
         msg: str = ''
     ) -> List[Dict]:
         """ Получение данных с эндпоинта порциями
@@ -693,6 +747,7 @@ class APIClient:
             params: параметры запроса (сортировка, даты и проч.)
             limit: ограничение по размеру выдачи
             entity: сущность, например, leads, может использоваться как дополнение к эндпоинту
+            entity_id: идентификатор сущности
 
         Returns:
             данные из AMO
@@ -706,7 +761,7 @@ class APIClient:
             # print(f'requesting {endpoint} {page}')
             params = f'{base_params}&page={page}'
             # print(endpoint, params)
-            response = self.__execute(endpoint=endpoint, params=params, entity=entity)
+            response = self.__execute(endpoint=endpoint, params=params, entity=entity, entity_id=entity_id)
             # print(response.text)
             if not response:
                 print('no response', response)
@@ -851,6 +906,17 @@ class DrvorobjevAPIClient(APIClient):
     note: db.Model = CDVNote
     user: db.Model = CDVUser
     sub_domain = 'drvorobjev'
+    referrer_field_id: int = 518713
+    utm_map: Dict = {
+        'utm_source': 46631,
+        'utm_medium': 498455,
+        'utm_campaign': 46619,
+        'utm_content': 46633,
+        'utm_term': 498811,
+        'utm_original': 498813,
+        'gclid': 498451,
+        'fbclid': 498815,
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -867,6 +933,14 @@ class SwissmedicaAPIClient(APIClient):
     note: db.Model = SMNote
     user: db.Model = SMUser
     sub_domain = 'swissmedica'
+    referrer_field_id: int = 954029
+    utm_map: Dict = {
+        'utm_source': 954543,
+        'utm_medium': 954545,
+        'utm_campaign': 954547,
+        'utm_content': 968677,
+        'utm_term': 956715,
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

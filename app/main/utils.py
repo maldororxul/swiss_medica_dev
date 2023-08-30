@@ -6,6 +6,8 @@ from typing import Dict, Callable, Tuple, Optional
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
 
+DUP_TAG = 'duplicated_lead'
+
 API_CLIENT = {
     'swissmedica': SwissmedicaAPIClient,
     'drvorobjev': DrvorobjevAPIClient,
@@ -58,6 +60,7 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str, str]:
     leads[status][0][old_status_id] :: 58840350
     leads[status][0][old_pipeline_id] :: 7010970
     """
+    lead_id = data.get('account[status]')
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get('leads[status][0][pipeline_id]')
@@ -65,12 +68,36 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str, str]:
         pipeline_id=pipeline_id,
         status_id=data.get('leads[status][0][status_id]')
     )
+    # проверка на дубли (находит первый дубль из возможных)
+    amo_client = API_CLIENT.get(branch)()
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    existing_tags = [
+        {'name': tag['name']}
+        for tag in (lead.get('_embedded') or {}).get('tags') or []
+        if tag['name'] != DUP_TAG
+    ]
+    duplicate = check_for_duplicated_leads(
+        processor=processor,
+        lead=lead,
+        amo_client=amo_client,
+        lead_id=lead_id,
+        branch=branch,
+        existing_tags=existing_tags
+    )
+    # получаем пользователя, ответственного за лид
+    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
+    tags_str = ', '.join([tag['name'] for tag in existing_tags])
+    if tags_str:
+        tags_str = f'Tags: {tags_str}'
     return (
         'NEW_LEAD',
         str(pipeline_id),
-        f"{pipeline.get('pipeline') or ''}\n"
+        f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
         f"URGENT! Answered autocall: "
-        f"https://{branch}.amocrm.ru/leads/detail/{data.get('leads[status][0][id]')}".strip()
+        f"https://{branch}.amocrm.ru/leads/detail/{data.get('leads[status][0][id]')}\n"
+        f"{tags_str}\n"
+        f"Responsible: {user.name if user else ''}\n"
+        f"{duplicate}".strip()
     )
 
 
@@ -90,34 +117,45 @@ def handle_new_lead_slow_reaction(data: Dict) -> Tuple[Optional[str], Optional[s
         pipeline_id=pipeline_id,
         status_id=data.get(f'leads[{key}][0][status_id]')
     )
-    return (
-        'NEED_TO_INSURE',
-        str(pipeline_id),
-        f"{pipeline.get('pipeline') or ''}\n"
-        f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
-    )
-
-
-def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    lead_id = data.get('leads[add][0][id]')
-    event = 'New lead'
-    key = 'add'
-    if not lead_id:
-        event = 'Lead moved'
-        key = 'status'
-        lead_id = data.get(f'leads[{key}][0][id]')
-    if not lead_id:
-        return None, None, None
-    branch = data.get('account[subdomain]')
-    processor = DATA_PROCESSOR.get(branch)()
-    pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
-    pipeline = processor.get_pipeline_and_status_by_id(
-        pipeline_id=pipeline_id,
-        status_id=data.get(f'leads[{key}][0][status_id]')
-    )
+    # return (
+    #     'NEED_TO_INSURE',
+    #     str(pipeline_id),
+    #     f"{pipeline.get('pipeline') or ''}\n"
+    #     f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
+    # )
     # проверка на дубли (находит первый дубль из возможных)
     amo_client = API_CLIENT.get(branch)()
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    existing_tags = [
+        {'name': tag['name']}
+        for tag in (lead.get('_embedded') or {}).get('tags') or []
+        if tag['name'] != DUP_TAG
+    ]
+    # получаем пользователя, ответственного за лид
+    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
+    tags_str = ', '.join([tag['name'] for tag in existing_tags])
+    if tags_str:
+        tags_str = f'Tags: {tags_str}'
+    duplicate = check_for_duplicated_leads(
+        processor=processor,
+        lead=lead,
+        amo_client=amo_client,
+        lead_id=lead_id,
+        branch=branch,
+        existing_tags=existing_tags
+    )
+    return (
+        'NEED_TO_INSURE',
+        str(pipeline_id),
+        f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
+        f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
+        f"{tags_str}\n"
+        f"Responsible: {user.name if user else ''}\n"
+        f"{duplicate}".strip()
+    )
+
+
+def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, existing_tags) -> str:
     contacts = []
     for contact in (lead.get('_embedded') or {}).get('contacts') or []:
         contacts.append(amo_client.get_contact_by_id(contact_id=contact['id']))
@@ -144,29 +182,66 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[
             break
     duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}" if duplicated else ''
     # прописываем тег "duplicated_lead"
-    dup_tag = 'duplicated_lead'
     if duplicate:
         # обновляем теги текущего лида
-        existing_tags = [
-            {'name': tag['name']}
-            for tag in (lead.get('_embedded') or {}).get('tags') or []
-            if tag['name'] != dup_tag
-        ]
-        existing_tags.append({'name': dup_tag})
+        existing_tags.append({'name': DUP_TAG})
         amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': existing_tags}})
         # обновляем теги лида-дубля
         existing_tags = [
             {'name': tag['name']}
             for tag in (duplicated.get('_embedded') or {}).get('tags') or []
-            if tag['name'] != dup_tag
+            if tag['name'] != DUP_TAG
         ]
-        existing_tags.append({'name': dup_tag})
+        existing_tags.append({'name': DUP_TAG})
         amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': existing_tags}})
+    return duplicate
+
+
+def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    lead_id = data.get('leads[add][0][id]')
+    event = 'New lead'
+    key = 'add'
+    if not lead_id:
+        event = 'Lead moved'
+        key = 'status'
+        lead_id = data.get(f'leads[{key}][0][id]')
+    if not lead_id:
+        return None, None, None
+    branch = data.get('account[subdomain]')
+    processor = DATA_PROCESSOR.get(branch)()
+    pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
+    pipeline = processor.get_pipeline_and_status_by_id(
+        pipeline_id=pipeline_id,
+        status_id=data.get(f'leads[{key}][0][status_id]')
+    )
+    # проверка на дубли (находит первый дубль из возможных)
+    amo_client = API_CLIENT.get(branch)()
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    existing_tags = [
+        {'name': tag['name']}
+        for tag in (lead.get('_embedded') or {}).get('tags') or []
+        if tag['name'] != DUP_TAG
+    ]
+    # получаем пользователя, ответственного за лид
+    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
+    tags_str = ', '.join([tag['name'] for tag in existing_tags])
+    if tags_str:
+        tags_str = f'Tags: {tags_str}'
+    duplicate = check_for_duplicated_leads(
+        processor=processor,
+        lead=lead,
+        amo_client=amo_client,
+        lead_id=lead_id,
+        branch=branch,
+        existing_tags=existing_tags
+    )
     return (
         'NEW_LEAD',
         str(pipeline_id),
-        f"{pipeline.get('pipeline') or ''}\n"
+        f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
         f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
+        f"{tags_str}\n"
+        f"Responsible: {user.name if user else ''}\n"
         f"{duplicate}".strip()
     )
 

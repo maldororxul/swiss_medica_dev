@@ -33,6 +33,58 @@ class SyncController:
             table_name='Contact',
         )
 
+    def chat(self, lead_id: int, data: Dict) -> bool:
+        phone = data.get('phone')
+        """
+        'type': 'visitor',
+        'visitor': visitor,
+        'message': message,
+        'utm': utmParams,
+        'referrer': referrer,
+        'create_lead': create_lead,
+        'chat_name': CHANNEL_NAME
+        """
+        message = {
+            'date': datetime.now(),
+            'type': data.get('type'),
+            'text': data.get('message'),
+        }
+        if data.get('create_lead'):
+            message['text'] = 'Init Tawk chat'
+        engine = get_engine()
+        target_table = Table('Chat', MetaData(), autoload_with=engine, schema=self.schema)
+        messages = []
+        with engine.begin() as connection:
+            phone_field = target_table.c.id_on_source
+            stmt = select(target_table).where(phone_field == phone)
+            db_record = connection.execute(stmt).fetchone()
+            if db_record:
+                # Update existing record
+                messages = db_record.messages
+                messages.append(message)
+                update_stmt = (
+                    target_table.update().
+                    where(phone_field == phone).
+                    values(messages=messages)
+                )
+                connection.execute(update_stmt)
+            elif not db_record and lead_id:
+                messages = [message]
+                # Insert new record
+                try:
+                    insert_stmt = insert(target_table).values(
+                        phone=phone,
+                        messages=messages,
+                        lead_id=lead_id,
+                        name=data['visitor']['name'],
+                        referrer=data['referrer'],
+                        utm=data['utm']
+                    )
+                    connection.execute(insert_stmt)
+                except Exception as exc:
+                    print(f'insert {target_table.name} error {exc}')
+        return messages
+
     def update_data(
         self,
         collection: List[Dict],
