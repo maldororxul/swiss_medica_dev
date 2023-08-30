@@ -20,7 +20,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # )
 from app.commands import create_tables
 # from app.event_listener import scheduler_listener
-from app.main.routes.autocall import start_autocalls
+# from app.main.routes.autocall import start_autocalls
 from config import Config
 from app.extensions import db, socketio
 
@@ -48,7 +48,7 @@ def create_app() -> Flask:
     #     EVENT_JOB_MISSED | EVENT_JOB_EXECUTED | EVENT_JOB_ERROR
     # )
     # запускаем фоновые задачи
-    start_autocalls()
+    # start_autocalls()
     # app.scheduler.start()
     # Register blueprints
     from app.main import bp as main_bp
