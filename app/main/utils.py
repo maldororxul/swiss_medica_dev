@@ -88,14 +88,14 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str, str]:
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
     tags_str = ', '.join([tag['name'] for tag in existing_tags])
     if tags_str:
-        tags_str = f'Tags: {tags_str}'
+        tags_str = f'{tags_str}'
     return (
         'NEW_LEAD',
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
         f"URGENT! Answered autocall: "
         f"https://{branch}.amocrm.ru/leads/detail/{data.get('leads[status][0][id]')}\n"
-        f"{tags_str}\n"
+        f"Tags: {tags_str}\n"
         f"Responsible: {user.name if user else ''}\n"
         f"{duplicate}".strip()
     )
@@ -135,7 +135,7 @@ def handle_new_lead_slow_reaction(data: Dict) -> Tuple[Optional[str], Optional[s
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
     tags_str = ', '.join([tag['name'] for tag in existing_tags])
     if tags_str:
-        tags_str = f'Tags: {tags_str}'
+        tags_str = f'{tags_str}'
     duplicate = check_for_duplicated_leads(
         processor=processor,
         lead=lead,
@@ -149,7 +149,7 @@ def handle_new_lead_slow_reaction(data: Dict) -> Tuple[Optional[str], Optional[s
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
         f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
-        f"{tags_str}\n"
+        f"Tags: {tags_str}\n"
         f"Responsible: {user.name if user else ''}\n"
         f"{duplicate}".strip()
     )
@@ -184,16 +184,29 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
     # прописываем тег "duplicated_lead"
     if duplicate:
         # обновляем теги текущего лида
-        existing_tags.append({'name': DUP_TAG})
-        amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': existing_tags}})
+        pass
+        # existing_tags.append({'name': DUP_TAG})
+        # amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': existing_tags}})
         # обновляем теги лида-дубля
-        existing_tags = [
-            {'name': tag['name']}
-            for tag in (duplicated.get('_embedded') or {}).get('tags') or []
-            if tag['name'] != DUP_TAG
-        ]
-        existing_tags.append({'name': DUP_TAG})
-        amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': existing_tags}})
+        # existing_tags = [
+        #     {'name': tag['name']}
+        #     for tag in (duplicated.get('_embedded') or {}).get('tags') or []
+        #     if tag['name'] != DUP_TAG
+        # ]
+        # existing_tags.append({'name': DUP_TAG})
+        # lead.get('responsible_user_id')
+        # """
+        # {
+        #     "id": 54884,
+        #     "price": 50000,
+        #     "pipeline_id": 47521,
+        #     "status_id": 525743,
+        #     "_embedded": {
+        #         "tags": null
+        #     }
+        # }
+        # """
+        # amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': existing_tags}})
     return duplicate
 
 
@@ -226,7 +239,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[
     user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
     tags_str = ', '.join([tag['name'] for tag in existing_tags])
     if tags_str:
-        tags_str = f'Tags: {tags_str}'
+        tags_str = f'{tags_str}'
     duplicate = check_for_duplicated_leads(
         processor=processor,
         lead=lead,
@@ -240,7 +253,7 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[
         str(pipeline_id),
         f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
         f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
-        f"{tags_str}\n"
+        f"Tags: {tags_str}\n"
         f"Responsible: {user.name if user else ''}\n"
         f"{duplicate}".strip()
     )

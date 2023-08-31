@@ -622,6 +622,7 @@ class DataProcessor:
             return [x._asdict() for x in connection.execute(stmt).fetchall() or []]
 
     def get_pipeline_and_status_by_id(self, pipeline_id: int, status_id: int) -> Dict:
+        status_id = str(status_id)
         table = Table('Pipeline', MetaData(), autoload_with=self.engine, schema=self.schema)
         with self.engine.begin() as connection:
             stmt = select(table).where(
@@ -633,7 +634,7 @@ class DataProcessor:
             _embedded = pipeline._embedded
             status = None
             for line in _embedded.get('statuses'):
-                if line['id'] == status_id:
+                if str(line['id']) == status_id:
                     status = line['name']
                     break
             return {

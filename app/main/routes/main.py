@@ -375,18 +375,6 @@ def tawk_data():
     app = current_app._get_current_object()
     with app.app_context():
         create_lead_from_tawk_chat(data=data)
-    # # пишем в базу
-    # if data.get('create_lead'):
-    #     # создаем лид
-    #     pass
-    #     # создаем запись чата в БД: date/time, name, phone, messages, referrer, utm, lead_id
-    #     return Response(status=204)
-    # # вычитываем запись чата из БД
-    # pass
-    # # обновляем запись чата в БД
-    # pass
-    # # обновляем примечание лида
-    # pass
     return Response(status=204)
 
 
