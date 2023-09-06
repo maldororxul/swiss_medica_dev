@@ -67,24 +67,27 @@ function makeGetRequest(endpoint, params, msg) {
 }
 
 <!--Start of Tawk.to Script-->
-var CHANNEL_ID = '64d0945994cf5d49dc68dd99';
-var CHANNEL_NAME = 'cdv_main';
-
-var utmParams = null;
-var referrer = null;
-var visitor = null;
-var agent = null;
-var isFirstMessage = true;
 var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 (function() {
     var s1 = document.createElement("script"),
         s0 = document.getElementsByTagName("script")[0];
     s1.async = true;
-    s1.src = 'https://embed.tawk.to/' + CHANNEL_ID + '/1h77c6vne';
+    s1.src = 'https://embed.tawk.to/64d0945994cf5d49dc68dd99/1h77c6vne';
     s1.charset = 'UTF-8';
     s1.setAttribute('crossorigin', '*');
     s0.parentNode.insertBefore(s1, s0);
 })();
+
+window.Tawk_API.onLoad = function(){
+    window.Tawk_API.setAttributes({
+        'utm': JSON.stringify(getUTMParameters()),
+        'referrer': document.referrer
+    }, function(error){
+        if (error) {
+            console.error("Error setting Tawk attributes:", error);
+        }
+    });
+};
 
 function getUTMParameters() {
     var params = {};
@@ -95,89 +98,11 @@ function getUTMParameters() {
     return params;
 }
 
-function sendTawkData(dataToSend) {
-    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk_data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend)
-    })
-    .then(response => response.status)
-    .then(data => {
-        console.log('Success:', data);
-    })
-    .catch(error => {
-        console.error('Fetch Error:', error);
-    });
-}
-
-Tawk_API.onChatMessageVisitor = function(message){
-    var create_lead = true;
-    if (isFirstMessage) {
-        utmParams = getUTMParameters();
-        referrer = document.referrer;
-        var details = message.split('\r\n');
-        visitor = {
-            name: details[0].split(' : ')[1],
-            phone: details[1].split(' : ')[1]
-        };
-        isFirstMessage = false;
-        create_lead = false;
-    };
-    sendTawkData({
-        'type': 'visitor',
-        'visitor': visitor,
-        'message': message,
-        'utm': utmParams,
-        'referrer': referrer,
-        'agent': agent,
-        'create_lead': create_lead,
-        'chat_name': CHANNEL_NAME
-    });
-};
-
-Tawk_API.onChatMessageAgent = function(message){
-    sendTawkData({
-        'type': 'agent',
-        'visitor': visitor,
-        'message': message,
-        'utm': utmParams,
-        'referrer': referrer,
-        'agent': agent,
-        'chat_name': CHANNEL_NAME
-    });
-};
-
-Tawk_API.onChatMessageSystem = function(message){
-    sendTawkData({
-        'type': 'system',
-        'visitor': visitor,
-        'message': message,
-        'utm': utmParams,
-        'referrer': referrer,
-        'agent': agent,
-        'chat_name': CHANNEL_NAME
-    });
-};
-
 Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {
         gtag('send', 'event', 'Tawk', 'Chat Started');
     }
 };
-
-window.Tawk_API.onAgentJoinChat = function(data){
-    /*
-    id: "64d093bf2e85733b9e316f39"
-    image: "https://embed.tawk.to/_s/v4/assets/images/default-profile.svg"
-    name: "Kirill"
-    position: ""
-    */
-    agent = data.get('name')
-    //console.log(data)
-};
-
 <!--End of Tawk.to Script-->
 
 $(document).ready(function() {

@@ -22,6 +22,7 @@ class Config:
         self.META_SYSTEM_USER_TOKEN = self.meta_system_user_token
         self.WHATSAPP = self.whatsapp
         self.TAWK = self.tawk
+        self.TAWK_REST_KEY = self.tawk_rest_key
 
     @property
     def sqlalchemy_database_uri(self):
@@ -81,3 +82,7 @@ class Config:
     @property
     def tawk(self):
         return json.loads(os.environ.get('TAWK') or '')
+
+    @property
+    def tawk_rest_key(self):
+        return os.environ.get('TAWK_REST_KEY')
