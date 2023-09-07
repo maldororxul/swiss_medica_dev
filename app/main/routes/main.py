@@ -1,6 +1,7 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
 
+import time
 import uuid
 from datetime import datetime
 from typing import Dict
@@ -401,6 +402,13 @@ def tawk():
         'event': 'chat:start',
         'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'CDV'} <-- это название чата, с ним будем мапать
     }
+    {
+        'chatId': '61880e20-4d46-11ee-871d-09e91a719de2',
+        'visitor': {'name': 'ChatEnds','city': 'batumi', 'country': 'GE'},
+        'time': '2023-09-07T06:20:09.450Z',
+        'event': 'chat:end',
+        'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'cdv_main'}
+    }
     """
     # return Response(status=204)
     # handle data from Tawk here
@@ -411,38 +419,53 @@ def tawk():
     chat_name = prop.get('name')
     if not chat_name:
         return Response(status=204)
-    msg_data = data.get('message')
-    if not msg_data:
-        return Response(status=204)
-    sender = (msg_data.get('sender') or {}).get('type')
-    if sender != 'visitor':
-        return Response(status=204)
+    # msg_data = data.get('message')
+    # if not msg_data:
+    #     return Response(status=204)
+    # sender = (msg_data.get('sender') or {}).get('type')
+    # if sender != 'visitor':
+    #     return Response(status=204)
     # имя и телефон клиента
-    spl_text = (msg_data.get('text') or '').split('\r\n')
-    if len(spl_text) != 2:
+    # spl_text = (msg_data.get('text') or '').split('\r\n')
+    # if len(spl_text) != 2:
+    #     return Response(status=204)
+    # name, phone = spl_text
+    # if 'Name : ' not in name or 'Phone : ' not in phone:
+    #     return Response(status=204)
+    # name = name.replace('Name : ', '')
+    # phone = phone.replace('Phone : ', '')
+
+    # тут данные чата могли не успеть записаться в базу Tawk, поэтому циклим
+    person_dict = None
+    counter = 0
+    max_counter = 24
+    while not person_dict:
+        counter += 1
+        if counter > max_counter:
+            break
+        person_dict = TawkRestClient().get_messages_text_and_person(channel_id=prop.get('id'), chat_id=data['chatId'])
+        print('person_dict', person_dict)
+        time.sleep(5)
+    if not person_dict:
         return Response(status=204)
-    name, phone = spl_text
-    if 'Name : ' not in name or 'Phone : ' not in phone:
+    # имя и номер пациента
+    name_data = person_dict.get('name')
+    name = f"{name_data['first']} {name_data['last']}".strip()
+    phones_data = person_dict.get('phones') or []
+    if not phones_data:
         return Response(status=204)
-    name = name.replace('Name : ', '')
-    phone = phone.replace('Phone : ', '')
+    phone = clear_phone(phones_data[0])
+
     # по имени чата определяем филиал, инициализируем amo клиент
     config = Config().TAWK.get(chat_name) or {}
     branch = config.get('branch')
     if not branch:
-        # print(7)
         return Response(status=204)
     amo_client = API_CLIENT.get(branch)()
     # пытаемся найти лид по номеру телефона
     existing_leads = list(amo_client.find_leads(query=phone, limit=1))
     # note_msg = f"Incoming chat https://dashboard.tawk.to/#/inbox/{prop.get('id')}/all/chat/{data['chatId']}"
 
-    # тут данные чата могли не успеть записаться в базу Tawk - проверить !!!
-
-    person_dict = TawkRestClient().get_messages_text_and_person(channel_id=prop.get('id'), chat_id=data['chatId'])
-    print('person_dict', person_dict)
-    if not person_dict:
-        return Response(status=204)
     lead_id = None
     if existing_leads:
         # лид найден - дописываем чат в ленту событий / примечаний
