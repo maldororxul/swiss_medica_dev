@@ -436,6 +436,24 @@ def tawk():
     # phone = phone.replace('Phone : ', '')
 
     # тут данные чата могли не успеть записаться в базу Tawk, поэтому циклим
+    """
+    {
+        'person': {
+            'name': {'first': 'chat data', 'last': 'transfer'},
+            'emails': [], 'phones': ['2589631477'],
+            'createdOn': '2023-09-07T07:45:55.831Z',
+            'updatedOn': '2023-09-07T07:46:24.430Z',
+            'device': {'ip': '37.232.82.193', 'browser': 'chrome', 'os': 'windows'},
+            'firstSeenOn': '2023-09-07T07:45:55.926Z',
+            'lastSeenOn': '2023-09-07T07:45:55.926Z',
+            'location': {'continent': 'AS', 'country': 'GE', 'cityName': 'Batumi', 'cityId': 615532, 'regionId': 615929, 'regionName': 'Achara', 'point': '41.6473,41.6258'},
+            'webSession': {'count': 1, 'first': '2023-09-07T07:45:55.926Z', 'latest': '2023-09-07T07:45:55.926Z', 'pageViews': 0, 'timeSpent': 0},
+            'primaryPhone': '2589631477',
+            'id': '64f97fb3aab3f51368ed3600'
+        },
+        'messages': 'Tawk chat from: https://swiss-medica-2e0e7bc937df.herokuapp.com/\nView chat: https://dashboard.tawk.to/#/inbox/64d0945994cf5d49dc68dd99/all/chat/93e94760-4d52-11ee-9f1f-6dfbc0fa7e4b\n2023-09-07 07:46:24 :: [chat started]\n2023-09-07 07:46:24 :: chat data transfer :: hi\n2023-09-07 07:46:24 :: Operator Kirill :: [operator joined chat]\n2023-09-07 07:46:24 :: Operator Kirill :: test\n2023-09-07 07:46:24 :: chat data transfer :: bb'
+    }
+    """
     tawk_data = None
     counter = 0
     max_counter = 24
@@ -477,8 +495,10 @@ def tawk():
         lead_added = amo_client.add_lead_simple(
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
-            referrer=person_dict.get('utm_referrer'),
+
+            referrer=person_dict.get('test_key'),
             utm={'utm_medium': 'utm_medium_test', 'utm_source': 'utm_source_test'},
+
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),
             contacts=[
@@ -487,11 +507,14 @@ def tawk():
         )
         # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
         added_lead_data = lead_added.json()
-        if added_lead_data and 'id' in added_lead_data[0]:
+        try:
             lead_id = int(added_lead_data[0]['id'])
+        except:
+            pass
     if lead_id:
-        amo_client.add_note_simple(entity_id=lead_id, text=person_dict.get('messages'))
-    return Response(status=204)
+        print('adding note to lead', lead_id, tawk_data.get('messages'))
+        amo_client.add_note_simple(entity_id=lead_id, text=tawk_data.get('messages'))
+    return Response(status=200)
 
 
 @bp.route('/agree_for_treatment', methods=['POST'])
