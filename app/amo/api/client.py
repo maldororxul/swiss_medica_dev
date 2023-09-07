@@ -247,11 +247,13 @@ class APIClient:
                 "field_id": self.referrer_field_id,
                 "values": [
                     {
-                        "value": referrer
+                        "value": str(referrer)
                     }
                 ]
             })
         for key, value in utm.items():
+            if not value:
+                continue
             lower_key = key.lower()
             utm_field_id = self.utm_map.get(lower_key)
             if not utm_field_id:
@@ -260,7 +262,7 @@ class APIClient:
                 "field_id": utm_field_id,
                 "values": [
                     {
-                        "value": value
+                        "value": str(value)
                     }
                 ]
             })
