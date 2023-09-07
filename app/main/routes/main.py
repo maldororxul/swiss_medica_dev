@@ -498,7 +498,7 @@ def tawk():
             tags=['Tawk', chat_name],
 
             referrer=person_dict.get('ref'),
-            utm=json.loads(person_dict.get('ref') or {}),
+            utm=json.loads(person_dict.get('utm') or {}),
 
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),

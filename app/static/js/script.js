@@ -81,7 +81,8 @@ var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 window.Tawk_API.onLoad = function(){
     var custom_attrs = {
         'utm': JSON.stringify(getUTMParameters()),
-        'ref': document.referrer
+        'ref': document.referrer,
+        'notemptykey': 'notemptyvalue'
     }
     console.log(custom_attrs)
     window.Tawk_API.setAttributes(custom_attrs, function(error){
