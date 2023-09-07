@@ -416,7 +416,7 @@ def tawk():
     print(data)
     # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
     prop = data.get('property') or {}
-    chat_name = prop.get('person')
+    chat_name = prop.get('name')
     if not chat_name:
         return Response(status=204)
     # msg_data = data.get('message')
