@@ -1,6 +1,7 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
 
+import json
 import time
 import uuid
 from datetime import datetime
@@ -496,8 +497,8 @@ def tawk():
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
 
-            referrer=person_dict.get('test_key'),
-            utm={'utm_medium': 'utm_medium_test', 'utm_source': 'utm_source_test'},
+            referrer=person_dict.get('ref'),
+            utm=json.loads(person_dict.get('ref') or {}),
 
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),
