@@ -416,7 +416,7 @@ def tawk():
     print(data)
     # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
     prop = data.get('property') or {}
-    chat_name = prop.get('name')
+    chat_name = prop.get('person')
     if not chat_name:
         return Response(status=204)
     # msg_data = data.get('message')
@@ -436,18 +436,19 @@ def tawk():
     # phone = phone.replace('Phone : ', '')
 
     # тут данные чата могли не успеть записаться в базу Tawk, поэтому циклим
-    person_dict = None
+    tawk_data = None
     counter = 0
     max_counter = 24
-    while not person_dict:
+    while not tawk_data:
         counter += 1
         if counter > max_counter:
             break
-        person_dict = TawkRestClient().get_messages_text_and_person(channel_id=prop.get('id'), chat_id=data['chatId'])
-        print('person_dict', person_dict)
+        tawk_data = TawkRestClient().get_messages_text_and_person(channel_id=prop.get('id'), chat_id=data['chatId'])
+        print('tawk_data', tawk_data)
         time.sleep(5)
-    if not person_dict:
+    if not tawk_data:
         return Response(status=204)
+    person_dict = tawk_data.get('person') or {}
     # имя и номер пациента
     name_data = person_dict.get('name')
     name = f"{name_data['first']} {name_data['last']}".strip()
@@ -476,7 +477,7 @@ def tawk():
         lead_added = amo_client.add_lead_simple(
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
-            referrer='test ref',
+            referrer=person_dict.get('utm_referrer'),
             utm={'utm_medium': 'utm_medium_test', 'utm_source': 'utm_source_test'},
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),
@@ -489,7 +490,7 @@ def tawk():
         if added_lead_data and 'id' in added_lead_data[0]:
             lead_id = int(added_lead_data[0]['id'])
     if lead_id:
-        amo_client.add_note_simple(entity_id=lead_id, text=person_dict.get('text'))
+        amo_client.add_note_simple(entity_id=lead_id, text=person_dict.get('messages'))
     return Response(status=204)
 
 
