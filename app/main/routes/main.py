@@ -6,6 +6,7 @@ import time
 import uuid
 from datetime import datetime
 from typing import Dict
+from urllib.parse import urlparse, parse_qs
 
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
@@ -352,7 +353,7 @@ def create_lead_from_tawk_chat(data: Dict):
     # for message in messages:
     #     note_msg = f"{note_msg}\n{message['date']} :: {message['type']} :: {message['text']}"
 
-    note_msg = TawkRestClient().get_messages_text(channel_id=data.get('channel_id'), chat_id=data.get('chat_id'))
+    note_msg = TawkRestClient().get_source_and_messages_text(channel_id=data.get('channel_id'), chat_id=data.get('chat_id'))
     if note_msg:
         amo_client.add_note_simple(entity_id=lead_id, text=note_msg)
     # message = messages[-1]
@@ -468,6 +469,12 @@ def tawk():
     if not tawk_data:
         return Response(status=204)
     person_dict = tawk_data.get('person') or {}
+    # разбираем utm-метки из source
+    utm_dict = {}
+    source = tawk_data.get('source')
+    if source:
+        parsed_url = urlparse(source)
+        utm_dict = parse_qs(parsed_url.query)
     # имя и номер пациента
     name_data = person_dict.get('name')
     name = f"{name_data['first']} {name_data['last']}".strip()
@@ -496,10 +503,8 @@ def tawk():
         lead_added = amo_client.add_lead_simple(
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
-
             referrer=person_dict.get('ref'),
-            utm=json.loads(person_dict.get('utm') or {}),
-
+            utm=utm_dict,
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),
             contacts=[

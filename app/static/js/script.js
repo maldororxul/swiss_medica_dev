@@ -80,7 +80,7 @@ var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 
 window.Tawk_API.onLoad = function(){
     var custom_attrs = {
-        'utm': JSON.stringify(getUTMParameters()),
+//        'utm': JSON.stringify(getUTMParameters()),
         'ref': document.referrer,
         'notemptykey': 'notemptyvalue'
     }
@@ -92,14 +92,14 @@ window.Tawk_API.onLoad = function(){
     });
 };
 
-function getUTMParameters() {
-    var params = {};
-    window.location.search.substring(1).split('&').forEach(function(pair) {
-        var keyValue = pair.split('=');
-        params[keyValue[0]] = decodeURIComponent(keyValue[1] || '');
-    });
-    return params;
-}
+//function getUTMParameters() {
+//    var params = {};
+//    window.location.search.substring(1).split('&').forEach(function(pair) {
+//        var keyValue = pair.split('=');
+//        params[keyValue[0]] = decodeURIComponent(keyValue[1] || '');
+//    });
+//    return params;
+//}
 
 Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {

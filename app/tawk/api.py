@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import requests
 from config import Config
 
@@ -98,9 +98,10 @@ class TawkRestClient:
             'phone': visitor_data[1].replace('Phone : ', '').strip(),
         }
 
-    def get_messages_text(self, channel_id: str, chat_id: str) -> str:
+    def get_source_and_messages_text(self, channel_id: str, chat_id: str) -> Tuple[str, str]:
         messages = self.get_messages(channel_id=channel_id, chat_id=chat_id)
-        text = f"Tawk chat from: {messages.get('site_url')}\n" \
+        site_url = messages.get('site_url')
+        text = f"Tawk chat from: {site_url}\n" \
                f"View chat: https://dashboard.tawk.to/#/inbox/{channel_id}/all/chat/{chat_id}"
         visitor = (messages.get('visitor') or {}).get('name')
         for msg in messages.get('messages') or []:
@@ -113,24 +114,28 @@ class TawkRestClient:
                 name = f"Operator {agent}" if agent else visitor
                 text_to_add = f"{date_str} :: {name} :: {msg_text}"
             text = f"{text}\n{text_to_add}"
-        return text
+        return site_url, text
 
     def get_messages_text_and_person_by_phone(self, channel_id: str, phone: str) -> Optional[Dict]:
         chat = self.find_latest_chat_by_phone(channel_id=channel_id, phone=phone)
         if not chat:
             return None
+        source, messages = self.get_source_and_messages_text(channel_id=channel_id, chat_id=chat.get('id'))
         return {
             'person': self.get_person(channel_id=channel_id, person_id=chat.get('personId')),
-            'messages': self.get_messages_text(channel_id=channel_id, chat_id=chat.get('id'))
+            'messages': messages,
+            'source': source
         }
 
     def get_messages_text_and_person(self, channel_id: str, chat_id: str) -> Optional[Dict]:
         chat = self.get_chat(channel_id=channel_id, chat_id=chat_id)
         if not chat:
             return None
+        source, messages = self.get_source_and_messages_text(channel_id=channel_id, chat_id=chat_id)
         return {
             'person': self.get_person(channel_id=channel_id, person_id=chat.get('personId')),
-            'messages': self.get_messages_text(channel_id=channel_id, chat_id=chat_id)
+            'messages': messages,
+            'source': source
         }
 
     def find_latest_chat_by_phone(self, channel_id: str, phone: str):
