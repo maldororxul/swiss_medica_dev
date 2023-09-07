@@ -240,7 +240,7 @@ class APIClient:
         utm: Optional[Dict] = None,
         custom_fields_values: Optional[List] = None
     ):
-        custom_fields_values = custom_fields_values
+        custom_fields_values = custom_fields_values or []
         utm = utm or {}
         if referrer and self.referrer_field_id:
             custom_fields_values.append({
