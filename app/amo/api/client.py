@@ -273,13 +273,13 @@ class APIClient:
                     "enum_code": contact['enum_code']
                 }]
             })
-        lead_data = [{
+        lead_data = {
             "name": name,
             "created_by": 0,
             'created_at': int(time()),
             'pipeline_id': pipeline_id,
             'status_id': status_id,
-            'custom_fields_values': custom_fields_values,
+            # 'custom_fields_values': custom_fields_values,
             # 'responsible_user_id': self.calls[_id]['responsible_user_id'],
             "_embedded": {
                 "tags": [{"name": tag} for tag in tags or []],
@@ -290,8 +290,10 @@ class APIClient:
                     "updated_by": 0
                 }]
             }
-        }]
-        return self.add_lead(data=lead_data)
+        }
+        if custom_fields_values:
+            lead_data['custom_fields_values'] = custom_fields_values
+        return self.add_lead(data=[lead_data])
 
     def add_note(self, entity_id: int, data: Union[Dict, List]):
         return self.__execute(endpoint=f'leads/{entity_id}/notes', method='POST', data=data)

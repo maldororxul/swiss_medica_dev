@@ -499,11 +499,11 @@ def tawk():
         lead_id = int(existing_leads[0]['id'])
     else:
         # лид не найден - создаем
-        # print('creating new lead')
+        print('creating new lead')
         lead_added = amo_client.add_lead_simple(
             name=f'TEST! Lead from Tawk: {name}',
             tags=['Tawk', chat_name],
-            referrer=person_dict.get('ref'),
+            referrer=(person_dict.get('customAttributes') or {}).get('ref'),
             utm=utm_dict,
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),
@@ -513,6 +513,7 @@ def tawk():
         )
         # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
         added_lead_data = lead_added.json()
+        print(added_lead_data)
         try:
             lead_id = int(added_lead_data[0]['id'])
         except:
