@@ -477,14 +477,18 @@ def tawk():
         utm_dict = parse_qs(parsed_url.query)
     # имя и номер пациента
     name_data = person_dict.get('name')
-    name = f"{name_data['first']} {name_data['last']}".strip()
+    name = f"{name_data.get('first') or ''} {name_data.get('last') or ''}".strip()
     phones_data = person_dict.get('phones') or []
     if not phones_data:
         return Response(status=204)
+    emails_data = person_dict.get('emails') or []
+    if not emails_data:
+        return Response(status=204)
     phone = clear_phone(phones_data[0])
+    email = emails_data[0]
 
     # по имени чата определяем филиал, инициализируем amo клиент
-    config = Config().TAWK.get(chat_name) or {}
+    config = Config().tawk.get(chat_name) or {}
     branch = config.get('branch')
     if not branch:
         return Response(status=204)
@@ -492,6 +496,16 @@ def tawk():
     # пытаемся найти лид по номеру телефона
     existing_leads = list(amo_client.find_leads(query=phone, limit=1))
     # note_msg = f"Incoming chat https://dashboard.tawk.to/#/inbox/{prop.get('id')}/all/chat/{data['chatId']}"
+
+    # определяем идентификатор ответственного пользователя
+    manager_id = tawk_data.get('manager').get('id')
+    managers = Config().managers.get(branch) or {}
+    tawk_amo_dict = {
+        value['tawk_id']: value['amo_id']
+        for value in managers.values()
+        if value['tawk_id'] and value['amo_id']
+    }
+    responsible_user_id = tawk_amo_dict.get(manager_id) or 0
 
     lead_id = None
     if existing_leads:
@@ -508,8 +522,10 @@ def tawk():
             pipeline_id=int(config.get('pipeline_id')),
             status_id=int(config.get('status_id')),
             contacts=[
-                {'value': phone, 'field_id': int(config.get('phone_field_id')), 'enum_code': 'WORK'}
-            ]
+                {'value': phone, 'field_id': int(config.get('phone_field_id')), 'enum_code': 'WORK'},
+                {'value': email, 'field_id': int(config.get('email_field_id')), 'enum_code': 'WORK'},
+            ],
+            responsible_user_id=responsible_user_id
         )
         # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
         added_lead_data = lead_added.json()

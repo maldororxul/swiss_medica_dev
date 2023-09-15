@@ -103,7 +103,10 @@ window.Tawk_API.onLoad = function(){
 
 Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {
-        gtag('send', 'event', 'Tawk', 'Chat Started');
+        gtag('event', 'Chat Started', {
+            'event_category': 'Tawk',
+            'event_label': 'Chat Interaction',
+        });
     }
 };
 <!--End of Tawk.to Script-->

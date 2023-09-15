@@ -16,16 +16,23 @@ class TawkRestClient:
         }
         self.params = None
 
-    def get_channels(self) -> List[Dict]:
-        return self._get_channels().get('data') or []
-
     def get_channel_info(self, _id: str) -> Dict:
         return self._get_channel_info(_id=_id).get('data') or {}
+
+    def get_channels(self) -> List[Dict]:
+        return self._get_channels().get('data') or []
 
     def get_chat(self, channel_id: str, chat_id: str) -> Dict:
         return self._get_chat(
             channel_id=channel_id,
             chat_id=chat_id
+        ).get('data') or []
+
+    def get_chats(self, channel_id: str, dt_from: datetime, dt_to: datetime) -> List[Dict]:
+        return self._get_chats(
+            channel_id=channel_id,
+            dt_from=dt_from,
+            dt_to=dt_to
         ).get('data') or []
 
     def get_messages(self, channel_id: str, chat_id: str) -> Dict:
@@ -51,6 +58,7 @@ class TawkRestClient:
         visitor = None
         site_url = None
         site_title = None
+        last_manager = {}
         for msg in chat.get('messages') or []:
             if msg.get('type') == 'nav':
                 # откуда пришел посетитель
@@ -64,6 +72,7 @@ class TawkRestClient:
             sender_type = sender.get('t')
             if sender_type == 'a':
                 # имя агента
+                last_manager = sender
                 agent = sender.get('n')
                 text = msg.get('msg') or '[operator joined chat]'
             elif sender_type == 'v':
@@ -87,18 +96,33 @@ class TawkRestClient:
             'site_url': site_url,
             'site_title': site_title,
             'visitor': visitor,
+            'manager': last_manager,
             'messages': result,
         }
 
-    @staticmethod
-    def __get_visitor(text: str):
-        visitor_data = text.split('\r\n')
-        return {
-            'name': visitor_data[0].replace('Name : ', '').strip(),
-            'phone': visitor_data[1].replace('Phone : ', '').strip(),
-        }
+    def get_messages_text_and_person(self, channel_id: str, chat_id: str) -> Optional[Dict]:
+        chat = self.get_chat(channel_id=channel_id, chat_id=chat_id)
+        if not chat:
+            return None
+        result = self.get_source_and_messages_text(channel_id=channel_id, chat_id=chat_id)
+        result['person'] = self.get_person(channel_id=channel_id, person_id=chat.get('personId'))
+        return result
 
-    def get_source_and_messages_text(self, channel_id: str, chat_id: str) -> Tuple[str, str]:
+    def get_messages_text_and_person_by_phone(self, channel_id: str, phone: str) -> Optional[Dict]:
+        chat = self.find_latest_chat_by_phone(channel_id=channel_id, phone=phone)
+        if not chat:
+            return None
+        result = self.get_source_and_messages_text(channel_id=channel_id, chat_id=chat.get('id'))
+        result['person'] = self.get_person(channel_id=channel_id, person_id=chat.get('personId'))
+        return result
+
+    def get_person(self, channel_id: str, person_id: str) -> Dict:
+        return (self._get_person(channel_id=channel_id, person_id=person_id).get('data') or {}).get('person')
+
+    def get_property_members(self, channel_id: str) -> List[Dict]:
+        return self._get_property_members(channel_id=channel_id).get('data') or []
+
+    def get_source_and_messages_text(self, channel_id: str, chat_id: str) -> Dict:
         messages = self.get_messages(channel_id=channel_id, chat_id=chat_id)
         site_url = messages.get('site_url')
         text = f"Tawk chat from: {site_url}\n" \
@@ -106,36 +130,18 @@ class TawkRestClient:
         visitor = (messages.get('visitor') or {}).get('name')
         for msg in messages.get('messages') or []:
             msg_text = msg.get('text')
+            date_str = msg.get('date').strftime('%Y-%m-%d %H:%M:%S')
             if msg_text == '[chat started]':
-                date_str = msg.get('date').strftime('%Y-%m-%d %H:%M:%S')
                 text_to_add = f"{date_str} :: {msg_text}"
             else:
                 agent = msg.get('agent')
                 name = f"Operator {agent}" if agent else visitor
                 text_to_add = f"{date_str} :: {name} :: {msg_text}"
             text = f"{text}\n{text_to_add}"
-        return site_url, text
-
-    def get_messages_text_and_person_by_phone(self, channel_id: str, phone: str) -> Optional[Dict]:
-        chat = self.find_latest_chat_by_phone(channel_id=channel_id, phone=phone)
-        if not chat:
-            return None
-        source, messages = self.get_source_and_messages_text(channel_id=channel_id, chat_id=chat.get('id'))
         return {
-            'person': self.get_person(channel_id=channel_id, person_id=chat.get('personId')),
-            'messages': messages,
-            'source': source
-        }
-
-    def get_messages_text_and_person(self, channel_id: str, chat_id: str) -> Optional[Dict]:
-        chat = self.get_chat(channel_id=channel_id, chat_id=chat_id)
-        if not chat:
-            return None
-        source, messages = self.get_source_and_messages_text(channel_id=channel_id, chat_id=chat_id)
-        return {
-            'person': self.get_person(channel_id=channel_id, person_id=chat.get('personId')),
-            'messages': messages,
-            'source': source
+            'source': site_url,
+            'messages': text,
+            'manager': messages.get('manager')
         }
 
     def find_latest_chat_by_phone(self, channel_id: str, phone: str):
@@ -155,40 +161,23 @@ class TawkRestClient:
                     return chat
         return None
 
-    def get_chats(self, channel_id: str, dt_from: datetime, dt_to: datetime) -> List[Dict]:
-        return self._get_chats(
-            channel_id=channel_id,
-            dt_from=dt_from,
-            dt_to=dt_to
-        ).get('data') or []
-
-    def get_person(self, channel_id: str, person_id: str) -> Dict:
-        return (self._get_person(channel_id=channel_id, person_id=person_id).get('data') or {}).get('person')
-
-    def _set_headers(self, headers: Dict):
-        self.headers = headers
-        return self
-
-    def _set_params(self, params: Dict):
-        self.params = params
-        return self
-
     def _get_channels(self):
         return self._set_params({
             "type": "business",
             "enabled": True
         }).__fetch(endpoint='property.list')
 
-    def _get_person(self, channel_id: str, person_id: str):
+    def _get_channel_info(self, _id: str):
         return self._set_params({
-            "propertyId": channel_id,
-            "personId": person_id,
-            'fields': [
-                'id', 'name', 'jobTitle', 'primaryEmail', 'emails', 'primaryPhone', 'phones', 'avatar',
-                'socialProfiles', 'tags', 'organizationId', 'userId', 'device', 'location', 'webSession', 'liveChat',
-                'ticket', 'firstSeenOn', 'lastSeenOn', 'customAttributes', 'customEvents', 'createdOn', 'updatedOn'
-            ]
-        }).__fetch(endpoint='contact.person.get')
+            "propertyId": _id,
+            "fields": {
+                "settings": True,
+                "agents": True,
+                "widgets": True,
+                "assets": True,
+                "createdOn": True
+            }
+        }).__fetch(endpoint='property.info')
 
     def _get_chat(self, channel_id: str, chat_id: str):
         return self._set_params({
@@ -212,17 +201,29 @@ class TawkRestClient:
             "dateType": "cso"
         }).__fetch(endpoint='chat.list')
 
-    def _get_channel_info(self, _id: str):
+    def _get_person(self, channel_id: str, person_id: str):
         return self._set_params({
-            "propertyId": _id,
-            "fields": {
-                "settings": True,
-                "agents": True,
-                "widgets": True,
-                "assets": True,
-                "createdOn": True
-            }
-        }).__fetch(endpoint='property.info')
+            "propertyId": channel_id,
+            "personId": person_id,
+            'fields': [
+                'id', 'name', 'jobTitle', 'primaryEmail', 'emails', 'primaryPhone', 'phones', 'avatar',
+                'socialProfiles', 'tags', 'organizationId', 'userId', 'device', 'location', 'webSession', 'liveChat',
+                'ticket', 'firstSeenOn', 'lastSeenOn', 'customAttributes', 'customEvents', 'createdOn', 'updatedOn'
+            ]
+        }).__fetch(endpoint='contact.person.get')
+
+    def _get_property_members(self, channel_id: str):
+        return self._set_params({
+            "propertyId": channel_id
+        }).__fetch(endpoint='members.list')
+
+    def _set_headers(self, headers: Dict):
+        self.headers = headers
+        return self
+
+    def _set_params(self, params: Dict):
+        self.params = params
+        return self
 
     def __fetch(self, endpoint: str) -> Dict:
         response = requests.post(
@@ -235,3 +236,12 @@ class TawkRestClient:
         if not data or 'error' in data or 'data' not in data:
             return {}
         return data
+
+    @staticmethod
+    def __get_visitor(text: str):
+        result = {}
+        for item in text.split('\r\n'):
+            for key, prefix in (('name', 'Name : '), ('email', 'Email : '), ('phone', 'Phone : ')):
+                if prefix in item:
+                    result[key] = item.replace(prefix, '').strip()
+        return result

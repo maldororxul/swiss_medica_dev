@@ -238,7 +238,8 @@ class APIClient:
         tags: Optional[List[str]] = None,
         referrer: Optional[str] = None,
         utm: Optional[Dict] = None,
-        custom_fields_values: Optional[List] = None
+        custom_fields_values: Optional[List] = None,
+        responsible_user_id: int = 0
     ):
         custom_fields_values = custom_fields_values or []
         utm = utm or {}
@@ -282,7 +283,7 @@ class APIClient:
             'pipeline_id': pipeline_id,
             'status_id': status_id,
             # 'custom_fields_values': custom_fields_values,
-            # 'responsible_user_id': self.calls[_id]['responsible_user_id'],
+            'responsible_user_id': responsible_user_id,
             "_embedded": {
                 "tags": [{"name": tag} for tag in tags or []],
                 'contacts': [{

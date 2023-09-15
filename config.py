@@ -23,6 +23,7 @@ class Config:
         self.WHATSAPP = self.whatsapp
         self.TAWK = self.tawk
         self.TAWK_REST_KEY = self.tawk_rest_key
+        self.MANAGERS = self.managers
 
     @property
     def sqlalchemy_database_uri(self):
@@ -86,3 +87,7 @@ class Config:
     @property
     def tawk_rest_key(self):
         return os.environ.get('TAWK_REST_KEY')
+
+    @property
+    def managers(self):
+        return json.loads(os.environ.get('MANAGERS') or '')
