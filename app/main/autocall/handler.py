@@ -256,7 +256,78 @@ class Autocall:
             #     processor.log.add(str(exc))
 
     def get_cookies(self):
-        return Config().sipuni_cookies.get(self.__branch)
+        cookies = {
+            "swissmedica": {
+                "OutSipClientTable_state": "0",
+                "TreeTable_out_state": "1",
+                "OurSipClientTable_state": "1",
+                "lastTree": "2008785",
+                "InSipClientTable_state": "1",
+                "_ym_uid": "1691126352735114426",
+                "_ym_d": "1691126352",
+                "hcode": "d8c63cadc70f02c3a477148030cdb62f",
+                "tmr_lvid": "37366c4d3b0bcfea4849829b4b9953da",
+                "tmr_lvidTS": "1693377866197",
+                "carrotquest_device_guid": "d12c9a4d-93c6-4d53-9a0d-a6e0d8f8f9b4",
+                "carrotquest_uid": "1520601854042443087",
+                "carrotquest_auth_token": "user.1520601854042443087.55906-5369ff2e5cfd9d6a816c5160eb.7e4ce86aeb6af33d920f53f93e16c180c041fd2b1f04452e",
+                "roistat_first_visit": "217903",
+                "___dc": "c0d800a2-0274-4a93-9558-4686771f1980",
+                "visitor_uid": "8ec3677a-79fa-4ede-894e-0928f629a6b9",
+                "user": "ZGVmNTAyMDA0YzQwN2I1M2NmNmRlMzBmYjA1ZmE4ODNiNGI3ZmRhOWE2YmU3NDYzN2QzNjg3YzMyNmYwNTllNTk2ZmI3YmRkMjdmNjY5OTdmYTA2ZDcwOGNhZjIzMWM3ZGJlNzE0YTFjN2RjMmQ1NjdmYzFiMDFkODExM2ExYmJjOGJjMTYzMzM2MTEwNGFlZjlkYTg1NjExYzkxZWNmYWY0YmM5MmVkYzgwMmY1NTlhMjgyMDc2YjM0MWRjNzgx",
+                "PHPSESSID": "5cq291r8tqkpc961uu03tpu0jn",
+                "_ga": "GA1.1.1216748222.1691126352",
+                "_ym_isad": "2",
+                "roistat_visit": "240456",
+                "roistat_is_need_listen_requests": "0",
+                "roistat_is_save_data_in_cookie": "1",
+                "carrotquest_realtime_services_transport": "wss",
+                "tmr_detect": "0%7C1694773631585",
+                "roistat_call_tracking": "1",
+                "roistat_emailtracking_email": "null",
+                "roistat_emailtracking_tracking_email": "null",
+                "roistat_emailtracking_emails": "null",
+                "carrotquest_closed_part_id": "1532310422571453465",
+                "_ga_5Z0GQXKR5Q": "GS1.1.1694773629.6.1.1694773658.31.0.0",
+                "roistat_cookies_to_resave": "roistat_ab%2Croistat_ab_submit%2Croistat_visit%2Croistat_call_tracking%2Croistat_emailtracking_email%2Croistat_emailtracking_tracking_email%2Croistat_emailtracking_emails%2Cvisitor_uid",
+                "carrotquest_hide_all_unread_popups": "true",
+                "_ym_visorc": "w",
+                "carrotquest_session": "8weig5rbkihlig66jm7vfisdfimytqte",
+                "carrotquest_session_started": "1"
+            },
+            "drvorobjev": {
+                "QueueTable_state": "0",
+                "DtmfListTable_state": "0",
+                "DirectionTable_state": "0",
+                "HotDeskTable_state": "1",
+                "CallOutListTable_state": "0",
+                "TreeTable_out_state": "1",
+                "lastTree": "2079255",
+                "OutSipClientTable_state": "0",
+                "OurSipClientTable_state": "0",
+                "TreeTable_in_state": "1",
+                "InSipClientTable_state": "0",
+                "_ym_uid": "1683784624150200334",
+                "_ym_d": "1683784624",
+                "hcode": "6d62c926bd64a47956d081a7c7cd73b1",
+                "paddos_3MUXg": "1",
+                "tmr_lvid": "893b1c01cf41d59f10b751b521563919",
+                "tmr_lvidTS": "1686289487442",
+                "roistat_first_visit": "135141",
+                "carrotquest_device_guid": "5ebe8c89-2f52-4609-969a-5dca24327d26",
+                "carrotquest_uid": "1461140221205679482",
+                "carrotquest_auth_token": "user.1461140221205679482.55906-5369ff2e5cfd9d6a816c5160eb.4bd313f331ce8f373b76005386c0a058bbf912bd342298a0",
+                "___dc": "ad624182-88e7-407c-a78e-e65e678af8db",
+                "_ga_5Z0GQXKR5Q": "GS1.1.1690803833.4.1.1690805989.14.0.0",
+                "_ga": "GA1.2.1801676173.1683784624",
+                "user": "ZGVmNTAyMDBiZTU1YmNjMDg5MmQ0YjMzNzU2OWEwOWVkZjU5NDk1YmIzM2EyYmRkZTQ2NDk2NWY5OGM2ZjA0MmU3OGIwZWNmMmFlNjBiYTcxMzlmNjEwMmNjNzUyNjA0OGVjMTMwZmIxY2M1MGUzMGI4ODVlYTU2ZmE3Njc2ZWY2YWJiOWRhYWVlYzYyMGIyZGJkYzAyZGJjMDRkMjFiODAwMWVhZmViZjU4NmU5OWUzNWQ2MTQwNmQ4ZjUxY2Zm",
+                "PHPSESSID": "9fr4o382vli7kqgnm7vfclujd1",
+                "_ym_isad": "2",
+                "_ym_visorc": "w",
+            }
+        }
+        # return Config().sipuni_cookies.get(self.__branch)
+        return cookies.get(self.__branch)
 
     def get_headers(self, autocall_id):
         return {
