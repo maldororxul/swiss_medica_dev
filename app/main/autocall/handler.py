@@ -9,6 +9,8 @@ import gc
 import time
 from datetime import datetime
 from typing import Dict, Optional
+
+import requests
 from flask import current_app, Flask
 # from app import db
 # from app.amo.processor.functions import clear_phone
@@ -213,34 +215,34 @@ class Autocall:
                 break
         # send_wahtsapp_message(number_id_from=number_from['id'], template=template, number_to=number)
 
-    def start_autocall(self, autocall_id: int):
-        """ Начинает автообзвон
+    # def start_autocall(self, autocall_id: int):
+    #     """ Начинает автообзвон
+    #
+    #     Args:
+    #         autocall_id: идентификатор автообзвона в Sipuni
+    #     """
+        # from app.main.autocall.constants import DATA_PROCESSOR
+        # processor = DATA_PROCESSOR.get(self.__branch)()
+        # processor.log.add(text='starting autocall')
+        # try:
+        #     self.__start_autocall(autocall_id=autocall_id)
+        # except Exception as exc:
+        #     processor.log.add(str(exc))
 
-        Args:
-            autocall_id: идентификатор автообзвона в Sipuni
-        """
-        from app.main.autocall.constants import DATA_PROCESSOR
-        processor = DATA_PROCESSOR.get(self.__branch)()
-        processor.log.add(text='starting autocall')
-        try:
-            self.__start_autocall(autocall_id=autocall_id)
-        except Exception as exc:
-            processor.log.add(str(exc))
-
-    def __start_autocall(self, autocall_id: int):
-        from app.main.autocall.error import SipuniConfigError
-        from app.main.browser import KmBrowser
-        try:
-            browser: KmBrowser = self.__get_sipuni_browser()
-        except SipuniConfigError:
-            try:
-                browser.close()
-            except:
-                pass
-            return
-        browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
-        time.sleep(10)
-        browser.close()
+    # def __start_autocall(self, autocall_id: int):
+    #     from app.main.autocall.error import SipuniConfigError
+    #     from app.main.browser import KmBrowser
+    #     try:
+    #         browser: KmBrowser = self.__get_sipuni_browser()
+    #     except SipuniConfigError:
+    #         try:
+    #             browser.close()
+    #         except:
+    #             pass
+    #         return
+    #     browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
+    #     time.sleep(10)
+    #     browser.close()
 
     def start_autocalls(self, app: Flask):
         """ Перезапускает все автообзвоны """
@@ -253,10 +255,30 @@ class Autocall:
             # except Exception as exc:
             #     processor.log.add(str(exc))
 
+    def get_cookies(self):
+        return Config().sipuni_cookies.get(self.__branch)
+
+    def get_headers(self, autocall_id):
+        return {
+            'authority': 'sipuni.com',
+            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'accept-language': 'en-US,en;q=0.9',
+            'referer': f'https://sipuni.com/ru_RU/settings/autocall/numbers/{autocall_id}',
+            'sec-ch-ua': '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'sec-fetch-dest': 'document',
+            'sec-fetch-mode': 'navigate',
+            'sec-fetch-site': 'same-origin',
+            'sec-fetch-user': '?1',
+            'upgrade-insecure-requests': '1',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+        }
+
     def __start_autocalls(self, processor):
         from app import db
-        from app.main.autocall.error import SipuniConfigError
-        from app.main.browser import KmBrowser
+        # from app.main.autocall.error import SipuniConfigError
+        # from app.main.browser import KmBrowser
         from app.main.autocall.constants import API_CLIENT, AUTOCALL_NUMBER
         branch_config = self.__sipuni_branch_config
         if not branch_config:
@@ -336,51 +358,64 @@ class Autocall:
             processor.log.add(text=f'no numbers for autocall')
             return
         processor.log.add(text=f'got {len(numbers_added)} numbers for autocall')
-        try:
-            browser: KmBrowser = self.__get_sipuni_browser()
-            print(self.__branch, 'browser started')
-        except SipuniConfigError:
-            processor.log.add(text=f'SipuniConfigError')
-            try:
-                browser.close()
-                print(self.__branch, 'browser closed - config error')
-            except:
-                print(self.__branch, 'failed to close browser - config error')
-                pass
-            return
-        except Exception as exc:
-            processor.log.add(text=f'browser error: {exc}')
-            try:
-                browser.close()
-                print(self.__branch, 'browser closed - common exc')
-            except:
-                print(self.__branch, 'failed to close browser - common exc')
-                pass
-            return
+        # try:
+        #     # browser: KmBrowser = self.__get_sipuni_browser()
+        #
+        #     print(self.__branch, 'autocall response, ')
+        # # except SipuniConfigError:
+        # #     processor.log.add(text=f'SipuniConfigError')
+        # #     try:
+        # #         browser.close()
+        # #         print(self.__branch, 'browser closed - config error')
+        # #     except:
+        # #         print(self.__branch, 'failed to close browser - config error')
+        # #         pass
+        # #     return
+        # except Exception as exc:
+        #     processor.log.add(text=f'browser error: {exc}')
+        #     try:
+        #         browser.close()
+        #         print(self.__branch, 'browser closed - common exc')
+        #     except:
+        #         print(self.__branch, 'failed to close browser - common exc')
+        #         pass
+        #     return
         # удаляем все номера из всех автообзвонов Sipuni (через браузер)
         for autocall_id in autocall_ids:
-            browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
-            time.sleep(10)
+            # browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
+            response = requests.get(
+                url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}',
+                cookies=self.get_cookies(),
+                headers=self.get_headers(autocall_id=autocall_id)
+            )
+            print('numbers delete response', response.status_code)
+            time.sleep(1)
         for item in numbers_added:
             sipuni_client.add_number_to_autocall(number=item['number'], autocall_id=item['autocall_id'])
             time.sleep(0.25)
         for autocall_id in autocall_ids:
             try:
-                browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
+                # browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
+                response = requests.get(
+                    url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}',
+                    cookies=self.get_cookies(),
+                    headers=self.get_headers(autocall_id=autocall_id)
+                )
+                print('autocall start response', response.status_code)
             except Exception as exc:
-                try:
-                    browser.close()
-                    print(self.__branch, 'browser closed - common exc 2')
-                except:
-                    print(self.__branch, 'failed to close browser - common exc 2')
-                    pass
-                processor.log.add(text=f'browser error: {exc}')
-            time.sleep(10)
-        try:
-            browser.close()
-            print(self.__branch, 'browser closed - autocall iteration done')
-        except:
-            print(self.__branch, 'failed to close browser - autocall iteration done')
+                # try:
+                #     browser.close()
+                #     print(self.__branch, 'browser closed - common exc 2')
+                # except:
+                #     print(self.__branch, 'failed to close browser - common exc 2')
+                #     pass
+                processor.log.add(text=f'autocall error: {exc}')
+            time.sleep(1)
+        # try:
+        #     browser.close()
+        #     print(self.__branch, 'browser closed - autocall iteration done')
+        # except:
+        #     print(self.__branch, 'failed to close browser - autocall iteration done')
         db.session.close()
 
     def __get_autocall_id(self, pipeline_id: str, status_id: str) -> Optional[int]:
@@ -417,25 +452,25 @@ class Autocall:
         else:
             return None
 
-    def __get_sipuni_browser(self):
-        """ Получить экземпляр браузера с авторизацией в личном кабинете Sipuni """
-        from app.main.autocall.error import SipuniConfigError
-        from app.main.browser import KmBrowser
-        browser = KmBrowser()
-        browser.open(url='https://sipuni.com/ru_RU/login')
-        sipuni_config = self.__sipuni_branch_config
-        if not sipuni_config:
-            raise SipuniConfigError(f'Sipuni Config for branch {self.__branch} is absent')
-        login_line = browser.find_element_by_selector(selector='#login_username_email')
-        login_line.send_keys(sipuni_config.get('login'))
-        password_line = browser.find_element_by_selector(selector='#login_password')
-        password_line.send_keys(sipuni_config.get('password'))
-        submit_btn = browser.find_element_by_selector(selector='#login_button')
-        submit_btn.click()
-        browser.wait(
-            selector='body > header > div.navigation.row-fluid > div.pull-left.menu-top > ul > li:nth-child(1) > a'
-        )
-        return browser
+    # def __get_sipuni_browser(self):
+    #     """ Получить экземпляр браузера с авторизацией в личном кабинете Sipuni """
+    #     from app.main.autocall.error import SipuniConfigError
+    #     from app.main.browser import KmBrowser
+    #     browser = KmBrowser()
+    #     browser.open(url='https://sipuni.com/ru_RU/login')
+    #     sipuni_config = self.__sipuni_branch_config
+    #     if not sipuni_config:
+    #         raise SipuniConfigError(f'Sipuni Config for branch {self.__branch} is absent')
+    #     login_line = browser.find_element_by_selector(selector='#login_username_email')
+    #     login_line.send_keys(sipuni_config.get('login'))
+    #     password_line = browser.find_element_by_selector(selector='#login_password')
+    #     password_line.send_keys(sipuni_config.get('password'))
+    #     submit_btn = browser.find_element_by_selector(selector='#login_button')
+    #     submit_btn.click()
+    #     browser.wait(
+    #         selector='body > header > div.navigation.row-fluid > div.pull-left.menu-top > ul > li:nth-child(1) > a'
+    #     )
+    #     return browser
 
     @staticmethod
     def __build_datetime_from_timestring(timestring: str) -> datetime:
