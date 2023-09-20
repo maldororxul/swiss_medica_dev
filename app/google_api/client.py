@@ -184,8 +184,8 @@ class GoogleAPIClient:
             arrival_str, departure_str = row.get('Arrival Date'), row.get('Departure Date')
             if not arrival_str or not departure_str:
                 continue
-            arrival_dt = datetime.strptime(arrival_str, DATE_FORMAT).date()
-            departure_dt = datetime.strptime(departure_str, DATE_FORMAT).date()
+            arrival_dt = datetime.strptime(arrival_str, '%Y-%m-%d').date()
+            departure_dt = datetime.strptime(departure_str, '%Y-%m-%d').date()
             if not from_dt or arrival_dt < from_dt:
                 from_dt = arrival_dt
             if not to_dt or departure_dt > to_dt:
