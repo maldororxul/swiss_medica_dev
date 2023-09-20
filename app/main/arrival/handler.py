@@ -37,7 +37,6 @@ def waiting_for_arrival(app: Flask, branch: str):
             # получаем лиды из Amo
             leads = amo_client.get_leads_by_pipeline_and_status(pipeline_id=pipeline_id, status_id=status_id)
             for lead in leads:
-                print('>>', lead)
                 _embedded = lead.get('_embedded') or {}
                 # получаем контакт из Amo
                 contacts = _embedded.get('contacts')
@@ -85,7 +84,7 @@ def waiting_for_arrival(app: Flask, branch: str):
                     "Wheelchair": cf_dict.get('Wheelchair') or '',
                     "Number of Companions": cf_dict.get('Number of Companions') or '',
                     "Food Intolerance": cf_dict.get('Food Intolerance') or '',
-                    "Contacts: Email, Phone number": email_and_phone,
+                    "Contacts: Email, Phone number": f"`{email_and_phone}",
                     "Comments (Manager)": cf_dict.get('Comments') or '',
                 })
     if not collection:

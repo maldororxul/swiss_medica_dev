@@ -181,6 +181,8 @@ class GoogleAPIClient:
         # границы по датам
         from_dt, to_dt = None, None
         for row in rows:
+            if not row.get('Hotel name'):
+                continue
             arrival_str, departure_str = row.get('Arrival Date'), row.get('Departure Date')
             if not arrival_str or not departure_str:
                 continue
@@ -207,8 +209,8 @@ class GoogleAPIClient:
             arrival_str, departure_str = row.get('Arrival Date'), row.get('Departure Date')
             if not arrival_str or not departure_str:
                 continue
-            arrival_dt = datetime.strptime(arrival_str, DATE_FORMAT).date()
-            departure_dt = datetime.strptime(departure_str, DATE_FORMAT).date()
+            arrival_dt = datetime.strptime(arrival_str, '%Y-%m-%d').date()
+            departure_dt = datetime.strptime(departure_str, '%Y-%m-%d').date()
             clinic = row.get('Hotel name')
             curr_dt = arrival_dt
             while curr_dt <= departure_dt:
@@ -241,6 +243,8 @@ class GoogleAPIClient:
             has_dates: на листе в первой колонке created_at, во второй колонке updated_at
             archive_sheet: имя архивного листа, на который перемещаются удаляемые данные
         """
+        if not collection:
+            return
         # находим id листа
         sheet_id = self.sheet_id
         # красим A1 в красный в знак того, что запущено обновление
