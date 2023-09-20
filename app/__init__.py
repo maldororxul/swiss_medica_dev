@@ -70,7 +70,7 @@ def create_app() -> Flask:
     app.scheduler.add_job(
         id=f'arrival_{branch}',
         func=socketio.start_background_task,
-        args=[run_arrival, branch],
+        args=[run_arrival, app, branch],
         trigger='interval',
         seconds=int(Config().arrival.get(branch).get('interval')),
         max_instances=1
