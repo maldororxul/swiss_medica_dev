@@ -178,7 +178,8 @@ def get_token():
 
 @bp.route('/arrival_sync', methods=['GET'])
 def arrival_sync():
-    # waiting_for_arrival('swissmedica')
+    app = current_app._get_current_object()
+    waiting_for_arrival(app=app, branch='swissmedica')
     return render_template('arrival_sync.html')
 
 
