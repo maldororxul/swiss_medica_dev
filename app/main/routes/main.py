@@ -1,24 +1,17 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
-
-import json
 import time
-import uuid
 from datetime import datetime
 from typing import Dict
 from urllib.parse import urlparse, parse_qs
-
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.functions import clear_phone
-from app.amo.processor.processor import GoogleSheets
-from app.google_api.client import GoogleAPIClient
 from app.main import bp
-from app.main.controllers import SYNC_CONTROLLER
+from app.main.arrival.handler import waiting_for_arrival
 from app.main.processors import DATA_PROCESSOR
-from app.main.routes.telegram import get_data_from_post_request
 from app.main.tasks import SchedulerTask
 from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
@@ -183,6 +176,12 @@ def get_token():
     return render_template('get_token.html')
 
 
+@bp.route('/arrival_sync', methods=['GET'])
+def arrival_sync():
+    waiting_for_arrival('swissmedica')
+    return render_template('arrival_sync.html')
+
+
 @bp.route('/get_token', methods=['POST'])
 def send_auth_code():
     auth_code = request.form.get('auth_code')
@@ -299,12 +298,6 @@ def get_amo_data_cdv():
 #     print('Received message:', message['data'])
 
 def create_lead_from_tawk_chat(data: Dict):
-
-    """
-    Склоняюсь к такой логике:
-        Tawk стреляет событием по завершении чата - создается лид
-    """
-
     # по имени чата определяем филиал, инициализируем amo клиент
     chat_name = data.get('chat_name')
     config = Config().TAWK.get(data.get('chat_name')) or {}
@@ -344,9 +337,9 @@ def create_lead_from_tawk_chat(data: Dict):
         if not added_lead_data:
             return
         # print(added_lead_data)
-        """
-        {'validation-errors': [{'request_id': '0', 'errors': [{'code': 'TooFew', 'path': 'custom_fields_values', 'detail': 'This collection should contain 1 element or more.'}]}], 'title': 'Bad Request', 'type': 'https://httpstatus.es/400', 'status': 400, 'detail': 'Request validation failed'}
-        """
+
+        # {'validation-errors': [{'request_id': '0', 'errors': [{'code': 'TooFew', 'path': 'custom_fields_values', 'detail': 'This collection should contain 1 element or more.'}]}], 'title': 'Bad Request', 'type': 'https://httpstatus.es/400', 'status': 400, 'detail': 'Request validation failed'}
+
         lead_id = int(added_lead_data.get('id'))
     # messages = sync_controller.chat(lead_id=lead_id, data=data)
     # note_msg = ''
@@ -538,74 +531,6 @@ def tawk():
         print('adding note to lead', lead_id, tawk_data.get('messages'))
         amo_client.add_note_simple(entity_id=lead_id, text=tawk_data.get('messages'))
     return Response(status=200)
-
-
-@bp.route('/agree_for_treatment', methods=['POST'])
-def agree_for_treatment():
-    data = get_data_from_post_request(_request=request)
-    if not data:
-        return 'Unsupported Media Type', 415
-    branch = data.get('account[subdomain]')
-    processor = DATA_PROCESSOR.get(branch)()
-    pipeline_id = data.get('leads[status][0][pipeline_id]')
-    status_id = data.get('leads[status][0][status_id]')
-    pipeline = processor.get_pipeline_and_status_by_id(
-        pipeline_id=int(pipeline_id) if str(pipeline_id).isnumeric() else None,
-        status_id=int(status_id) if str(status_id).isnumeric() else None
-    ) or {}
-    # получаем лид из Amo
-    amo_client = API_CLIENT.get(branch)()
-    lead_id = data.get('leads[status][0][id]')
-    lead = amo_client.get_lead_by_id(lead_id=lead_id)
-    _embedded = lead.get('_embedded') or {}
-    # получаем контакт из Amo
-    contacts = _embedded.get('contacts')
-    contact = amo_client.get_contact_by_id(contact_id=contacts[0]['id']) if contacts else {}
-    # получаем пользователя, ответственного за лид
-    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id')) or (None, None, '')
-    # print('agree_for_treatment lead', lead)
-    # print('agree_for_treatment user', user)
-    link_to_amo = (((lead.get('_links') or {}).get('self') or {}).get('href') or '').split('?')[0]
-    cf_dict = processor.get_cf_dict(lead=lead)
-    arrival_dt = datetime.fromtimestamp(cf_dict.get('Дата начала лечения')).date()
-    departure_dt = datetime.fromtimestamp(cf_dict.get('Дата завершения лечения')).date()
-    data = {
-        'Arrival': str(arrival_dt),
-        'Departure': str(departure_dt),
-        'Arrival Month': arrival_dt.month,
-        'Departure Month': departure_dt.month,
-        'Amo Link': link_to_amo,
-        'Google Drive Link': cf_dict.get('Папка Пациента'),
-        'Этап в АМО': pipeline.get('status'),
-        "Client's Name": contact.get('name'),
-        'Disease': cf_dict.get('Disease'),
-        'Clinic': cf_dict.get('Клиника'),
-        'Duration': cf_dict.get('Days in Clinic (Stay duration)'),
-        'Language': cf_dict.get('Spoken language'),
-        'Manager': user[2],
-        'Final Cost': lead.get('price'),
-        'Discount': cf_dict.get('Размер  скидки'),
-        'Country': cf_dict.get('Country_from_Jivo'),
-        'New or Repeated': 'Repeated' if pipeline.get('pipeline') in ('Re-sales to Client SM', '') else 'New',
-        'Doctor Consultant': cf_dict.get('Консультирующий доктор'),
-        'Arrival chance in the current month': cf_dict.get('(%) Arrival chance'),
-        'Gender': '',
-        'Arrival flight details: flight number, airport, date and time': '',
-        'Departure flight details: flight number, airport, date and time': '',
-        'Comments': '',
-        'Статус приезда': '',
-        'Prepayment amount': '',
-        'Prepayment Date': '',
-        'Prepayment confirmation': '',
-        'Stem Cell Procedures: List the number of procedures': '',
-        'Wheelchair required': '',
-        'Number of Companions': ''
-    }
-    GoogleAPIClient(
-        book_id=GoogleSheets.ArrivalSM.value,
-        sheet_title='Draft'
-    ).write_data_to_sheet(data=[data])
-    return Response(status=204)
 
 
 @bp.route('/stop_get_amo_data_sm')

@@ -180,10 +180,13 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
                 break
         if duplicated:
             break
-    duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}" if duplicated else ''
-    # прописываем тег "duplicated_lead"
-    if duplicate:
-        # обновляем теги текущего лида
+    duplicate = ''
+    if duplicated:
+        # получаем пользователя, ответственного за лид
+        duplicated_user = processor.get_user_by_id(user_id=duplicated.get('responsible_user_id'))
+        duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}\n" \
+                    f"Responsible for duplicate: {duplicated_user.name}"
+        # обновляем теги текущего лида, прописываем тег "duplicated_lead"
         pass
         # existing_tags.append({'name': DUP_TAG})
         # amo_client.update_lead(lead_id=lead_id, data={'_embedded': {'tags': existing_tags}})

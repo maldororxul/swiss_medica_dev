@@ -640,6 +640,19 @@ class APIClient:
             print(response.text)
             return {}
 
+    def get_leads_by_pipeline_and_status(self, pipeline_id: Union[int, str], status_id: Union[int, str]) -> List[Dict]:
+        """ Получение лидов с указанной воронки / стадии """
+        # лимит - не больше 250!
+        params = f'filter[statuses][0][pipeline_id]={pipeline_id}' \
+                 f'&filter[statuses][0][status_id]={status_id}' \
+                 f'&with=contacts,loss_reason&limit={250}'
+        response = self.__execute(endpoint='leads', params=params)
+        try:
+            return response.json()
+        except:
+            print(response.text)
+            return []
+
     def find_leads(self, query: str, limit: int = 1) -> List[Dict]:
         """ Поиск сделок по запросу
 

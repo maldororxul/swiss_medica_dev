@@ -105,7 +105,23 @@ Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {
         gtag('event', 'Chat Started', {
             'event_category': 'Tawk',
-            'event_label': 'Chat Interaction',
+            'event_label': 'Chat Interaction Started',
+        });
+    }
+};
+Tawk_API.onPrechatSubmit = function() {
+    if (typeof(gtag) !== 'undefined') {
+        gtag('event', 'Prechat Submit', {
+            'event_category': 'Tawk',
+            'event_label': 'Prechat Form Submitted',
+        });
+    }
+};
+Tawk_API.onChatEnded = function() {
+    if (typeof(gtag) !== 'undefined') {
+        gtag('event', 'Chat Ended', {
+            'event_category': 'Tawk',
+            'event_label': 'Chat Interaction Stopped',
         });
     }
 };
@@ -116,8 +132,8 @@ $(document).ready(function() {
     const getAmoDataCdv = () => makeGetRequest('/get_amo_data_cdv', { time: $('#time-cdv').val() }, 'get_amo_data_cdv');
     const stopGetAmoDataSm = () => makeGetRequest('/stop_get_amo_data_sm', {}, 'stop_get_amo_data_sm');
     const stopGetAmoDataCdv = () => makeGetRequest('/stop_get_amo_data_cdv', {}, 'stop_get_amo_data_cdv');
-    const startAutocalls = () => makeGetRequest('/start_autocalls', {}, 'start_autocalls');
-    const setTelegramWebhooks = () => makeGetRequest('/set_telegram_webhooks', {}, 'set_telegram_webhooks');
+//    const startAutocalls = () => makeGetRequest('/start_autocalls', {}, 'start_autocalls');
+//    const setTelegramWebhooks = () => makeGetRequest('/set_telegram_webhooks', {}, 'set_telegram_webhooks');
     const buildPivotDataSm = () => makeGetRequest('/start_update_pivot_data_sm', {}, 'start_update_pivot_data_sm');
     const buildPivotDataCdv = () => makeGetRequest('/start_update_pivot_data_cdv', {}, 'start_update_pivot_data_cdv');
     const stopBuildPivotDataSm = () => makeGetRequest('/stop_update_pivot_data_sm', {}, 'start_update_pivot_data_sm');
@@ -135,6 +151,6 @@ $(document).ready(function() {
     $('#stop_get_amo_data_cdv').on('click', stopGetAmoDataCdv);
     $('#build_pivot_data_cdv').on('click', buildPivotDataCdv);
     $('#stop_build_pivot_data_cdv').on('click', stopBuildPivotDataCdv);
-    $('#start_autocalls').on('click', startAutocalls);
-    $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
+//    $('#start_autocalls').on('click', startAutocalls);
+//    $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
 });

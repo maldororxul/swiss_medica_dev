@@ -73,7 +73,7 @@ class Autocall:
         """
         from app import db
         from app.main.autocall.constants import API_CLIENT
-        print('handle autocall result', data)
+        # print('handle autocall result', data)
         status = data.get('status')
         # получаем экземпляр номера автообзвона из нашей БД
         app = current_app._get_current_object()
@@ -93,12 +93,12 @@ class Autocall:
                 # удаляем номер из нашей базы
                 db.session.delete(number_entity)
                 # перемещаем лид (факт перемещения вручную игнорируются, ошибки игнорируются)
-                print(
-                    'moving lead...',
-                    lead_id,
-                    autocall_config.get('success_pipeline_id'),
-                    autocall_config.get('success_status_id')
-                )
+                # print(
+                #     'moving lead...',
+                #     lead_id,
+                #     autocall_config.get('success_pipeline_id'),
+                #     autocall_config.get('success_status_id')
+                # )
                 amo_client = API_CLIENT.get(self.__branch)()
                 amo_client.update_lead(
                     lead_id=lead_id,
@@ -323,11 +323,11 @@ class Autocall:
                 "user": "ZGVmNTAyMDBiZTU1YmNjMDg5MmQ0YjMzNzU2OWEwOWVkZjU5NDk1YmIzM2EyYmRkZTQ2NDk2NWY5OGM2ZjA0MmU3OGIwZWNmMmFlNjBiYTcxMzlmNjEwMmNjNzUyNjA0OGVjMTMwZmIxY2M1MGUzMGI4ODVlYTU2ZmE3Njc2ZWY2YWJiOWRhYWVlYzYyMGIyZGJkYzAyZGJjMDRkMjFiODAwMWVhZmViZjU4NmU5OWUzNWQ2MTQwNmQ4ZjUxY2Zm",
                 "PHPSESSID": "9fr4o382vli7kqgnm7vfclujd1",
                 "_ym_isad": "2",
-                "_ym_visorc": "w",
+                "_ym_visorc": "w"
             }
         }
-        # return Config().sipuni_cookies.get(self.__branch)
-        return cookies.get(self.__branch)
+        return Config().sipuni_cookies.get(self.__branch)
+        # return cookies.get(self.__branch)
 
     def get_headers(self, autocall_id):
         return {
@@ -371,8 +371,8 @@ class Autocall:
             db.session.refresh(line)
             # с момента last_call_timestamp должно пройти не менее 23 часов (если звонок не первый)
             if line.last_call_timestamp + 23 * 3600 > time.time() and line.calls > 0:
-                waiting_for = f"waiting for {line.last_call_timestamp + 23 * 3600}, now {time.time()}"
-                processor.log.add(text=f'out of schedule (0) {line.autocall_id} number {line.number} ({waiting_for})')
+                # waiting_for = f"waiting for {line.last_call_timestamp + 23 * 3600}, now {time.time()}"
+                # processor.log.add(text=f'out of schedule (0) {line.autocall_id} number {line.number} ({waiting_for})')
                 continue
             # конфиг SIPUNI существует
             autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
@@ -387,13 +387,17 @@ class Autocall:
             schedule = autocall_config.get('schedule')
             # существует расписание для данного автообзвона
             if not schedule:
-                processor.log.add(text=f'schedule not found (0) {line.autocall_id} number {line.number}')
+                # processor.log.add(text=f'schedule not found (0) {line.autocall_id} number {line.number}')
                 continue
             # лид все еще находится в воронке автообзвона
             lead = amo_client.get_lead_by_id(lead_id=line.lead_id)
             pipeline_id, status_id = lead.get('pipeline_id'), lead.get('status_id')
             if not pipeline_id or not status_id:
                 processor.log.add(text=f'lead pipeline or status not found {line.autocall_id} number {line.number}')
+                processor.log.add(text=f"removing number {line.number} from database")
+                db.session.delete(line)
+                db.session.commit()
+                time.sleep(0.25)
                 continue
             if autocall_config.get('pipeline_id') != str(pipeline_id) \
                     or autocall_config.get('status_id') != str(status_id):

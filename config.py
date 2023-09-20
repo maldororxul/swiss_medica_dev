@@ -24,7 +24,7 @@ class Config:
         self.TAWK = self.tawk
         self.TAWK_REST_KEY = self.tawk_rest_key
         self.MANAGERS = self.managers
-        # self.SIPUNI_COOKIES = self.sipuni_cookies
+        self.SIPUNI_COOKIES = self.sipuni_cookies
 
     @property
     def sqlalchemy_database_uri(self):
@@ -62,6 +62,10 @@ class Config:
         return json.loads(os.environ.get('SIPUNI') or '')
 
     @property
+    def arrival(self):
+        return json.loads(os.environ.get('ARRIVAL'))
+
+    @property
     def autocall_interval(self):
         return os.environ.get('AUTOCALL_INTERVAL')
 
@@ -93,6 +97,6 @@ class Config:
     def managers(self):
         return json.loads(os.environ.get('MANAGERS') or '')
 
-    # @property
-    # def sipuni_cookies(self):
-    #     return json.loads(os.environ.get('SIPUNI_COOKIES') or '')
+    @property
+    def sipuni_cookies(self):
+        return json.loads(os.environ.get('SIPUNI_COOKIES') or '')
