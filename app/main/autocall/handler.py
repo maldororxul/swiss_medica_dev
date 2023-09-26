@@ -393,8 +393,8 @@ class Autocall:
             lead = amo_client.get_lead_by_id(lead_id=line.lead_id)
             pipeline_id, status_id = lead.get('pipeline_id'), lead.get('status_id')
             if not pipeline_id or not status_id:
-                processor.log.add(text=f'lead pipeline or status not found {line.autocall_id} number {line.number}')
-                processor.log.add(text=f"removing number {line.number} from database")
+                # processor.log.add(text=f'lead pipeline or status not found {line.autocall_id} number {line.number}')
+                # processor.log.add(text=f"removing number {line.number} from database")
                 db.session.delete(line)
                 db.session.commit()
                 time.sleep(0.25)
@@ -402,7 +402,7 @@ class Autocall:
             if autocall_config.get('pipeline_id') != str(pipeline_id) \
                     or autocall_config.get('status_id') != str(status_id):
                 # лид был перемещен, удаляем номер из БД автообзвона
-                processor.log.add(text=f"removing number {line.number} from database")
+                # processor.log.add(text=f"removing number {line.number} from database")
                 db.session.delete(line)
                 db.session.commit()
                 time.sleep(0.25)

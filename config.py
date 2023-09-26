@@ -34,6 +34,10 @@ class Config:
         return uri
 
     @property
+    def continue_to_work(self):
+        return json.loads(os.environ.get('CONTINUE_TO_WORK') or '')
+
+    @property
     def connections_limit(self):
         return int(os.environ.get('CONNECTIONS_LIMIT'))
 

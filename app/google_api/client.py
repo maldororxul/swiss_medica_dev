@@ -13,6 +13,7 @@ References:
 __author__ = 'ke.mizonov'
 import decimal
 from datetime import datetime, timedelta
+from time import sleep
 from typing import Dict, List, Optional, Union
 from googleapiclient.discovery import build, Resource
 from google.oauth2 import service_account
@@ -162,6 +163,28 @@ class GoogleAPIClient:
         }
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=request).execute()
 
+    def sort(self, sheet_id: Optional[str] = None, column: int = 0):
+        sheet_id = sheet_id or self.__get_sheet_id(sheet_title=self.__sheet_title)
+        sort_request = {
+            "requests": [
+                {
+                    "sortRange": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,  # с начала листа
+                        },
+                        "sortSpecs": [
+                            {
+                                "dimensionIndex": column,
+                                "sortOrder": "ASCENDING"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=sort_request).execute()
+
     def update_arrival_schedule(self, source_sheet_title: str):
         """ Обновление расписания клиник
 
@@ -273,7 +296,7 @@ class GoogleAPIClient:
                 for key, new_value in collection_item.items():
                     if key in exclude_keys:
                         continue
-                    if str(new_value) != str(row_item.get(key)):
+                    if str(new_value) != str(row_item.get(key) or ''):
                         need_update = True
                         break
                 if need_update:
@@ -317,11 +340,11 @@ class GoogleAPIClient:
                     break
             if not start_row:
                 continue
-            self.__write(collection=[item], start_row=start_row)
+            self.__write(collection=[item], start_row=start_row, pause=.5)
         # записываем добавляемые данные
         next_row = len(rows) + 1
         # добавляем строки (условие - должна существовать пустая последняя строка!)
-        self.__add_rows(sheet_id=sheet_id, next_row=next_row, lenght=len(adding))
+        self.__add_rows(sheet_id=sheet_id, next_row=next_row, length=len(adding))
         self.__write(collection=adding, start_row=next_row)
         # перемещаем удаляемые строки в архив
         if archive_sheet:
@@ -407,35 +430,33 @@ class GoogleAPIClient:
             start_row = len(rows) + 1
         # добавляем строки (условие - должна существовать пустая последняя строка!)
         if not rewrite:
-            self.__add_rows(sheet_id=sheet_id, next_row=start_row, lenght=len(data), shift=shift)
+            self.__add_rows(sheet_id=sheet_id, next_row=start_row, length=len(data), shift=shift)
         self.__write(collection=data, start_row=start_row)
 
-    def __add_rows(self, sheet_id: str, next_row: int, lenght: int, shift: bool = True):
+    def __add_rows(self, sheet_id: str, next_row: int, length: int, shift: bool = True):
         """ Добавляет строки
 
         Args:
             sheet_id: идентификатор листа
             next_row: номер строки
-            lenght: количество вставляемых строк
+            length: количество вставляемых строк
             shift: требуется ли смещение
         """
-        for num in range(lenght):
-            body = {
-                "requests": [
-                    {
-                        "insertRange": {
-                            "range": {
-                                "sheetId": sheet_id,
-                                "startRowIndex": next_row + num,
-                                "endRowIndex": next_row + num+1
-                            },
-                        }
-                    },
-                ]
-            }
-            if shift:
-                body['requests'][0]['insertRange']['shiftDimension'] = 'ROWS'
-            self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
+        body = {
+            "requests": [
+                {
+                    "insertRange": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": next_row,
+                            "endRowIndex": next_row + length
+                        },
+                        "shiftDimension": 'ROWS' if shift else None
+                    }
+                }
+            ]
+        }
+        self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
 
     def __get_sheet_id(self, sheet_title):
         """ Идентификатор листа
@@ -451,7 +472,7 @@ class GoogleAPIClient:
                 return sheet['properties']['sheetId']
         raise SpreadSheetNotFoundError(f'Лист "{sheet_title}" не найден в онлайн-таблице')
 
-    def __write(self, collection: List[Dict], start_row: int):
+    def __write(self, collection: List[Dict], start_row: int, pause: float = .0):
         """ Запись данных на лист
 
         Args:
@@ -471,6 +492,7 @@ class GoogleAPIClient:
             ]
         }
         self.service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
+        sleep(pause)
 
     @staticmethod
     def __auth() -> Resource:

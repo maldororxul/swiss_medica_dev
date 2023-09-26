@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import Dict, Callable, Tuple, Optional
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
+from config import Config
 
 DUP_TAG = 'duplicated_lead'
 
@@ -186,6 +187,11 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
         duplicated_user = processor.get_user_by_id(user_id=duplicated.get('responsible_user_id'))
         duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}\n" \
                     f"Responsible for duplicate: {duplicated_user.name}"
+        # перемещаем лид
+        try:
+            move_lead_to_continue_to_work(lead=duplicated, branch=branch, amo_client=amo_client)
+        except Exception as exc:
+            print('failed to move lead', exc)
         # обновляем теги текущего лида, прописываем тег "duplicated_lead"
         pass
         # existing_tags.append({'name': DUP_TAG})
@@ -211,6 +217,32 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
         # """
         # amo_client.update_lead(lead_id=duplicated['id'], data={'_embedded': {'tags': existing_tags}})
     return duplicate
+
+
+def move_lead_to_continue_to_work(lead, branch, amo_client):
+    """ Перемещает лид на этап "Продолжить работу" в соответствующей воронке
+    {
+        "swissmedica": {
+            "pipeline_id": "continue_to_work_status_id",
+            "772717": "21521746",
+            "5707270": "50171239",
+            "2047060": "29830045",
+            "2048428": "29839171"
+        }
+    }
+    """
+    config = (Config().continue_to_work or {}).get(branch) or {}
+    if config:
+        pipeline_id = lead.get('pipeline_id')
+        status_id = config.get(str(pipeline_id))
+        if status_id:
+            amo_client.update_lead(
+                lead_id=lead.get('id'),
+                data={
+                    'pipeline_id': int(pipeline_id),
+                    'status_id': int(status_id)
+                }
+            )
 
 
 def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
