@@ -183,18 +183,24 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
             break
     duplicate = ''
     if duplicated:
+        _embedded = duplicated.get('_embedded') or {}
+        loss_reason = _embedded.get('loss_reason')
+        is_spam = loss_reason[0]['name'] in ('SPAM', 'СПАМ') if loss_reason else False
         # получаем пользователя, ответственного за лид
         duplicated_user = processor.get_user_by_id(user_id=duplicated.get('responsible_user_id'))
         duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}\n" \
                     f"Responsible for duplicate: {duplicated_user.name}"
-        # перемещаем лид
-        try:
-            # from modules.constants.constants.constants import CLOSE_REASON_FAILED
-            # loss_reason = duplicated['loss_reason'][0]['name'] if lead.get('loss_reason') else None
-            if duplicated.get('closed_at'):
-                move_lead_to_continue_to_work(lead=duplicated, branch=branch, amo_client=amo_client)
-        except Exception as exc:
-            print('failed to move lead', exc)
+        if is_spam:
+            duplicate = f'{duplicate}\nPROBABLY SPAM!'
+        else:
+            # перемещаем лид
+            try:
+                # from modules.constants.constants.constants import CLOSE_REASON_FAILED
+                # loss_reason = duplicated['loss_reason'][0]['name'] if lead.get('loss_reason') else None
+                if duplicated.get('closed_at'):
+                    move_lead_to_continue_to_work(lead=duplicated, branch=branch, amo_client=amo_client)
+            except Exception as exc:
+                print('failed to move lead', exc)
         # обновляем теги текущего лида, прописываем тег "duplicated_lead"
         pass
         # existing_tags.append({'name': DUP_TAG})

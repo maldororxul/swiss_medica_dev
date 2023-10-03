@@ -61,27 +61,19 @@ def send_wahtsapp_message(
     print(res.text)
 
 
-@bp.route('/whatsapp', methods=['GET', 'POST'])
+@bp.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
-    if request.method == 'GET':
-        # Handle the verification request from Meta
-        params = request.args
-        if 'hub.verify_token' in params and params['hub.verify_token'] == Config().meta_whatsapp_token:
-            return params['hub.challenge'], 200
-        else:
-            return jsonify({'error': 'Invalid Verify Token'}), 403
-    elif request.method == 'POST':
-        data = request.get_json()
-        try:
-            print(data)
-            if data['entry'][0]['changes'][0]['value']['messages'][0]['id']:
-                pass
-                # reply(msg="Thank you for the response.", number=)
-        except:
+    data = request.get_json()
+    try:
+        print(data)
+        if data['entry'][0]['changes'][0]['value']['messages'][0]['id']:
             pass
-        return '200 OK HTTPS.'
+            # reply(msg="Thank you for the response.", number=)
+    except:
+        pass
+    return '200 OK HTTPS.', 200
 
 
 @bp.route('/whatsapp_remove', methods=['GET', 'POST'])
