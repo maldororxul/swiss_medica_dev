@@ -5,7 +5,7 @@ import telebot
 from flask import request, current_app, Response
 from app.main import bp
 from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR, \
-    handle_new_lead_slow_reaction
+    handle_new_lead_slow_reaction, get_data_from_external_api
 from config import Config
 
 BOTS = {
@@ -34,7 +34,7 @@ def reply_on_lead_event(_request, msg_builder: Callable):
         return 'Ok', 200
     config = Config()
     # в параметрах содержится идентификатор чата; вероятно, есть параметры конкретной воронки (по дефолту - филиала)
-    branch = data.get('account[subdomain]')
+    branch = data.get('account[subdomain]') or data.get('branch')
     params = config.new_lead_telegram.get(pipeline_id)
     if params:
         bot_key = pipeline_id
@@ -128,3 +128,57 @@ def get_message(bot_token):
         return "Invalid bot token", 400
     _bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
     return "!", 200
+
+
+@bp.route('/missed_call_handler', methods=['POST'])
+def missed_call_handler():
+    """
+    Call data:
+        {
+            'number': '995591058618',
+            'dateTime': '2023-07-04 14:44:17',
+            'status': 'Исходящие, отвеченные',
+            'operator': '',
+            'record': 'https://sipuni.com/api/callback/record/05578a253f510b1840c67016426218c1',
+            'callId': '1688471056.154959'
+        }
+    """
+    return get_data_from_external_api(
+        request=request,
+        handler_func=handle_missed_call_result,
+    )
+
+
+def handle_missed_call_result(data: Dict):
+    """ Обработка результата пропущенного звонка (Sipuni)
+
+    Args:
+        data: данные, пришедшие через webhook в формате
+            {
+              "call_args": {
+                "call_id": "1698153245.6379",
+                "event": 2,
+                "dst_type": 1,
+                "dst_num": "74996470000",
+                "src_type": 1,
+                "src_num": "74996470001",
+                "timestamp": "1698153245",
+                "pbx_user_id": "187484",
+                "is_autocall": false,
+                "operator_name": "Николай Смирнов",
+                "status": "NOANSWER",
+                "call_start_timestamp": "1698153235",
+                "call_record_link": "https://commons.wikimedia.org/wiki/File:Heart_Monitor_Beep--freesound.org.mp3",
+                "line_number": "74996470000",
+                "line_name": "Общая",
+                "tree_name": "Входащая",
+                "tree_number": "00090001"
+              },
+    """
+    def missed_call_msg_builder(**kwargs):
+        return (
+            'MISSED_CALL',
+            None,
+            data['src_num']
+        )
+    reply_on_lead_event(_request=request, msg_builder=missed_call_msg_builder)
