@@ -179,6 +179,6 @@ def handle_missed_call_result(data: Dict):
         return (
             'MISSED_CALL',
             None,
-            data['src_num']
+            f"Missed call: {data['src_num']}"
         )
     reply_on_lead_event(_request=request, msg_builder=missed_call_msg_builder)
