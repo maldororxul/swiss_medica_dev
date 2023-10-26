@@ -101,6 +101,22 @@ window.Tawk_API.onLoad = function(){
 //    return params;
 //}
 
+function sendTawkData(dataToSend) {
+    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend)
+    })
+    .then(response => response.status)
+    .then(data => {
+        console.log('Success:', data);
+    })
+    .catch(error => {
+        console.error('Fetch Error:', error);
+    });
+}
 Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {
         gtag('event', 'Chat Started', {
@@ -124,6 +140,10 @@ Tawk_API.onChatEnded = function() {
             'event_label': 'Chat Interaction Stopped',
         });
     }
+};
+window.Tawk_API.onOfflineSubmit = function(data){
+    // заполнена оффлайн-форма {name : ”, email : ”, message : ”, questions : []}
+    sendTawkData(data)
 };
 <!--End of Tawk.to Script-->
 

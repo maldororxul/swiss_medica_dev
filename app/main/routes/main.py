@@ -409,7 +409,7 @@ def tawk():
     # return Response(status=204)
     # handle data from Tawk here
     data = request.json or {}
-    print(data)
+    print('DATA FROM TAWK', data)
     # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
     prop = data.get('property') or {}
     chat_name = prop.get('name')

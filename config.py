@@ -91,6 +91,18 @@ class Config:
 
     @property
     def tawk(self):
+        """
+        Returns:
+            {
+                "cdv_main": {
+                    "branch": "CDV",
+                    "pipeline_id": "5389528",
+                    "status_id": "47873530",
+                    "phone_field_id": "8671",
+                    "email_field_id": "8673"
+                }
+            }
+        """
         return json.loads(os.environ.get('TAWK') or '')
 
     @property
