@@ -95,11 +95,20 @@ class Config:
         Returns:
             {
                 "cdv_main": {
+                    "sites": ["https://swiss-medica-2e0e7bc937df.herokuapp.com"],
                     "branch": "CDV",
                     "pipeline_id": "5389528",
                     "status_id": "47873530",
                     "phone_field_id": "8671",
-                    "email_field_id": "8673"
+                    "email_field_id": "8673",
+                },
+                "sm_main": {
+                    "sites": ["https://swiss-medica-2e0e7bc937df.herokuapp.com"],
+                    "branch": "SM",
+                    "pipeline_id": "5389528",
+                    "status_id": "47873530",
+                    "phone_field_id": "8671",
+                    "email_field_id": "8673",
                 }
             }
         """
@@ -107,7 +116,7 @@ class Config:
 
     @property
     def tawk_rest_key(self):
-        return os.environ.get('TAWK_REST_KEY')
+        return json.loads(os.environ.get('TAWK_REST_KEY') or '')
 
     @property
     def managers(self):

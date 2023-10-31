@@ -67,12 +67,16 @@ function makeGetRequest(endpoint, params, msg) {
 }
 
 <!--Start of Tawk.to Script-->
+// CDV
+//var Tawk_Slug = '64d0945994cf5d49dc68dd99/1h77c6vne';
+// SM
+var Tawk_Slug = '6540c6b2f2439e1631ea401c/1he2ggacp';
 var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 (function() {
     var s1 = document.createElement("script"),
         s0 = document.getElementsByTagName("script")[0];
     s1.async = true;
-    s1.src = 'https://embed.tawk.to/64d0945994cf5d49dc68dd99/1h77c6vne';
+    s1.src = 'https://embed.tawk.to/' + Tawk_Slug;
     s1.charset = 'UTF-8';
     s1.setAttribute('crossorigin', '*');
     s0.parentNode.insertBefore(s1, s0);
@@ -80,26 +84,14 @@ var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
 
 window.Tawk_API.onLoad = function(){
     var custom_attrs = {
-//        'utm': JSON.stringify(getUTMParameters()),
-        'ref': document.referrer,
-        'notemptykey': 'notemptyvalue'
+        'ref': document.referrer
     }
-    console.log(custom_attrs)
     window.Tawk_API.setAttributes(custom_attrs, function(error){
         if (error) {
             console.error("Error setting Tawk attributes:", error);
         }
     });
 };
-
-//function getUTMParameters() {
-//    var params = {};
-//    window.location.search.substring(1).split('&').forEach(function(pair) {
-//        var keyValue = pair.split('=');
-//        params[keyValue[0]] = decodeURIComponent(keyValue[1] || '');
-//    });
-//    return params;
-//}
 
 function sendTawkData(dataToSend) {
     fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk', {
@@ -117,6 +109,7 @@ function sendTawkData(dataToSend) {
         console.error('Fetch Error:', error);
     });
 }
+
 Tawk_API.onChatStarted = function() {
     if (typeof(gtag) !== 'undefined') {
         gtag('event', 'Chat Started', {
@@ -142,7 +135,7 @@ Tawk_API.onChatEnded = function() {
     }
 };
 window.Tawk_API.onOfflineSubmit = function(data){
-    // заполнена оффлайн-форма {name : ”, email : ”, message : ”, questions : []}
+    data['referrer'] = document.referrer
     sendTawkData(data)
 };
 <!--End of Tawk.to Script-->

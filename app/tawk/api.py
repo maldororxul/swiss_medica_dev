@@ -1,15 +1,15 @@
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 import requests
 from config import Config
 
 
 class TawkRestClient:
-    token: str = Config().tawk_rest_key
     base_url: str = 'https://api.tawk.to/v1/'
 
-    def __init__(self):
+    def __init__(self, branch: str):
+        self.token = Config().tawk_rest_key.get(branch)
         self.headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -36,13 +36,14 @@ class TawkRestClient:
         ).get('data') or []
 
     def get_messages(self, channel_id: str, chat_id: str) -> Dict:
-        """
+        """ Получает историю сообщений чата
 
         Args:
-            channel_id:
-            chat_id:
+            channel_id: идентификатор канала
+            chat_id: идентификатор чата
 
         Returns:
+            Словарь для построения истории чата
             Tawk chat from: https://source-landing.com/
             2023-08-24 06:41:02 :: [chat started]
             2023-08-24 06:41:02 :: Operator Maria :: [operator joined chat]
@@ -101,6 +102,31 @@ class TawkRestClient:
         }
 
     def get_messages_text_and_person(self, channel_id: str, chat_id: str) -> Optional[Dict]:
+        """ Возвращает данные чата
+
+        Args:
+            channel_id: текстовый идентификатор канала
+            chat_id: текстовый идентификатор чата
+
+        Returns:
+            Данные чата в формате
+            {
+                'person': {
+                    'name': {'first': 'chat data', 'last': 'transfer'},
+                    'emails': [], 'phones': ['2589631477'],
+                    'createdOn': '2023-09-07T07:45:55.831Z',
+                    'updatedOn': '2023-09-07T07:46:24.430Z',
+                    'device': {'ip': '37.232.82.193', 'browser': 'chrome', 'os': 'windows'},
+                    'firstSeenOn': '2023-09-07T07:45:55.926Z',
+                    'lastSeenOn': '2023-09-07T07:45:55.926Z',
+                    'location': {'continent': 'AS', 'country': 'GE', 'cityName': 'Batumi', 'cityId': 615532, 'regionId': 615929, 'regionName': 'Achara', 'point': '41.6473,41.6258'},
+                    'webSession': {'count': 1, 'first': '2023-09-07T07:45:55.926Z', 'latest': '2023-09-07T07:45:55.926Z', 'pageViews': 0, 'timeSpent': 0},
+                    'primaryPhone': '2589631477',
+                    'id': '64f97fb3aab3f51368ed3600'
+                },
+                'messages': 'Tawk chat from: https://swiss-medica-2e0e7bc937df.herokuapp.com/\nView chat: https://dashboard.tawk.to/#/inbox/64d0945994cf5d49dc68dd99/all/chat/93e94760-4d52-11ee-9f1f-6dfbc0fa7e4b\n2023-09-07 07:46:24 :: [chat started]\n2023-09-07 07:46:24 :: chat data transfer :: hi\n2023-09-07 07:46:24 :: Operator Kirill :: [operator joined chat]\n2023-09-07 07:46:24 :: Operator Kirill :: test\n2023-09-07 07:46:24 :: chat data transfer :: bb'
+            }
+        """
         chat = self.get_chat(channel_id=channel_id, chat_id=chat_id)
         if not chat:
             return None

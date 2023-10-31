@@ -1,22 +1,17 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
-import time
 from datetime import datetime
-from typing import Dict
-from urllib.parse import urlparse, parse_qs
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
-from app.amo.processor.functions import clear_phone
 from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
 from app.main.processors import DATA_PROCESSOR
 from app.main.tasks import SchedulerTask
 from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
-from app.tawk.api import TawkRestClient
-from config import Config
+from app.tawk.controller import TawkController
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
@@ -294,244 +289,9 @@ def get_amo_data_cdv():
     return start_get_data_from_amo_scheduler(branch='cdv')
 
 
-# @socketio.on('client_message')
-# def handle_client_message(message):
-#     print('Received message:', message['data'])
-
-def create_lead_from_tawk_chat(data: Dict):
-    # по имени чата определяем филиал, инициализируем amo клиент
-    chat_name = data.get('chat_name')
-    config = Config().TAWK.get(data.get('chat_name')) or {}
-    branch = config.get('branch')
-    if not branch:
-        return Response(status=204)
-    visitor = data.get('visitor')
-    if not visitor:
-        return Response(status=204)
-    amo_client = API_CLIENT.get(branch)()
-    name = visitor.get('name')
-    phone = clear_phone(visitor.get('phone'))
-    data['visitor'] = {'name': name, 'phone': phone}
-    # готовим сообщение
-    # sync_controller = SYNC_CONTROLLER.get(branch)()
-    # пытаемся найти лид по номеру телефона
-    existing_leads = list(amo_client.find_leads(query=phone, limit=1))
-    if existing_leads:
-        # лид найден - дописываем чат в ленту событий / примечаний
-        existing_lead = existing_leads[0]
-        lead_id = int(existing_lead['id'])
-    else:
-        # лид не найден - создаем
-        lead_added = amo_client.add_lead_simple(
-            name=f'TEST! Lead from Tawk: {name}',
-            tags=['Tawk', chat_name],
-            referrer=data.get('refferer'),
-            utm=data.get('utm'),
-            pipeline_id=int(config.get('pipeline_id')),
-            status_id=int(config.get('status_id')),
-            contacts=[
-                {'value': phone, 'field_id': int(config.get('phone_field_id')), 'enum_code': 'WORK'}
-            ]
-        )
-        # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
-        added_lead_data = lead_added.json()
-        if not added_lead_data:
-            return
-        # print(added_lead_data)
-
-        # {'validation-errors': [{'request_id': '0', 'errors': [{'code': 'TooFew', 'path': 'custom_fields_values', 'detail': 'This collection should contain 1 element or more.'}]}], 'title': 'Bad Request', 'type': 'https://httpstatus.es/400', 'status': 400, 'detail': 'Request validation failed'}
-
-        lead_id = int(added_lead_data.get('id'))
-    # messages = sync_controller.chat(lead_id=lead_id, data=data)
-    # note_msg = ''
-    # for message in messages:
-    #     note_msg = f"{note_msg}\n{message['date']} :: {message['type']} :: {message['text']}"
-
-    note_msg = TawkRestClient().get_source_and_messages_text(channel_id=data.get('channel_id'), chat_id=data.get('chat_id'))
-    if note_msg:
-        amo_client.add_note_simple(entity_id=lead_id, text=note_msg)
-    # message = messages[-1]
-    # agent = message.get('agent')
-    # name = message['type']
-    # if name == 'agent' and agent:
-    #     name = agent
-    # note_msg = f"{message['date']} :: {name} :: {message['text']}"
-    # existing_note = amo_client.get_tawk_lead_notes(lead_id=lead_id)
-    # if existing_note:
-    #     # обновляем существующее примечание
-    #     text = (existing_note.get('params') or {}).get('text')
-    #     note_msg = f'{text}\n{note_msg.strip()}'
-    #     amo_client.update_note_simple(note_id=int(existing_note.get('id')), lead_id=lead_id, text=note_msg)
-    #     return
-    # # добавляем новое примечание
-    # note_msg = f'Tawk chat:\n{note_msg.strip()}'
-
-
-# @bp.route('/tawk_data', methods=['POST'])
-# def tawk_data():
-#     """ Принимаем данные со стороны клиента
-#     {
-#         'type': 'visitor',
-#         'visitor': {'name': str, 'phone': str},
-#         'message': str,
-#         'utm': dict,
-#         'referrer': str,
-#         'create_lead': bool,
-#         'chat_name': str
-#     }
-#     """
-#     data = request.json or {}
-#     app = current_app._get_current_object()
-#     with app.app_context():
-#         create_lead_from_tawk_chat(data=data)
-#     return Response(status=204)
-
-
 @bp.route('/tawk', methods=['POST'])
 def tawk():
-    """
-    {
-        'chatId': 'aaf4ff90-3a7d-11ee-86b6-71ef2c3aef2f',
-        'visitor': {'name': 'Test Name', 'city': 'batumi', 'country': 'GE'},
-        'message': {'sender': {'type': 'visitor'}, 'text': 'Name : Test Name\r\nPhone : 79216564906', 'type': 'msg'},
-        'time': '2023-08-14T08:37:11.874Z',
-        'event': 'chat:start',
-        'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'CDV'} <-- это название чата, с ним будем мапать
-    }
-    {
-        'chatId': '61880e20-4d46-11ee-871d-09e91a719de2',
-        'visitor': {'name': 'ChatEnds','city': 'batumi', 'country': 'GE'},
-        'time': '2023-09-07T06:20:09.450Z',
-        'event': 'chat:end',
-        'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'cdv_main'}
-    }
-    """
-    # return Response(status=204)
-    # handle data from Tawk here
-    data = request.json or {}
-    print('DATA FROM TAWK', data)
-    # убеждаемся, что перед нами сообщение с заполненной контактной формой (pre-chat)
-    prop = data.get('property') or {}
-    chat_name = prop.get('name')
-    if not chat_name:
-        return Response(status=204)
-    # msg_data = data.get('message')
-    # if not msg_data:
-    #     return Response(status=204)
-    # sender = (msg_data.get('sender') or {}).get('type')
-    # if sender != 'visitor':
-    #     return Response(status=204)
-    # имя и телефон клиента
-    # spl_text = (msg_data.get('text') or '').split('\r\n')
-    # if len(spl_text) != 2:
-    #     return Response(status=204)
-    # name, phone = spl_text
-    # if 'Name : ' not in name or 'Phone : ' not in phone:
-    #     return Response(status=204)
-    # name = name.replace('Name : ', '')
-    # phone = phone.replace('Phone : ', '')
-
-    # тут данные чата могли не успеть записаться в базу Tawk, поэтому циклим
-    """
-    {
-        'person': {
-            'name': {'first': 'chat data', 'last': 'transfer'},
-            'emails': [], 'phones': ['2589631477'],
-            'createdOn': '2023-09-07T07:45:55.831Z',
-            'updatedOn': '2023-09-07T07:46:24.430Z',
-            'device': {'ip': '37.232.82.193', 'browser': 'chrome', 'os': 'windows'},
-            'firstSeenOn': '2023-09-07T07:45:55.926Z',
-            'lastSeenOn': '2023-09-07T07:45:55.926Z',
-            'location': {'continent': 'AS', 'country': 'GE', 'cityName': 'Batumi', 'cityId': 615532, 'regionId': 615929, 'regionName': 'Achara', 'point': '41.6473,41.6258'},
-            'webSession': {'count': 1, 'first': '2023-09-07T07:45:55.926Z', 'latest': '2023-09-07T07:45:55.926Z', 'pageViews': 0, 'timeSpent': 0},
-            'primaryPhone': '2589631477',
-            'id': '64f97fb3aab3f51368ed3600'
-        },
-        'messages': 'Tawk chat from: https://swiss-medica-2e0e7bc937df.herokuapp.com/\nView chat: https://dashboard.tawk.to/#/inbox/64d0945994cf5d49dc68dd99/all/chat/93e94760-4d52-11ee-9f1f-6dfbc0fa7e4b\n2023-09-07 07:46:24 :: [chat started]\n2023-09-07 07:46:24 :: chat data transfer :: hi\n2023-09-07 07:46:24 :: Operator Kirill :: [operator joined chat]\n2023-09-07 07:46:24 :: Operator Kirill :: test\n2023-09-07 07:46:24 :: chat data transfer :: bb'
-    }
-    """
-    tawk_data = None
-    counter = 0
-    max_counter = 24
-    while not tawk_data:
-        counter += 1
-        if counter > max_counter:
-            break
-        tawk_data = TawkRestClient().get_messages_text_and_person(channel_id=prop.get('id'), chat_id=data['chatId'])
-        print('tawk_data', tawk_data)
-        time.sleep(5)
-    if not tawk_data:
-        return Response(status=204)
-    person_dict = tawk_data.get('person') or {}
-    # разбираем utm-метки из source
-    utm_dict = {}
-    source = tawk_data.get('source')
-    if source:
-        parsed_url = urlparse(source)
-        utm_dict = parse_qs(parsed_url.query)
-    # имя и номер пациента
-    name_data = person_dict.get('name')
-    name = f"{name_data.get('first') or ''} {name_data.get('last') or ''}".strip()
-    phones_data = person_dict.get('phones') or []
-    if not phones_data:
-        return Response(status=204)
-    emails_data = person_dict.get('emails') or []
-    if not emails_data:
-        return Response(status=204)
-    phone = clear_phone(phones_data[0])
-    email = emails_data[0]
-
-    # по имени чата определяем филиал, инициализируем amo клиент
-    config = Config().tawk.get(chat_name) or {}
-    branch = config.get('branch')
-    if not branch:
-        return Response(status=204)
-    amo_client = API_CLIENT.get(branch)()
-    # пытаемся найти лид по номеру телефона
-    existing_leads = list(amo_client.find_leads(query=phone, limit=1))
-    # note_msg = f"Incoming chat https://dashboard.tawk.to/#/inbox/{prop.get('id')}/all/chat/{data['chatId']}"
-
-    # определяем идентификатор ответственного пользователя
-    manager_id = tawk_data.get('manager').get('id')
-    managers = Config().managers.get(branch) or {}
-    tawk_amo_dict = {
-        value['tawk_id']: value['amo_id']
-        for value in managers.values()
-        if value['tawk_id'] and value['amo_id']
-    }
-    responsible_user_id = tawk_amo_dict.get(manager_id) or 0
-
-    lead_id = None
-    if existing_leads:
-        # лид найден - дописываем чат в ленту событий / примечаний
-        lead_id = int(existing_leads[0]['id'])
-    else:
-        # лид не найден - создаем
-        print('creating new lead')
-        lead_added = amo_client.add_lead_simple(
-            name=f'TEST! Lead from Tawk: {name}',
-            tags=['Tawk', chat_name],
-            referrer=(person_dict.get('customAttributes') or {}).get('ref'),
-            utm=utm_dict,
-            pipeline_id=int(config.get('pipeline_id')),
-            status_id=int(config.get('status_id')),
-            contacts=[
-                {'value': phone, 'field_id': int(config.get('phone_field_id')), 'enum_code': 'WORK'},
-                {'value': email, 'field_id': int(config.get('email_field_id')), 'enum_code': 'WORK'},
-            ],
-            responsible_user_id=responsible_user_id
-        )
-        # response from Amo [{"id":24050975,"contact_id":28661273,"company_id":null,"request_id":["0"],"merged":false}]
-        added_lead_data = lead_added.json()
-        print(added_lead_data)
-        try:
-            lead_id = int(added_lead_data[0]['id'])
-        except:
-            pass
-    if lead_id:
-        print('adding note to lead', lead_id, tawk_data.get('messages'))
-        amo_client.add_note_simple(entity_id=lead_id, text=tawk_data.get('messages'))
-    return Response(status=200)
+    return TawkController().handle(request=request)
 
 
 @bp.route('/stop_get_amo_data_sm')
