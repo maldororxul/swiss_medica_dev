@@ -1,4 +1,4 @@
-""" Клиент API чатов AmoCRM - отдельный от основного API. Заточен под работу с WhatsApp.
+""" Клиент API чатов AmoCRM - отдельный от основного API
 
 amojo_id получаем через запрос https://swissmedica.amocrm.ru/api/v4/account?with=amojo_id
 """
@@ -12,7 +12,7 @@ from config import Config
 
 
 class AmoChatsAPIClient:
-    """ Класс клиента API чатов AmoCRM. Заточен под работу с WhatsApp. """
+    """ Класс клиента API чатов AmoCRM """
     base_url: str = 'https://amojo.amocrm.ru/v2/origin/custom/'
 
     def __init__(self, branch: str):
