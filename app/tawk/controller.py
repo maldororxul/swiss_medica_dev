@@ -147,10 +147,8 @@ class TawkController:
             'name': data.get('name'),
             'phone': data.get('phone'),
             'email': data.get('email'),
-            # referrer - это кастомный атрибут, передаваемый при загрузке виджета чата,
-            # но он не прокидывается через оффлайн-форму
-            # вероятно, его можно вытащить через REST API TAWK? (маловероятно, т.к. чат не создается?)
-            'referrer': None,
+            # referrer - это кастомный атрибут, передаваемый при загрузке виджета чата, прокидывается вручную
+            'referrer': data.get('referrer'),
             'utm_dict': utm_dict,
             'responsible_user_id': 0,
             'tawk_data': {},

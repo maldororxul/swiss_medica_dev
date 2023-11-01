@@ -25,6 +25,7 @@ class Config:
         self.TAWK_REST_KEY = self.tawk_rest_key
         self.MANAGERS = self.managers
         self.SIPUNI_COOKIES = self.sipuni_cookies
+        self.AMO_CHAT = self.amo_chat
 
     @property
     def sqlalchemy_database_uri(self):
@@ -32,6 +33,10 @@ class Config:
         if uri and uri.startswith("postgres://"):
             uri = uri.replace("postgres://", "postgresql://", 1)
         return uri
+
+    @property
+    def amo_chat(self):
+        return json.loads(os.environ.get('AMO_CHAT') or '')
 
     @property
     def continue_to_work(self):
@@ -100,7 +105,7 @@ class Config:
                     "pipeline_id": "5389528",
                     "status_id": "47873530",
                     "phone_field_id": "8671",
-                    "email_field_id": "8673",
+                    "email_field_id": "8673"
                 },
                 "sm_main": {
                     "sites": ["https://swiss-medica-2e0e7bc937df.herokuapp.com"],
@@ -108,7 +113,7 @@ class Config:
                     "pipeline_id": "5389528",
                     "status_id": "47873530",
                     "phone_field_id": "8671",
-                    "email_field_id": "8673",
+                    "email_field_id": "8673"
                 }
             }
         """

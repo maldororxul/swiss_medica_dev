@@ -4,6 +4,7 @@ from datetime import datetime
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
+from app.amo.api.chat_client import AmoChatsAPIClient
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
@@ -12,6 +13,8 @@ from app.main.tasks import SchedulerTask
 from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
 from app.tawk.controller import TawkController
+from app.whatsapp.controller import WhatsAppController
+from config import Config
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
@@ -282,6 +285,25 @@ def data_to_excel_cdv():
 @bp.route('/get_amo_data_sm')
 def get_amo_data_sm():
     return start_get_data_from_amo_scheduler(branch='sm')
+
+
+@bp.route('/amo_chat/<str:scope_id>')
+def amo_chat(scope_id: str) -> Response:
+    """ Пришло сообщение из Amo Chat:
+        менеджер через интерфейс Amo написал клиенту - нам нужно переслать сообщение в WhatsApp
+
+    Args:
+        scope_id: идентификатор, позволяющий судить о том, с какого аккаунта Amo прилетели данные
+    """
+    # в каком формате придут данные - хз, нам по сути нужны только телефон и текст сообщения
+    print('got info from AMO Chat', scope_id, request.json)
+    # по scope_id определяем аккаунт
+    for branch, config in Config().amo_chat.items():
+        if config.get('scope_id') == scope_id:
+            # будет выбран первый номер из списка (переменная WHATSAPP) для данного филиала
+            # WhatsAppController(branch=branch).send_message(number_to=..., message=...)
+            break
+    return Response(status=204)
 
 
 @bp.route('/get_amo_data_cdv')

@@ -3,6 +3,8 @@ __author__ = 'ke.mizonov'
 from typing import Optional
 import requests
 from flask import request, jsonify, Response
+
+from app.amo.api.chat_client import AmoChatsAPIClient
 from app.main import bp
 from config import Config
 
@@ -63,6 +65,9 @@ def send_wahtsapp_message(
 
 @bp.route('/whatsapp', methods=['POST'])
 def whatsapp_webhook():
+    """ Нам отправили сообщение в WhatsApp,
+        чтобы менеджер увидел его в интерфейсе Amo, необходимо использовать AmoChatsAPIClient
+    """
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
@@ -71,6 +76,9 @@ def whatsapp_webhook():
         if data['entry'][0]['changes'][0]['value']['messages'][0]['id']:
             pass
             # reply(msg="Thank you for the response.", number=)
+
+        # AmoChatsAPIClient(branch=...).get_message()
+
     except:
         pass
     return '200 OK HTTPS.', 200
