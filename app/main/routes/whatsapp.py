@@ -87,3 +87,13 @@ def whatsapp_webhook():
 @bp.route('/whatsapp_remove', methods=['GET', 'POST'])
 def whatsapp_remove():
     pass
+
+
+@bp.route('/connect_account_to_chat_sm', methods=['GET'])
+def connect_account_to_chat_sm():
+    return AmoChatsAPIClient(branch='SM').connect_account()
+
+
+@bp.route('/connect_account_to_chat_cdv', methods=['GET'])
+def connect_account_to_chat_cdv():
+    return AmoChatsAPIClient(branch='CDV').connect_account()
