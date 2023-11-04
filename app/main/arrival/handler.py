@@ -6,7 +6,6 @@ from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import GoogleSheets
 from app.google_api.client import GoogleAPIClient
 from app.main.processors import DATA_PROCESSOR
-from app.main.routes.telegram import get_data_from_post_request
 from config import Config
 
 

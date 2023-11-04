@@ -9,6 +9,7 @@ from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
 from app.main.processors import DATA_PROCESSOR
+from app.main.routes.utils import get_data_from_post_request
 from app.main.tasks import SchedulerTask
 from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
@@ -282,6 +283,27 @@ def data_to_excel_cdv():
     return data_to_excel(branch='cdv')
 
 
+@bp.route('/new_raw_lead', methods=['POST'])
+def new_raw_lead():
+    """ В Amo пришел новый лид, его данные необходимо записать в RawLeadData """
+    data = get_data_from_post_request(_request=request)
+    if not data:
+        return 'Unsupported Media Type', 415
+    lead_id = data.get('leads[add][0][id]')
+    if not lead_id:
+        return Response(status=204)
+    branch = data.get('account[subdomain]')
+    # вытаскиваем данные сделки
+    amo_client = API_CLIENT.get(branch)()
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+
+    # записываем данные сделки
+    print('new raw lead', lead)
+    pass
+
+    return Response(status=204)
+
+
 @bp.route('/get_amo_data_sm')
 def get_amo_data_sm():
     return start_get_data_from_amo_scheduler(branch='sm')
@@ -363,6 +385,7 @@ def create_all():
     from app.models.log import SMLog, CDVLog
     from app.models.autocall import SMAutocallNumber, CDVAutocallNumber
     from app.models.chat import SMChat, CDVChat
+    from app.models.raw_lead_data import SMRawLeadData, CDVRawLeadData
     with current_app.app_context():
         db.create_all()
     return 'tables created'

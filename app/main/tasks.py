@@ -91,6 +91,9 @@ class SchedulerTask:
             while True:
                 not_updated = 0
                 total = 0
+
+                # todo tmp - образец работы с JSON-конвертацией для RawLeadData
+
                 for line in data_processor.update(date_from=date_from, date_to=date_to):
                     item = {key.split('_(')[0]: value for key, value in line.items()}
                     if not controller.sync_record(

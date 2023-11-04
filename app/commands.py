@@ -17,6 +17,8 @@ from .models.company import SMCompany, CDVCompany
 from .models.data import SMData, CDVData
 from .models.log import SMLog, CDVLog
 from .models.autocall import SMAutocallNumber, CDVAutocallNumber
+from .models.chat import SMChat, CDVChat
+from .models.raw_lead_data import SMRawLeadData, CDVRawLeadData
 
 
 @click.command(name='create_tables')

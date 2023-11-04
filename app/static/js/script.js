@@ -154,16 +154,16 @@ $(document).ready(function() {
     const downloadPivotDataSm = () => makeGetRequest('/data_excel_sm', {}, 'data_excel_sm');
     const downloadPivotDataCdv = () => makeGetRequest('/data_excel_cdv', {}, 'data_excel_cdv');
 
-    $('#download_pivot_data_sm').on('click', downloadPivotDataSm);
-    $('#download_pivot_data_cdv').on('click', downloadPivotDataCdv);
+//    $('#download_pivot_data_sm').on('click', downloadPivotDataSm);
+//    $('#download_pivot_data_cdv').on('click', downloadPivotDataCdv);
     $('#get_amo_data_sm').on('click', getAmoDataSm);
-    $('#stop_get_amo_data_sm').on('click', stopGetAmoDataSm);
+//    $('#stop_get_amo_data_sm').on('click', stopGetAmoDataSm);
     $('#build_pivot_data_sm').on('click', buildPivotDataSm);
-    $('#stop_build_pivot_data_sm').on('click', stopBuildPivotDataSm);
+//    $('#stop_build_pivot_data_sm').on('click', stopBuildPivotDataSm);
     $('#get_amo_data_cdv').on('click', getAmoDataCdv);
-    $('#stop_get_amo_data_cdv').on('click', stopGetAmoDataCdv);
+//    $('#stop_get_amo_data_cdv').on('click', stopGetAmoDataCdv);
     $('#build_pivot_data_cdv').on('click', buildPivotDataCdv);
-    $('#stop_build_pivot_data_cdv').on('click', stopBuildPivotDataCdv);
+//    $('#stop_build_pivot_data_cdv').on('click', stopBuildPivotDataCdv);
 //    $('#start_autocalls').on('click', startAutocalls);
 //    $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
 });

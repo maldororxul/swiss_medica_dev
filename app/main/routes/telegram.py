@@ -1,9 +1,10 @@
 """ Маршруты для работы Telegram-ботов """
 __author__ = 'ke.mizonov'
-from typing import Optional, Dict, Callable
+from typing import Dict, Callable
 import telebot
 from flask import request, current_app, Response
 from app.main import bp
+from app.main.routes.utils import get_data_from_post_request
 from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR, \
     handle_new_lead_slow_reaction, get_data_from_external_api
 from config import Config
@@ -13,15 +14,6 @@ BOTS = {
     for pipeline_or_branch, params in Config().new_lead_telegram.items()
     if params.get('TOKEN')
 }
-
-
-def get_data_from_post_request(_request) -> Optional[Dict]:
-    if request.content_type == 'application/json':
-        return _request.json
-    elif request.content_type == 'application/x-www-form-urlencoded':
-        return _request.form.to_dict()
-    else:
-        return None
 
 
 def reply_on_lead_event(_request, msg_builder: Callable):
