@@ -37,10 +37,10 @@ class RawLeadDataBase(db.Model):
 
 
 class SMRawLeadData(RawLeadDataBase):
-    __tablename__ = 'Data'
+    __tablename__ = 'RawLeadData'
     __table_args__ = {"schema": "sm"}
 
 
 class CDVRawLeadData(RawLeadDataBase):
-    __tablename__ = 'Data'
+    __tablename__ = 'RawLeadData'
     __table_args__ = {"schema": "cdv"}
