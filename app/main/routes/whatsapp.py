@@ -67,20 +67,39 @@ def send_wahtsapp_message(
 def whatsapp_webhook():
     """ Нам отправили сообщение в WhatsApp,
         чтобы менеджер увидел его в интерфейсе Amo, необходимо использовать AmoChatsAPIClient
+        {'object': 'whatsapp_business_account', 'entry': [{'id': '133570986506988', 'changes': [{'value': {'messaging_product': 'whatsapp', 'metadata': {'display_phone_number': '381114221400', 'phone_number_id': '151648284687808'}, 'contacts': [{'profile': {'name': 'Kirill Mizonow'}, 'wa_id': '995591058618'}], 'messages': [{'from': '995591058618', 'id': 'wamid.HBgMOTk1NTkxMDU4NjE4FQIAEhggQ0JBQUY5QkQwQTE0OUUxQ0Q4NTVCNkUwREVGOUQ3MEUA', 'timestamp': '1699356265', 'text': {'body': 'Test'}, 'type': 'text'}]}, 'field': 'messages'}]}]}
     """
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
     try:
-        print(data)
-        if data['entry'][0]['changes'][0]['value']['messages'][0]['id']:
-            pass
-            # reply(msg="Thank you for the response.", number=)
-
-        # AmoChatsAPIClient(branch=...).get_message()
-
-    except:
-        pass
+        entry = data['entry'][0]
+        value = entry['changes'][0]['value']
+        # определяем идентификатор нашего номера, на который пришло сообщение
+        phone_number_id = value['metadata']['phone_number_id']
+        # по идентификатору номера определяем филиал
+        branch = None
+        for _branch, config in Config().whatsapp.items():
+            for number in config.get('numbers'):
+                if number['id'] == phone_number_id:
+                    branch = _branch
+                    break
+            if branch:
+                break
+        if not branch:
+            return '200 OK HTTPS.', 200
+        contact = value['contacts'][0]['profile']
+        msg = value['messages'][0]
+        AmoChatsAPIClient(branch=branch).get_message(
+            timestamp=int(msg['timestamp']),
+            name=contact['profile']['name'],
+            phone=contact['wa_id'],
+            text=msg['text']['body'],
+            conversation_id=entry['id'],
+            msg_id=msg['id']
+        )
+    except Exception as exc:
+        print(f'WhatsApp webhook error: {exc}')
     return '200 OK HTTPS.', 200
 
 
@@ -91,9 +110,9 @@ def whatsapp_remove():
 
 @bp.route('/connect_account_to_chat_sm', methods=['GET'])
 def connect_account_to_chat_sm():
-    return AmoChatsAPIClient(branch='SM').connect_account()
+    return jsonify(AmoChatsAPIClient(branch='SM').connect_account())
 
 
 @bp.route('/connect_account_to_chat_cdv', methods=['GET'])
 def connect_account_to_chat_cdv():
-    return AmoChatsAPIClient(branch='CDV').connect_account()
+    return jsonify(AmoChatsAPIClient(branch='CDV').connect_account())

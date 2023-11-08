@@ -53,23 +53,23 @@ class AmoChatsAPIClient:
         }
         return self.__request(path=path, body=body)
 
-    def get_message(self, name: str, phone: str, text: str):
+    def get_message(self, timestamp: int, name: str, phone: str, text: str, conversation_id: str, msg_id: str):
         path = f'{self.config.get("scope_id")}'
         body = {
           "event_type": "new_message",
           "payload": {
-            "timestamp": 1639604761,
-            "msec_timestamp": 1639604761694,
-            "msgid": "my_int-5f2836a8ca475",
-            "conversation_id": "my_int-d5a421f7f217",
+            "timestamp": timestamp,
+            "msec_timestamp": timestamp * 1000,
+            "msgid": msg_id,
+            "conversation_id": conversation_id,
             "sender": {
-              "id": "my_int-1376265f-86df-4c49-a0c3-a4816df41af8",
-              "avatar": "https://example.com/users/avatar.png",
+              "id": phone,
+              # "avatar": "https://example.com/users/avatar.png",
               "profile": {
                 "phone": phone,
-                "email": "example.client@example.com"
+                # "email": "example.client@example.com"
               },
-              "profile_link": "https://example.com/profile/example.client",
+              # "profile_link": "https://example.com/profile/example.client",
               "name": name
             },
             "message": {

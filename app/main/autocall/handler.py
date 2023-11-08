@@ -249,7 +249,7 @@ class Autocall:
         from app.main.autocall.constants import DATA_PROCESSOR
         with app.app_context():
             processor = DATA_PROCESSOR.get(self.__branch)()
-            processor.log.add(text=f'starting autocalls')
+            # processor.log.add(text=f'starting autocalls')
             # try:
             self.__start_autocalls(processor=processor)
             # except Exception as exc:
@@ -430,7 +430,7 @@ class Autocall:
             numbers_added.append({'number': line.number, 'autocall_id': line.autocall_id})
         # запускаем все автообзвоны Sipuni
         if not numbers_added:
-            processor.log.add(text=f'no numbers for autocall')
+            # processor.log.add(text=f'no numbers for autocall')
             return
         processor.log.add(text=f'got {len(numbers_added)} numbers for autocall')
         # try:

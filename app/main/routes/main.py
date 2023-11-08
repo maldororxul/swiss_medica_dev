@@ -1,6 +1,8 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
 from datetime import datetime
+from typing import Union, Type
+
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
@@ -11,8 +13,10 @@ from app.main.arrival.handler import waiting_for_arrival
 from app.main.processors import DATA_PROCESSOR
 from app.main.routes.utils import get_data_from_post_request
 from app.main.tasks import SchedulerTask
+from app.main.utils import DateTimeEncoder
 from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
+from app.models.raw_lead_data import SMRawLeadData, CDVRawLeadData
 from app.tawk.controller import TawkController
 from app.whatsapp.controller import WhatsAppController
 from config import Config
@@ -24,6 +28,15 @@ API_CLIENT = {
     'cdv': DrvorobjevAPIClient,
     'swissmedica': SwissmedicaAPIClient,
     'drvorobjev': DrvorobjevAPIClient,
+}
+
+RAW_LEAD = {
+    'SM': SMRawLeadData,
+    'CDV': CDVRawLeadData,
+    'sm': SMRawLeadData,
+    'cdv': CDVRawLeadData,
+    'swissmedica': SMRawLeadData,
+    'drvorobjev': CDVRawLeadData,
 }
 
 TAWK_CHAT_MODEL = {
@@ -293,14 +306,24 @@ def new_raw_lead():
     if not lead_id:
         return Response(status=204)
     branch = data.get('account[subdomain]')
-    # вытаскиваем данные сделки
+    # вытаскиваем данные сделки и контакта
     amo_client = API_CLIENT.get(branch)()
-    lead = amo_client.get_lead_by_id(lead_id=lead_id)
-
-    # записываем данные сделки
-    print('new raw lead', lead)
-    pass
-
+    lead = amo_client.get_lead_by_id(lead_id=lead_id) or {}
+    contacts = (lead.get('_embedded') or {}).get('contacts')
+    contact = amo_client.get_contact_by_id(contact_id=contacts[0]['id']) if contacts else {}
+    # добавляем запись в RawLeadData
+    raw_lead_model: Type[Union[SMRawLeadData, CDVRawLeadData]] = RAW_LEAD.get(branch)
+    app = current_app._get_current_object()
+    with app.app_context():
+        raw_lead_model.add(
+            id_on_source=lead['id'],
+            created_at=lead['created_at'],
+            updated_at=lead['updated_at'],
+            data=DateTimeEncoder.encode({
+                'lead': lead,
+                'contact': contact
+            })
+        )
     return Response(status=204)
 
 
