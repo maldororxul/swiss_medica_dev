@@ -5,7 +5,7 @@ amojo_id получаем через запрос https://swissmedica.amocrm.ru/
 import hashlib
 import hmac
 import json
-import datetime
+from email.utils import formatdate
 from typing import Optional, Dict
 import requests
 from config import Config
@@ -38,6 +38,7 @@ class AmoChatsAPIClient:
             4. Дописываем в конфиг scope_id
         """
         path = f'{self.config.get("id")}/connect'
+        # {'account_id': '59a2fb56-7492-4c16-8bbe-f776345af46c', 'title': 'WhatsApp Business', 'hook_api_version': 'v2'}
         body = {
             'account_id': self.config.get('amojo_id'),
             'title': self.config.get('name'),  # Название канала, отображаемое пользователю
@@ -132,8 +133,9 @@ class AmoChatsAPIClient:
             результат выполнения запроса или None
         """
         content_type = 'application/json'
-        date = datetime.datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')
-        request_body = json.dumps(body, ensure_ascii=False).encode('utf-8')
+        # date = datetime.datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')
+        date = formatdate(localtime=True)
+        request_body = json.dumps(body, separators=(',', ':'))
         checksum = hashlib.md5(request_body).hexdigest()
         # Подготовка строки для подписи
         str_to_sign = '\n'.join([
@@ -144,8 +146,8 @@ class AmoChatsAPIClient:
             path,
         ])
         signature = hmac.new(
-            self.config.get('secret_key').encode('utf-8'),
-            str_to_sign.encode('utf-8'),
+            self.config.get('secret_key').encode(),
+            str_to_sign.encode(),
             hashlib.sha1
         ).hexdigest()
         # Подготовка заголовков запроса
@@ -154,6 +156,7 @@ class AmoChatsAPIClient:
             'Content-Type': content_type,
             'Content-MD5': checksum,
             'X-Signature': signature,
+            'User-Agent': 'amoCRM-Chats-Doc-Example/1.0'
         }
         # Выполнение запроса
         response = requests.request(method, f'{self.base_url}{path}', headers=headers, data=request_body)

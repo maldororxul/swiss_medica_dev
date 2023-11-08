@@ -30,6 +30,13 @@ class RawLeadDataBase(db.Model):
     def __repr__(self):
         return f'<Raw lead "{self.id_on_source}">'
 
+    @classmethod
+    def add(cls, id_on_source: str, created_at: int, updated_at: int, data: str):
+        record = cls(id_on_source=id_on_source, created_at=created_at, updated_at=updated_at, data=data)
+        db.session.add(record)
+        db.session.commit()
+        db.session.close()
+
     def to_dict(self):
         line = {c.name: getattr(self, c.name) for c in self.__table__.columns}
         # line['data'] = decode(line['data'])
