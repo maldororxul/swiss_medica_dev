@@ -34,7 +34,7 @@ class AmoChatsAPIClient:
         Explanation:
             1. Через запрос https://subdomen.amocrm.ru/api/v4/account?with=amojo_id получаем amojo_id
             2. Прописываем его в конфиг
-            3. Зовем данный метод через эндпоинт <...>
+            3. Зовем данный метод через эндпоинт connect_account_to_chat
             4. Дописываем в конфиг scope_id
         """
         path = f'{self.config.get("id")}/connect'
@@ -43,7 +43,11 @@ class AmoChatsAPIClient:
             'title': self.config.get('name'),  # Название канала, отображаемое пользователю
             'hook_api_version': 'v2',
         }
-        return self.__request(path=path, body=body)
+        tmp = self.__request(path=path, body=body)
+        print('connecting whatsapp')
+        print(body)
+        print('response:', tmp)
+        return tmp
 
     def disconnect_account(self):
         """ Отключение канала чата в аккаунте """
