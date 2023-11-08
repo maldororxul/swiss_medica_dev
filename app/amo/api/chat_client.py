@@ -160,6 +160,7 @@ class AmoChatsAPIClient:
         if response.status_code != 200:
             print(f"Amo chats error: Received response {response.status_code} {response.text}")
             return None
+        print(response.status_code, response.text)
         try:
             return response.json()
         except Exception as exc:
