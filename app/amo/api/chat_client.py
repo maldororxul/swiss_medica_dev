@@ -162,5 +162,6 @@ class AmoChatsAPIClient:
             return None
         try:
             return response.json()
-        except:
+        except Exception as exc:
+            print('request error', exc)
             return None
