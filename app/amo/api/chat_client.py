@@ -136,7 +136,7 @@ class AmoChatsAPIClient:
         # date = datetime.datetime.now().strftime('%a, %d %b %Y %H:%M:%S %z')
         date = formatdate(localtime=True)
         request_body = json.dumps(body, separators=(',', ':'))
-        checksum = hashlib.md5(request_body).hexdigest()
+        checksum = hashlib.md5(request_body.encode()).hexdigest()
         # Подготовка строки для подписи
         str_to_sign = '\n'.join([
             method.upper(),
