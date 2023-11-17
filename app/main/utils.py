@@ -279,10 +279,10 @@ def handle_new_interaction(data: Dict) -> Tuple[Optional[str], Optional[str], Op
     branch = data.get('account[subdomain]')
     processor = DATA_PROCESSOR.get(branch)()
     pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
-    pipeline = processor.get_pipeline_and_status_by_id(
-        pipeline_id=pipeline_id,
-        status_id=data.get(f'leads[{key}][0][status_id]')
-    )
+    # pipeline = processor.get_pipeline_and_status_by_id(
+    #     pipeline_id=pipeline_id,
+    #     status_id=data.get(f'leads[{key}][0][status_id]')
+    # )
     # получаем лид и пользователя, ответственного за лид
     amo_client = API_CLIENT.get(branch)()
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
@@ -299,7 +299,6 @@ def handle_new_interaction(data: Dict) -> Tuple[Optional[str], Optional[str], Op
     return (
         'NEW_INCOMING',
         str(pipeline_id),
-        f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
         f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
         f"Responsible: {telegram_name if telegram_name else user}".strip()
     )
