@@ -5,7 +5,9 @@ from datetime import date, datetime
 from typing import Dict, Callable, Tuple, Optional
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import SMDataProcessor, CDVDataProcessor
+from app.google_api.client import GoogleAPIClient
 from config import Config
+from modules.constants.constants.constants import GoogleSheets
 
 DUP_TAG = 'duplicated_lead'
 
@@ -255,58 +257,52 @@ def move_lead_to_continue_to_work(lead, branch, amo_client):
 
 
 def handle_new_interaction(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-    print(data)
-    return (
-        'NEW_LEAD',
-        str('pipeline_id'),
-        'test'
+    """
+
+    {'leads[mail_in][0][id]': '34388191', 'leads[mail_in][0][status_id]': '61769054', 'leads[mail_in][0][pipeline_id]': '7438250', 'account[id]': '9884604', 'account[subdomain]': 'swissmedica'}
+    {'leads[call_in][0][id]': '34404851', 'leads[call_in][0][status_id]': '61769054', 'leads[call_in][0][pipeline_id]': '7438250', 'account[id]': '9884604', 'account[subdomain]': 'swissmedica'}
+    Args:
+        data:
+
+    Returns:
+
+    """
+    key = 'call_in'
+    event = 'Incoming call'
+    lead_id = data.get(f'leads[{key}][0][id]')
+    if not lead_id:
+        key = 'mail_in'
+        event = 'Incoming email'
+        lead_id = data.get(f'leads[{key}][0][id]')
+    if not lead_id:
+        return None, None, None
+    branch = data.get('account[subdomain]')
+    processor = DATA_PROCESSOR.get(branch)()
+    pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
+    pipeline = processor.get_pipeline_and_status_by_id(
+        pipeline_id=pipeline_id,
+        status_id=data.get(f'leads[{key}][0][status_id]')
     )
-    # lead_id = data.get('leads[add][0][id]')
-    # event = 'New lead'
-    # key = 'add'
-    # if not lead_id:
-    #     event = 'Lead moved'
-    #     key = 'status'
-    #     lead_id = data.get(f'leads[{key}][0][id]')
-    # if not lead_id:
-    #     return None, None, None
-    # branch = data.get('account[subdomain]')
-    # processor = DATA_PROCESSOR.get(branch)()
-    # pipeline_id = data.get(f'leads[{key}][0][pipeline_id]')
-    # pipeline = processor.get_pipeline_and_status_by_id(
-    #     pipeline_id=pipeline_id,
-    #     status_id=data.get(f'leads[{key}][0][status_id]')
-    # )
-    # # проверка на дубли (находит первый дубль из возможных)
-    # amo_client = API_CLIENT.get(branch)()
-    # lead = amo_client.get_lead_by_id(lead_id=lead_id)
-    # existing_tags = [
-    #     {'name': tag['name']}
-    #     for tag in (lead.get('_embedded') or {}).get('tags') or []
-    #     if tag['name'] != DUP_TAG
-    # ]
-    # # получаем пользователя, ответственного за лид
-    # user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
-    # tags_str = ', '.join([tag['name'] for tag in existing_tags])
-    # if tags_str:
-    #     tags_str = f'{tags_str}'
-    # duplicate = check_for_duplicated_leads(
-    #     processor=processor,
-    #     lead=lead,
-    #     amo_client=amo_client,
-    #     lead_id=lead_id,
-    #     branch=branch,
-    #     existing_tags=existing_tags
-    # )
-    # return (
-    #     'NEW_LEAD',
-    #     str(pipeline_id),
-    #     f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
-    #     f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
-    #     f"Tags: {tags_str}\n"
-    #     f"Responsible: {user.name if user else ''}\n"
-    #     f"{duplicate}".strip()
-    # )
+    # получаем лид и пользователя, ответственного за лид
+    amo_client = API_CLIENT.get(branch)()
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    user = processor.get_user_by_id(user_id=lead.get('responsible_user_id'))
+    user = user.name if user else ''
+    # тегаем пользователя через @
+    telegram_name = None
+    managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
+    for manager in managers:
+        if manager.get('manager') == user:
+            telegram_name = manager.get('telegram')
+            break
+    telegram_name = f"@{telegram_name}" if telegram_name else ''
+    return (
+        'NEW_INCOMING',
+        str(pipeline_id),
+        f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n"
+        f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n"
+        f"Responsible: {telegram_name if telegram_name else user}".strip()
+    )
 
 
 def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[str]]:

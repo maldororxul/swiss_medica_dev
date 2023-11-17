@@ -15,9 +15,6 @@ BOTS = {
     if params.get('TOKEN')
 }
 
-def reply_on_lead_event(_request, msg_builder: Callable):
-    data = get_data_from_post_request(_request=_request)
-
 
 def reply_on_lead_event(_request, msg_builder: Callable):
     data = get_data_from_post_request(_request=_request)
