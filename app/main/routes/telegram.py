@@ -103,7 +103,7 @@ def new_lead_slow_reaction():
 
 
 @bp.route('/new_interaction', methods=['POST'])
-def new_lead():
+def new_interaction():
     return reply_on_lead_event(_request=request, msg_builder=handle_new_interaction)
 
 
