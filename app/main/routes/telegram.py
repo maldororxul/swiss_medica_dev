@@ -6,7 +6,7 @@ from flask import request, current_app, Response
 from app.main import bp
 from app.main.routes.utils import get_data_from_post_request
 from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR, \
-    handle_new_lead_slow_reaction, get_data_from_external_api
+    handle_new_lead_slow_reaction, get_data_from_external_api, handle_new_interaction
 from config import Config
 
 BOTS = {
@@ -14,6 +14,9 @@ BOTS = {
     for pipeline_or_branch, params in Config().new_lead_telegram.items()
     if params.get('TOKEN')
 }
+
+def reply_on_lead_event(_request, msg_builder: Callable):
+    data = get_data_from_post_request(_request=_request)
 
 
 def reply_on_lead_event(_request, msg_builder: Callable):
@@ -97,6 +100,11 @@ def new_lead():
 @bp.route('/new_lead_slow_reaction', methods=['POST'])
 def new_lead_slow_reaction():
     return reply_on_lead_event(_request=request, msg_builder=handle_new_lead_slow_reaction)
+
+
+@bp.route('/new_interaction', methods=['POST'])
+def new_lead():
+    return reply_on_lead_event(_request=request, msg_builder=handle_new_interaction)
 
 
 @bp.route('/autocall_success', methods=['POST'])
