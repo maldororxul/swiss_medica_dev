@@ -154,14 +154,17 @@ class AmoChatsAPIClient:
         headers = {
             'Date': date,
             'Content-Type': content_type,
-            'Content-MD5': checksum,
-            'X-Signature': signature,
+            'Content-MD5': checksum.lower(),
+            'X-Signature': signature.lower(),
             'User-Agent': 'amoCRM-Chats-Doc-Example/1.0'
         }
         # Выполнение запроса
         response = requests.request(method, f'{self.base_url}{path}', headers=headers, data=request_body)
         if response.status_code != 200:
-            print(f"Amo chats error: Received response {response.status_code} {response.text}")
+            print(f"Amo chats error: Received response {response.status_code} {response.text}\n"
+                  f"URL: {self.base_url}{path}\n"
+                  f"HEADERS: {headers}\n"
+                  f"BODY: {request_body}")
             return None
         print(response.status_code, response.text)
         try:
