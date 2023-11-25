@@ -332,7 +332,7 @@ def get_amo_data_sm():
     return start_get_data_from_amo_scheduler(branch='sm')
 
 
-@bp.route('/amo_chat/<scope_id>')
+@bp.route('/amo_chat/<scope_id>', methods=['POST'])
 def amo_chat(scope_id):
     """ Пришло сообщение из Amo Chat:
         менеджер через интерфейс Amo написал клиенту - нам нужно переслать сообщение в WhatsApp
