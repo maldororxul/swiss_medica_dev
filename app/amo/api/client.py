@@ -672,7 +672,10 @@ class APIClient:
             список чатов
         """
         params = f'contact_id={contact_id}' if contact_id else f'chat_id={chat_id}'
-        return self.__get_data(endpoint='contacts/chats', params=params, key='chats')
+        response = self.__execute(endpoint='contacts/chats', params=params)
+        data = response.json()
+        return (data.get('_embedded') or {}).get('chats') or []
+        # return self.__get_data(endpoint='contacts/chats', params=params, key='chats')
 
     def find_leads(self, query: str, limit: int = 1) -> List[Dict]:
         """ Поиск сделок по запросу
