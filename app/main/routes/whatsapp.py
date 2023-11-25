@@ -168,6 +168,7 @@ def whatsapp_webhook():
                 name=name,
                 phone=phone,
                 text=text,
+                conversation_id=str(uuid.uuid4()),
                 conversation_ref_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
