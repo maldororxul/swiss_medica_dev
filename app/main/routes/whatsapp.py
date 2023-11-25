@@ -77,11 +77,14 @@ def whatsapp_webhook():
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
     print('incoming WhatsApp data:', data)
+    """
+    {'profile': {'name': 'Kirill Mizonow'}, 'wa_id': '995591058618'}], 'messages': [{'from': '995591058618', 'id': 'wamid.HBgMOTk1NTkxMDU4NjE4FQIAEhggQkFDNTcwN0VGMzY1RDEyNUZBQTcxRDZBM0U5QjE4OTMA', 'timestamp': '1700943407', 'text': {'body': 'Сообщение отправлено из WhatsApp... 2'}, 'type': 'text'}]}, 'field': 'messages'}]}]}
+    """
     try:
         entry = data['entry'][0]
         value = entry['changes'][0]['value']
         # определяем идентификатор нашего номера, на который пришло сообщение
-        phone_number_id = value['metadata']['phone_number_id']
+        phone_number_id = value['metadata']['phone_number_id']      # пришло 151648284687808
         # по идентификатору номера определяем филиал
         branch = None
         for _branch, config in Config().whatsapp.items():
@@ -96,14 +99,17 @@ def whatsapp_webhook():
             return '200 OK HTTPS.', 200
         contact = value['contacts'][0]
         msg = value['messages'][0]
+        print('msg', msg)
         timestamp = int(msg['timestamp'])
         name = contact['profile']['name']
         phone = contact['wa_id']
         text = msg['text']['body']
         # ищем лид и связанный с ним контакт
         contact_id = None
+        print('init amo api client...')
         amo_client = API_CLIENT.get(branch)()
-        leads = amo_client.find_leads(query=contact['wa_id'][-8:])
+        print('searching leads...')
+        leads = amo_client.find_leads(query=phone[-8:])
         if leads:
             contacts = leads[0]['_embedded']['contacts']
             if contacts:
