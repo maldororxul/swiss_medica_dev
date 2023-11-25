@@ -805,13 +805,13 @@ class APIClient:
             params = f'{base_params}&page={page}'
             # print(endpoint, params)
             response = self.__execute(endpoint=endpoint, params=params, entity=entity, entity_id=entity_id)
-            # print(response.text)
+            print(response.text)
             if not response:
                 print('no response', response)
                 break
             # нет данных - выходим из цикла
             if response.status_code == 204:
-                # print(f'{datetime.now()} response.status_code == 204', response.text)
+                print(f'{datetime.now()} response.status_code == 204', response.text)
                 # sleep(5)
                 break
             try:
