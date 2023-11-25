@@ -122,7 +122,7 @@ def whatsapp_webhook():
         chat_id = None
         if contact_id:
             print('trying to find chats...')
-            chats = amo_client.get_chats(contact_id=contact_id)
+            chats = [x for x in amo_client.get_chats(contact_id=contact_id)]
             if chats:
                 chat_id = chats[-1]['chat_id']
         else:

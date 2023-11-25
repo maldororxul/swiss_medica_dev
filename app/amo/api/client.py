@@ -672,8 +672,7 @@ class APIClient:
             список чатов
         """
         params = f'contact_id={contact_id}' if contact_id else f'chat_id={chat_id}'
-        data = self.__get_data(endpoint='contacts/chats', params=params)
-        return (data.get('_embedded') or {}).get('chats') or []
+        return self.__get_data(endpoint='contacts/chats', params=params, key='chats')
 
     def find_leads(self, query: str, limit: int = 1) -> List[Dict]:
         """ Поиск сделок по запросу
@@ -793,7 +792,8 @@ class APIClient:
         limit: int = DATA_LIMIT,
         entity: str = '',
         entity_id: Optional[int] = None,
-        msg: str = ''
+        msg: str = '',
+        key: Optional[str] = None
     ) -> List[Dict]:
         """ Получение данных с эндпоинта порциями
 
@@ -803,6 +803,7 @@ class APIClient:
             limit: ограничение по размеру выдачи
             entity: сущность, например, leads, может использоваться как дополнение к эндпоинту
             entity_id: идентификатор сущности
+            key: ключ данных в _embedded
 
         Returns:
             данные из AMO
@@ -838,7 +839,7 @@ class APIClient:
             except Exception as exc:
                 print(exc)
                 print(response.status_code, response.text)
-            chunk = (json_response.get('_embedded') or {}).get(endpoint) or []
+            chunk = (json_response.get('_embedded') or {}).get(key or endpoint) or []
             # print(chunk)
             # for x in chunk:
             #     print(x['created_at'])
