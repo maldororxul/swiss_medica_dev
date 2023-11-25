@@ -129,7 +129,7 @@ def whatsapp_webhook():
         else:
             # контакта не существует, кидаем чат в "неразобранное"
             conversation_id = str(uuid.uuid4())
-            print('trying to create unsorted...', timestamp, name, phone, text)
+            print('trying to create unsorted...', timestamp, name, phone, text, conversation_id)
             AmoChatsAPIClient(branch=branch).get_message(
                 timestamp=timestamp,
                 name=name,
