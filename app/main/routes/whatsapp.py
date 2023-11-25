@@ -108,16 +108,20 @@ def whatsapp_webhook():
         contact_id = None
         print('init amo api client...')
         amo_client = API_CLIENT.get(branch)()
-        print('searching leads...', phone[-8:])
-        leads = [x for x in amo_client.find_leads(query=phone[-8:])]
-        print('leads', leads)
-        if leads:
-            contacts = leads[0]['_embedded']['contacts']
-            if contacts:
-                contact_id = contacts[0]['id']
+        print('searching contacts...', phone[-8:])
+        contacts = [x for x in amo_client.find_contacts(query=phone[-8:])]
+        if contacts:
+            contact_id = contacts[0]['id']
+        # leads = [x for x in amo_client.find_leads(query=phone[-8:])]
+        # print('leads', leads)
+        # if leads:
+        #     contacts = leads[0]['_embedded']['contacts']
+        #     if contacts:
+        #         contact_id = contacts[0]['id']
         # если контакт существует, ищем связанные с ним чаты
         chat_id = None
         if contact_id:
+            print('trying to find chats...')
             chats = amo_client.get_chats(contact_id=contact_id)
             if chats:
                 chat_id = chats[-1]['chat_id']

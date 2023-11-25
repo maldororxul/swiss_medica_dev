@@ -689,8 +689,21 @@ class APIClient:
                  f'&limit={limit}' \
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
-        # response = self.__execute(endpoint='leads', params=params, entity=entity, entity_id=entity_id)
-        # if response
+
+    def find_contacts(self, query: str, limit: int = 1) -> List[Dict]:
+        """ Поиск сделок по запросу
+
+        Args:
+            query: запрос для поиска
+            limit: ограничение по количеству найденных лидов
+
+        Returns:
+            список сделок
+        """
+        params = f'query={query}' \
+                 f'&limit={limit}' \
+                 f'&order=created_at'
+        return self.__get_data(endpoint='contacts', params=params)
 
     def _get_pipelines_and_statues(self) -> Dict:
         """ Получить словарь воронок и их статусов
@@ -825,7 +838,6 @@ class APIClient:
             except Exception as exc:
                 print(exc)
                 print(response.status_code, response.text)
-            print('>>>', json_response)
             chunk = (json_response.get('_embedded') or {}).get(endpoint) or []
             # print(chunk)
             # for x in chunk:
