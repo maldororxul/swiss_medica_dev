@@ -60,7 +60,7 @@ class AmoChatsAPIClient:
         }
         return self.__request(path=path, body=body)
 
-    def get_message(self, timestamp: int, name: str, phone: str, text: str, conversation_id: str, msg_id: str):
+    def get_message(self, timestamp: int, name: str, phone: str, text: str, msg_id: str, conversation_id: Optional[str] = None, conversation_ref_id: Optional[str] = None):
         # path = f'{self.config.get("scope_id")}'
         path = f"/v2/origin/custom/{self.config.get('scope_id')}"
         body = {
@@ -69,7 +69,7 @@ class AmoChatsAPIClient:
             "timestamp": timestamp,
             "msec_timestamp": timestamp * 1000,
             "msgid": msg_id,
-            "conversation_id": conversation_id,
+            # "conversation_id": conversation_id,
             "sender": {
               "id": phone,
               # "avatar": "https://example.com/users/avatar.png",
@@ -87,6 +87,10 @@ class AmoChatsAPIClient:
             "silent": False
           }
         }
+        if conversation_id:
+            body['conversation_id'] = conversation_id
+        if conversation_ref_id:
+            body['conversation_ref_id'] = conversation_ref_id
         return self.__request(path=path, body=body)
 
     def get_new_message(self, name: str, phone: str, conversation_id: str):
@@ -190,7 +194,7 @@ class AmoChatsAPIClient:
                   f"HEADERS: {headers}\n"
                   f"BODY: {request_body}")
             return None
-        print(response.status_code, response.text)
+        # print(response.status_code, response.text)
         try:
             return response.json()
         except Exception as exc:

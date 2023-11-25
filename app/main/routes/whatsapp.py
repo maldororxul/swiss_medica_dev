@@ -76,7 +76,7 @@ def whatsapp_webhook():
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
-    print('incoming WhatsApp data:', data)
+    # print('incoming WhatsApp data:', data)
     """
     {'profile': {'name': 'Kirill Mizonow'}, 'wa_id': '995591058618'}], 'messages': [{'from': '995591058618', 'id': 'wamid.HBgMOTk1NTkxMDU4NjE4FQIAEhggQkFDNTcwN0VGMzY1RDEyNUZBQTcxRDZBM0U5QjE4OTMA', 'timestamp': '1700943407', 'text': {'body': 'Сообщение отправлено из WhatsApp... 2'}, 'type': 'text'}]}, 'field': 'messages'}]}]}
     """
@@ -95,23 +95,24 @@ def whatsapp_webhook():
             if branch:
                 break
         if not branch:
-            print('no branch')
+            # print('no branch')
             return '200 OK HTTPS.', 200
         contact = value['contacts'][0]
         msg = value['messages'][0]
-        print('msg', msg)
+        # print('msg', msg)
         timestamp = int(msg['timestamp'])
         name = contact['profile']['name']
         phone = contact['wa_id']
         text = msg['text']['body']
         # ищем лид и связанный с ним контакт
         contact_id = None
-        print('init amo api client...')
+        # print('init amo api client...')
         amo_client = API_CLIENT.get(branch)()
         print('searching contacts...', phone[-8:])
-        contacts = [x for x in amo_client.find_contacts(query=phone[-8:])]
+        contacts = [x for x in amo_client.find_contacts(query=phone[-8:]) or []]
         if contacts:
             contact_id = contacts[0]['id']
+            print('contact found!', contacts)
         # leads = [x for x in amo_client.find_leads(query=phone[-8:])]
         # print('leads', leads)
         # if leads:
@@ -167,7 +168,7 @@ def whatsapp_webhook():
                 name=name,
                 phone=phone,
                 text=text,
-                conversation_id=chat_id,
+                conversation_ref_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
     except Exception as exc:
