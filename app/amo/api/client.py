@@ -690,6 +690,8 @@ class APIClient:
                  f'&with=contacts' \
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
+        # response = self.__execute(endpoint='leads', params=params, entity=entity, entity_id=entity_id)
+        # if response
 
     def _get_pipelines_and_statues(self) -> Dict:
         """ Получить словарь воронок и их статусов
@@ -825,6 +827,7 @@ class APIClient:
             except Exception as exc:
                 print(exc)
                 print(response.status_code, response.text)
+            print('>>>', json_response)
             chunk = (json_response.get('_embedded') or {}).get(endpoint) or []
             # print(chunk)
             # for x in chunk:
