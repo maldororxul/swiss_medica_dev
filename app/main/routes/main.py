@@ -336,17 +336,24 @@ def get_amo_data_sm():
 def amo_chat(scope_id):
     """ Пришло сообщение из Amo Chat:
         менеджер через интерфейс Amo написал клиенту - нам нужно переслать сообщение в WhatsApp
-
+        Формат данных:
+            {'account_id': '59a2fb56-7492-4c16-8bbe-f776345af46c', 'time': 1700951116, 'message': {'receiver': {'id': '8cab93ac-a6cc-40c7-9021-989ae3629bb1', 'name': 'Kirill Mizonow', 'phone': '995591058618', 'client_id': '995591058618'}, 'sender': {'id': 'ab8317cd-eb38-4bf4-8462-47a4b328a887', 'name': 'Василий Админ'}, 'conversation': {'id': '988b9688-e8b9-47ed-8eb8-2339dffd4f17', 'client_id': 'cc5d7525-6e8d-4cd1-8ace-e09900e88ea1'}, 'timestamp': 1700951116, 'msec_timestamp': 1700951116276, 'message': {'id': '527af4d5-2a69-48b2-87f0-b665f4bd2b9c', 'type': 'text', 'text': 'should work', 'markup': None, 'tag': '', 'media': '', 'thumbnail': '', 'file_name': '', 'file_size': 0}}}
     Args:
         scope_id: идентификатор, позволяющий судить о том, с какого аккаунта Amo прилетели данные
     """
     # в каком формате придут данные - хз, нам по сути нужны только телефон и текст сообщения
-    print('got info from AMO Chat', scope_id, request.json)
+    # print('got info from AMO Chat', scope_id, request.json)
+    data = request.json
+    message = data.get('message')
+    if not message:
+        return Response(status=204)
+    receiver = message['receiver']['phone']
+    msg = message['message']['text']
     # по scope_id определяем аккаунт
     for branch, config in Config().amo_chat.items():
         if config.get('scope_id') == scope_id:
             # будет выбран первый номер из списка (переменная WHATSAPP) для данного филиала
-            # WhatsAppController(branch=branch).send_message(number_to=..., message=...)
+            WhatsAppController(branch=branch).send_message(number_to=receiver, message=msg)
             break
     return Response(status=204)
 
