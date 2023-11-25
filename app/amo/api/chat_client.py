@@ -88,9 +88,9 @@ class AmoChatsAPIClient:
           }
         }
         if conversation_id:
-            body['conversation_id'] = conversation_id
+            body["payload"]['conversation_id'] = conversation_id
         if conversation_ref_id:
-            body['conversation_ref_id'] = conversation_ref_id
+            body["payload"]['conversation_ref_id'] = conversation_ref_id
         return self.__request(path=path, body=body)
 
     def get_new_message(self, name: str, phone: str, conversation_id: str):
