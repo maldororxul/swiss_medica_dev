@@ -1,11 +1,15 @@
 """ Маршруты для работы WhatsApp-ботов """
 __author__ = 'ke.mizonov'
+
+import time
+import uuid
 from typing import Optional
 import requests
 from flask import request, jsonify, Response
 
 from app.amo.api.chat_client import AmoChatsAPIClient
 from app.main import bp
+from app.main.utils import API_CLIENT
 from config import Config
 
 
@@ -88,16 +92,58 @@ def whatsapp_webhook():
                 break
         if not branch:
             return '200 OK HTTPS.', 200
-        contact = value['contacts'][0]['profile']
+        contact = value['contacts'][0]
         msg = value['messages'][0]
-        AmoChatsAPIClient(branch=branch).get_message(
-            timestamp=int(msg['timestamp']),
-            name=contact['profile']['name'],
-            phone=contact['wa_id'],
-            text=msg['text']['body'],
-            conversation_id=entry['id'],
-            msg_id=msg['id']
-        )
+        timestamp = int(msg['timestamp'])
+        name = contact['profile']['name']
+        phone = contact['wa_id']
+        text = msg['text']['body']
+        # ищем лид и связанный с ним контакт
+        contact_id = None
+        amo_client = API_CLIENT.get(branch)()
+        leads = amo_client.find_leads(query=contact['wa_id'][-8:])
+        if leads:
+            contacts = leads[0]['_embedded']['contacts']
+            if contacts:
+                contact_id = contacts[0]['id']
+        # если контакт существует, ищем связанные с ним чаты
+        chat_id = None
+        if contact_id:
+            chats = amo_client.get_chats(contact_id=contact_id)
+            if chats:
+                chat_id = chats[-1]['chat_id']
+        else:
+            # контакта не существует, кидаем чат в "неразобранное"
+            AmoChatsAPIClient(branch=branch).get_message(
+                timestamp=timestamp,
+                name=name,
+                phone=phone,
+                text=text,
+                conversation_id=str(uuid.uuid4()),
+                msg_id=str(uuid.uuid4())
+            )
+            return '200 OK HTTPS.', 200
+        # есть контакт, но нет чата - создаем новый чат и связываем его с контактов
+        if not chat_id:
+            new_chat = AmoChatsAPIClient(branch=branch).get_new_message(
+                name=name,
+                phone=phone,
+                conversation_id=str(uuid.uuid4())
+            )
+            chat_id = new_chat['id']
+            # связываем чат с контактом
+            amo_client.link_chat_with_contact(contact_id=contact_id, chat_id=chat_id)
+        # пишем сообщение в чат
+        if chat_id:
+            AmoChatsAPIClient(branch=branch).get_message(
+                timestamp=int(time.time()),  # поправка по времени?
+                name=name,
+                phone=phone,
+                text=text,
+                conversation_id=chat_id,
+                msg_id=str(uuid.uuid4())
+            )
+        return '200 OK HTTPS.', 200
     except Exception as exc:
         print(f'WhatsApp webhook error: {exc}')
     return '200 OK HTTPS.', 200
@@ -110,6 +156,13 @@ def whatsapp_remove():
 
 @bp.route('/connect_account_to_chat_sm', methods=['GET'])
 def connect_account_to_chat_sm():
+    """
+    Amo chats error: Received response 403 {"status":0,"error_code":403,"error_type":"ORIGIN_INVALID_SIGNATURE","error_description":"invalid signature"}
+    URL: https://amojo.amocrm.ru/v2/origin/custom/3a952d6f-afb1-4154-977a-a6f2eeb2053e/connect
+    HEADERS: {'Date': 'Thu, 23 Nov 2023 06:39:58 +0000', 'Content-Type': 'application/json', 'Content-MD5': 'd60c4ec9ca70e3ddb50b1852c7326f0f', 'X-Signature': '024796f7085b2eb42244c19909c5704bbea436ce', 'User-Agent': 'amoCRM-Chats-Doc-Example/1.0'}
+    BODY: {"account_id":"59a2fb56-7492-4c16-8bbe-f776345af46c","title":"WhatsApp Business","hook_api_version":"v2"}
+    response: None
+    """
     return jsonify(AmoChatsAPIClient(branch='SM').connect_account())
 
 

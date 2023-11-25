@@ -381,7 +381,7 @@ class Autocall:
                 continue
             # лимит звонков еще не достигнут
             if line.calls >= int(autocall_config.get('calls_limit')):
-                processor.log.add(text=f'calls limit reached {line.autocall_id} number {line.number}')
+                # processor.log.add(text=f'calls limit reached {line.autocall_id} number {line.number}')
                 db.session.delete(line)
                 continue
             schedule = autocall_config.get('schedule')
@@ -432,7 +432,7 @@ class Autocall:
         if not numbers_added:
             # processor.log.add(text=f'no numbers for autocall')
             return
-        processor.log.add(text=f'got {len(numbers_added)} numbers for autocall')
+        # processor.log.add(text=f'got {len(numbers_added)} numbers for autocall')
         # try:
         #     # browser: KmBrowser = self.__get_sipuni_browser()
         #

@@ -12,6 +12,10 @@ from modules.constants.constants.constants import GoogleSheets
 DUP_TAG = 'duplicated_lead'
 
 API_CLIENT = {
+    'SM': SwissmedicaAPIClient,
+    'CDV': DrvorobjevAPIClient,
+    'sm': SwissmedicaAPIClient,
+    'cdv': DrvorobjevAPIClient,
     'swissmedica': SwissmedicaAPIClient,
     'drvorobjev': DrvorobjevAPIClient,
 }

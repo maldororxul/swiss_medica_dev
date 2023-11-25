@@ -647,6 +647,34 @@ class APIClient:
                  f'&with=contacts,loss_reason&limit={250}'
         return self.__get_data(endpoint='leads', params=params)
 
+    def link_chat_with_contact(self, contact_id: int, chat_id: str):
+        """ Связывает чат с контактом
+
+        Args:
+            contact_id: идентификатор контакта
+            chat_id: идентификатор чата
+        """
+        params = f'chat_id={chat_id}&contact_id={contact_id}'
+        self.__execute(endpoint='contacts/chats', params=params, method='POST')
+
+    def get_chats(
+        self,
+        contact_id: Optional[int] = None,
+        chat_id: Optional[str] = None,
+    ) -> List[Dict]:
+        """ Поиск чатов, связанных с контактом, либо по идентификатору
+
+        Args:
+            contact_id: идентификатор контакта
+            chat_id: идентификатор чата
+
+        Returns:
+            список чатов
+        """
+        params = f'contact_id={contact_id}' if contact_id else f'chat_id={chat_id}'
+        data = self.__get_data(endpoint='contacts/chats', params=params)
+        return (data.get('_embedded') or {}).get('chats') or []
+
     def find_leads(self, query: str, limit: int = 1) -> List[Dict]:
         """ Поиск сделок по запросу
 
@@ -659,6 +687,7 @@ class APIClient:
         """
         params = f'query={query}' \
                  f'&limit={limit}' \
+                 f'&with=contacts' \
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
 

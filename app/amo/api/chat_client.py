@@ -13,10 +13,12 @@ from config import Config
 
 class AmoChatsAPIClient:
     """ Класс клиента API чатов AmoCRM """
-    base_url: str = 'https://amojo.amocrm.ru/v2/origin/custom/'
+    base_url: str = 'https://amojo.amocrm.ru'
 
     def __init__(self, branch: str):
         self.config = Config().amo_chat.get(branch)
+        self.channel_secret = self.config.get('secret_key')
+        self.channel_id = self.config.get("id")
 
     def connect_account(self):
         """ Подключение канала чата в аккаунте
@@ -37,7 +39,7 @@ class AmoChatsAPIClient:
             3. Зовем данный метод через эндпоинт connect_account_to_chat
             4. Дописываем в конфиг scope_id
         """
-        path = f'{self.config.get("id")}/connect'
+        path = f'/v2/origin/custom/{self.config.get("id")}/connect'
         # {'account_id': '59a2fb56-7492-4c16-8bbe-f776345af46c', 'title': 'WhatsApp Business', 'hook_api_version': 'v2'}
         body = {
             'account_id': self.config.get('amojo_id'),
@@ -59,7 +61,8 @@ class AmoChatsAPIClient:
         return self.__request(path=path, body=body)
 
     def get_message(self, timestamp: int, name: str, phone: str, text: str, conversation_id: str, msg_id: str):
-        path = f'{self.config.get("scope_id")}'
+        # path = f'{self.config.get("scope_id")}'
+        path = f"/v2/origin/custom/{self.config.get('scope_id')}"
         body = {
           "event_type": "new_message",
           "payload": {
@@ -83,6 +86,27 @@ class AmoChatsAPIClient:
             },
             "silent": False
           }
+        }
+        return self.__request(path=path, body=body)
+
+    def get_new_message(self, name: str, phone: str, conversation_id: str):
+        # path = f'{self.config.get("scope_id")}'
+        path = f"/v2/origin/custom/{self.config.get('scope_id')}/chats"
+        body = {
+            "conversation_id": conversation_id,
+            # "source": {
+            #   "external_id": "78001234567"
+            # },
+            "user": {
+                "id": phone,
+                # "avatar": "https://example.com/users/avatar.png",
+                "name": name,
+                "profile": {
+                    "phone": phone
+                    # "email": "example.client@example.com"
+                },
+                # "profile_link": "https://example.com/profile/example.client"
+            }
         }
         return self.__request(path=path, body=body)
 
