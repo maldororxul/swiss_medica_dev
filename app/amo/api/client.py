@@ -687,7 +687,6 @@ class APIClient:
         """
         params = f'query={query}' \
                  f'&limit={limit}' \
-                 f'&with=contacts' \
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
         # response = self.__execute(endpoint='leads', params=params, entity=entity, entity_id=entity_id)
@@ -805,7 +804,6 @@ class APIClient:
             params = f'{base_params}&page={page}'
             # print(endpoint, params)
             response = self.__execute(endpoint=endpoint, params=params, entity=entity, entity_id=entity_id)
-            print(response.text)
             if not response:
                 print('no response', response)
                 break
