@@ -76,6 +76,7 @@ def whatsapp_webhook():
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
+    print('incoming WhatsApp data:', data)
     try:
         entry = data['entry'][0]
         value = entry['changes'][0]['value']
@@ -91,6 +92,7 @@ def whatsapp_webhook():
             if branch:
                 break
         if not branch:
+            print('no branch')
             return '200 OK HTTPS.', 200
         contact = value['contacts'][0]
         msg = value['messages'][0]
@@ -114,6 +116,7 @@ def whatsapp_webhook():
                 chat_id = chats[-1]['chat_id']
         else:
             # контакта не существует, кидаем чат в "неразобранное"
+            print('trying to create unsorted...', timestamp, name, phone, text)
             AmoChatsAPIClient(branch=branch).get_message(
                 timestamp=timestamp,
                 name=name,
@@ -122,9 +125,11 @@ def whatsapp_webhook():
                 conversation_id=str(uuid.uuid4()),
                 msg_id=str(uuid.uuid4())
             )
+            print('ok')
             return '200 OK HTTPS.', 200
         # есть контакт, но нет чата - создаем новый чат и связываем его с контактов
         if not chat_id:
+            print('creating chat', name, phone)
             new_chat = AmoChatsAPIClient(branch=branch).get_new_message(
                 name=name,
                 phone=phone,
@@ -132,9 +137,11 @@ def whatsapp_webhook():
             )
             chat_id = new_chat['id']
             # связываем чат с контактом
+            print('linking chat with contact', chat_id, contact_id)
             amo_client.link_chat_with_contact(contact_id=contact_id, chat_id=chat_id)
         # пишем сообщение в чат
         if chat_id:
+            print('writing msg', name, phone, text, chat_id)
             AmoChatsAPIClient(branch=branch).get_message(
                 timestamp=int(time.time()),  # поправка по времени?
                 name=name,
@@ -143,7 +150,6 @@ def whatsapp_webhook():
                 conversation_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
-        return '200 OK HTTPS.', 200
     except Exception as exc:
         print(f'WhatsApp webhook error: {exc}')
     return '200 OK HTTPS.', 200
