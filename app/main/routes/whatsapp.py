@@ -97,7 +97,10 @@ def whatsapp_webhook():
         if not branch:
             # print('no branch')
             return '200 OK HTTPS.', 200
-        contact = value['contacts'][0]
+        contact = (value.get('contacts') or [None])[0]
+        if contact is None:
+            print('uncatched WhatsApp error')
+            return '200 OK HTTPS.', 200
         msg = value['messages'][0]
         # print('msg', msg)
         timestamp = int(msg['timestamp'])
