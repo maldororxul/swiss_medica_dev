@@ -131,6 +131,7 @@ class APIClient:
                 upload_url = data.get('next_url')
         # прикрепляем файл к лиду
         if lead_id:
+            print('adding note with file')
             self.add_note(
                 entity_id=lead_id,
                 data=[{

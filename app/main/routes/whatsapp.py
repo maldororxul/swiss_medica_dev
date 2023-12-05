@@ -183,6 +183,7 @@ def whatsapp_webhook():
         attachments: List[str] = WhatsAppController(branch=branch).get_attachments_from_incoming_msg(data=data)
         print('attachments:', attachments)
         lead_id = amo_client.get_lead_id_by_contact_id(contact_id=contact_id)
+        print('lead_id', lead_id)
         for file in attachments:
             amo_client.upload_file(file_path=file, lead_id=lead_id)
     except Exception as exc:
