@@ -84,7 +84,7 @@ class APIClient:
                  f'&with=leads' \
                  f'&limit={1}' \
                  f'&order=created_at'
-        data = self.__get_data(endpoint='contacts', params=params)
+        data = [x for x in self.__get_data(endpoint='contacts', params=params)]
         if not data:
             return None
         _embedded = data[0].get('_embedded')
