@@ -1,6 +1,8 @@
 """ API-клиент AMO """
 __author__ = 'ke.mizonov'
 import json
+import mimetypes
+import os
 from datetime import datetime
 import random
 import requests
@@ -70,6 +72,75 @@ class APIClient:
         self.headers = {}
         self._set_auth_headers()
         self.test_request()
+
+    def get_drive_url(self):
+        response = self.__execute(endpoint='account', params='with=drive_url')
+        return response.json().get('drive_url')
+
+    def get_lead_id_by_contact_id(self, contact_id: Optional[int] = None) -> Optional[int]:
+        if not contact_id:
+            return None
+        params = f'filter[id][]={contact_id}' \
+                 f'&with=leads' \
+                 f'&limit={1}' \
+                 f'&order=created_at'
+        _embedded = (self.__get_data(endpoint='contacts', params=params) or {}).get('_embedded')
+        leads = _embedded.get('leads')
+        if not leads:
+            return None
+        return leads[0]['id']
+
+    def upload_file(self, file_path: str, lead_id: int):
+        file_name = file_path
+        file_size = os.path.getsize(file_path)
+        mime_type, _ = mimetypes.guess_type(file_path)
+        drive_url = self.get_drive_url()
+        self._set_auth_headers()
+        # создаем сессию загрузки
+        data = {
+            "file_name": file_name,
+            "file_size": file_size,
+            "content_type": mime_type,
+            # "file_uuid": "367b9f38-5f01-4cea-947e-dfab47aea522"
+        }
+        response = requests.post(url=f"{drive_url}/v1.0/sessions", headers=self.headers, json=data)
+        if response.status_code != 200:
+            return
+        session = response.json()
+        upload_url = session.get('upload_url')
+        chunk_size = session.get('max_part_size')  # Размер части в байтах
+        headers = {'Content-Type': mime_type}
+        # Отправка файла частями
+        data = None
+        with open(file_path, 'rb') as f:
+            while True:
+                file_chunk = f.read(chunk_size)
+                if not file_chunk:
+                    break
+                response = requests.post(upload_url, headers=headers, data=file_chunk)
+                # Обработка ответа для каждой части
+                try:
+                    response.raise_for_status()
+                except requests.exceptions.HTTPError as err:
+                    print(f"Ошибка при отправке части файла: {err}")
+                    break  # Прерывание цикла в случае ошибки
+                data = response.json()
+                upload_url = data.get('next_url')
+        # прикрепляем файл к лиду
+        if lead_id:
+            self.add_note(
+                entity_id=lead_id,
+                data=[{
+                    "entity_id": lead_id,
+                    'note_type': 'attachment',
+                    'params': {
+                        "version_uuid": data['version_uuid'],
+                        "file_uuid": data['uuid'],
+                        "file_name": f"{data['name']}.{data['metadata']['extension']}"
+                    }
+                }]
+            )
+        return data
 
     def get_tasks(self, date_from: datetime, date_to: datetime) -> List[Dict]:
         """ Получить список задач

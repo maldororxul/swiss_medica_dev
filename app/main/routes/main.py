@@ -341,7 +341,6 @@ def amo_chat(scope_id):
     Args:
         scope_id: идентификатор, позволяющий судить о том, с какого аккаунта Amo прилетели данные
     """
-    # в каком формате придут данные - хз, нам по сути нужны только телефон и текст сообщения
     # print('got info from AMO Chat', scope_id, request.json)
     data = request.json
     message = data.get('message')

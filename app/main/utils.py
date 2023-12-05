@@ -195,7 +195,7 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
         # получаем пользователя, ответственного за лид
         duplicated_user = processor.get_user_by_id(user_id=duplicated.get('responsible_user_id'))
         duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}\n" \
-                    f"Responsible for duplicate: {duplicated_user.name}"
+                    f"Responsible for duplicate: {duplicated_user.name if duplicated_user else '???'}"
         if is_spam:
             duplicate = f'{duplicate}\nPROBABLY SPAM!'
         else:

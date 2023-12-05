@@ -3,13 +3,14 @@ __author__ = 'ke.mizonov'
 
 import time
 import uuid
-from typing import Optional
+from typing import Optional, List
 import requests
 from flask import request, jsonify, Response
 
 from app.amo.api.chat_client import AmoChatsAPIClient
 from app.main import bp
 from app.main.utils import API_CLIENT
+from app.whatsapp.controller import WhatsAppController
 from config import Config
 
 
@@ -97,8 +98,8 @@ def whatsapp_webhook():
         if not branch:
             # print('no branch')
             return '200 OK HTTPS.', 200
-        contact = (value.get('contacts') or [None])[0]
-        if contact is None:
+        contact = (value.get('contacts') or [{}])[0]
+        if not contact:
             print('uncatched WhatsApp error')
             return '200 OK HTTPS.', 200
         msg = value['messages'][0]
@@ -106,16 +107,17 @@ def whatsapp_webhook():
         timestamp = int(msg['timestamp'])
         name = contact['profile']['name']
         phone = contact['wa_id']
-        text = msg['text']['body']
+        # текста может не быть - вероятно, нам прислали файл
+        text = (msg.get('text') or {}).get('body')
         # ищем лид и связанный с ним контакт
         contact_id = None
         # print('init amo api client...')
         amo_client = API_CLIENT.get(branch)()
-        print('searching contacts...', phone[-8:])
+        # print('searching contacts...', phone[-8:])
         contacts = [x for x in amo_client.find_contacts(query=phone[-8:]) or []]
         if contacts:
             contact_id = contacts[0]['id']
-            print('contact found!', contacts)
+            # print('contact found!', contacts)
         # leads = [x for x in amo_client.find_leads(query=phone[-8:])]
         # print('leads', leads)
         # if leads:
@@ -134,25 +136,27 @@ def whatsapp_webhook():
             # контакта не существует, кидаем чат в "неразобранное"
             # conversation_id = str(uuid.uuid4())
             # print('creating chat', name, phone)
-            new_chat = AmoChatsAPIClient(branch=branch).get_new_message(
-                name=name,
-                phone=phone,
-                conversation_id=str(uuid.uuid4())
-            )
-            new_chat_id = new_chat['id']
-            print('trying to create unsorted...', timestamp, name, phone, text, new_chat_id)
-            AmoChatsAPIClient(branch=branch).get_message(
-                timestamp=timestamp,
-                name=name,
-                phone=phone,
-                text=text,
-                conversation_id=new_chat_id,
-                msg_id=str(uuid.uuid4())
-            )
-            print('ok')
+            if text:
+                amo_chats_client = AmoChatsAPIClient(branch=branch)
+                new_chat = amo_chats_client.get_new_message(
+                    name=name,
+                    phone=phone,
+                    conversation_id=str(uuid.uuid4())
+                )
+                new_chat_id = new_chat['id']
+                print('trying to create unsorted...', timestamp, name, phone, text, new_chat_id)
+                amo_chats_client.get_message(
+                    timestamp=timestamp,
+                    name=name,
+                    phone=phone,
+                    text=text,
+                    conversation_id=new_chat_id,
+                    msg_id=str(uuid.uuid4())
+                )
+                print('ok')
             return '200 OK HTTPS.', 200
         # есть контакт, но нет чата - создаем новый чат и связываем его с контактом
-        if not chat_id:
+        if not chat_id and text:
             print('creating chat', name, phone)
             new_chat = AmoChatsAPIClient(branch=branch).get_new_message(
                 name=name,
@@ -164,7 +168,7 @@ def whatsapp_webhook():
             print('linking chat with contact', chat_id, contact_id)
             amo_client.link_chat_with_contact(contact_id=contact_id, chat_id=chat_id)
         # пишем сообщение в чат
-        if chat_id:
+        if chat_id and text:
             print('writing msg', name, phone, text, chat_id)
             AmoChatsAPIClient(branch=branch).get_message(
                 timestamp=int(time.time()),  # поправка по времени?
@@ -175,6 +179,12 @@ def whatsapp_webhook():
                 conversation_ref_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
+        # всегда проверяем и вложения (вероятно, нам прислали какие-то файлы)
+        attachments: List[str] = WhatsAppController(branch=branch).get_attachments_from_incoming_msg(data=data)
+        print('attachments:', attachments)
+        lead_id = amo_client.get_lead_id_by_contact_id(contact_id=contact_id)
+        for file in attachments:
+            amo_client.upload_file(file_path=file, lead_id=lead_id)
     except Exception as exc:
         print(f'WhatsApp webhook error: {exc}')
         # todo WhatsApp webhook error: 'contacts'
