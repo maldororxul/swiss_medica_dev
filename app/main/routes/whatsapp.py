@@ -76,7 +76,7 @@ def whatsapp_webhook():
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
-    # print('incoming WhatsApp data:', data)
+    print('incoming WhatsApp data:', data)
     """
     {'profile': {'name': 'Kirill Mizonow'}, 'wa_id': '995591058618'}], 'messages': [{'from': '995591058618', 'id': 'wamid.HBgMOTk1NTkxMDU4NjE4FQIAEhggQkFDNTcwN0VGMzY1RDEyNUZBQTcxRDZBM0U5QjE4OTMA', 'timestamp': '1700943407', 'text': {'body': 'Сообщение отправлено из WhatsApp... 2'}, 'type': 'text'}]}, 'field': 'messages'}]}]}
     """
@@ -174,6 +174,11 @@ def whatsapp_webhook():
             )
     except Exception as exc:
         print(f'WhatsApp webhook error: {exc}')
+        # todo WhatsApp webhook error: 'contacts'
+        """
+        WhatsApp response on sending msg {"messaging_product":"whatsapp","contacts":[{"input":"375292799419","wa_id":"375292799419"}],"messages":[{"id":"wamid.HBgMMzc1MjkyNzk5NDE5FQIAERgSNEEwOTI2MUFEMDI1OEVBQjIxAA=="}]}
+        2023-11-27T10:03:08.195474+00:00 app[web.1]: 10.1.37.119 - - [27/Nov/2023:10:03:08 +0000] "POST /amo_chat/3a952d6f-afb1-4154-977a-a6f2eeb2053e_59a2fb56-7492-4c16-8bbe-f776345af46c HTTP/1.1" 204 0 "-" "amoCRM amoJo/1.0"
+        """
     return '200 OK HTTPS.', 200
 
 

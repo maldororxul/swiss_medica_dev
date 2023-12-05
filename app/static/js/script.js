@@ -135,6 +135,12 @@ Tawk_API.onChatEnded = function() {
     }
 };
 window.Tawk_API.onOfflineSubmit = function(data){
+    if (typeof(gtag) !== 'undefined') {
+        gtag('event', 'Offline Form', {
+            'event_category': 'Tawk',
+            'event_label': 'Offline Form Submitted',
+        });
+    }
     data['referrer'] = document.referrer
     sendTawkData(data)
 };
