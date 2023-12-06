@@ -77,6 +77,7 @@ def bwa_send_msg_by_template(template_name: str):
         return '200 OK HTTPS.', 200
     # собственно отправляем сообщение через BWA
     send_whatsapp_message(template=template, number_to=phone, number_id_from=number_id)
+    amo_client.add_note_simple(entity_id=lead_id, text=f'Sent Business WhatsApp message. Template: {template_name}')
     return '200 OK HTTPS.', 200
 
 
@@ -137,7 +138,7 @@ def whatsapp_webhook():
         entry = data['entry'][0]
         value = entry['changes'][0]['value']
         # определяем идентификатор нашего номера, на который пришло сообщение
-        phone_number_id = value['metadata']['phone_number_id']      # пришло 151648284687808
+        phone_number_id = value['metadata']['phone_number_id']
         # по идентификатору номера определяем филиал
         branch = None
         for _branch, config in Config().whatsapp.items():
@@ -152,7 +153,10 @@ def whatsapp_webhook():
             return '200 OK HTTPS.', 200
         contact = (value.get('contacts') or [{}])[0]
         if not contact:
-            print('uncatched WhatsApp error')
+            """
+            {'object': 'whatsapp_business_account', 'entry': [{'id': '133570986506988', 'changes': [{'value': {'messaging_product': 'whatsapp', 'metadata': {'display_phone_number': '381114221400', 'phone_number_id': '151648284687808'}, 'statuses': [{'id': 'wamid.HBgMOTk1NTkxMDU4NjE4FQIAERgSOEJDNTQzN0E1MkU2QzEwM0UwAA==', 'status': 'delivered', 'timestamp': '1701896963', 'recipient_id': '995591058618', 'conversation': {'id': '284a2cc182835831700f6711b563f032', 'origin': {'type': 'utility'}}, 'pricing': {'billable': True, 'pricing_model': 'CBP', 'category': 'utility'}}]}, 'field': 'messages'}]}]}
+            """
+            # print('uncatched WhatsApp error')
             return '200 OK HTTPS.', 200
         msg = value['messages'][0]
         # print('msg', msg)
