@@ -77,7 +77,7 @@ def bwa_send_msg_by_template(template_name: str):
         return '200 OK HTTPS.', 200
     # собственно отправляем сообщение через BWA
     send_whatsapp_message(template=template, number_to=phone, number_id_from=number_id)
-    amo_client.add_note_simple(entity_id=lead_id, text=f'Sent Business WhatsApp message. Template: {template_name}')
+    amo_client.add_note_simple(entity_id=lead_id, text=f'Sent Business WhatsApp message. Template: {template_name}.')
     return '200 OK HTTPS.', 200
 
 
