@@ -29,7 +29,7 @@ from config import Config
 #     send_wahtsapp_message(number_to='995591058618', number_id_from=number_from['id'], template=template)
 #     return Response(status=204)
 
-@bp.route('bwa_send_msg_by_template/<template_name>', methods=['POST'])
+@bp.route('/bwa_send_msg_by_template/<template_name>', methods=['POST'])
 def bwa_send_msg_by_template(template_name: str):
     """ Отклик на событие перемещения лида на определенный этап в Amo. Нам придут следующие данные:
         leads[status][0][id] :: 23802129
