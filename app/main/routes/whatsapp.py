@@ -3,13 +3,15 @@ __author__ = 'ke.mizonov'
 
 import time
 import uuid
-from typing import Optional, List
+from typing import Optional, List, Dict
 import requests
 from flask import request, jsonify, Response
 
 from app.amo.api.chat_client import AmoChatsAPIClient
+from app.amo.processor.functions import clear_phone
 from app.main import bp
-from app.main.utils import API_CLIENT
+from app.main.routes.utils import get_data_from_post_request
+from app.main.utils import API_CLIENT, DATA_PROCESSOR
 from app.whatsapp.controller import WhatsAppController
 from config import Config
 
@@ -27,13 +29,63 @@ from config import Config
 #     send_wahtsapp_message(number_to='995591058618', number_id_from=number_from['id'], template=template)
 #     return Response(status=204)
 
+@bp.route('bwa_send_msg_by_template/<template_name>', methods=['POST'])
+def bwa_send_msg_by_template(template_name: str):
+    """ Отклик на событие перемещения лида на определенный этап в Amo. Нам придут следующие данные:
+        leads[status][0][id] :: 23802129
+        leads[status][0][status_id] :: 58841526
+        leads[status][0][pipeline_id] :: 3508507
+        leads[status][0][old_status_id] :: 58840350
+        leads[status][0][old_pipeline_id] :: 7010970
 
-def send_wahtsapp_message(
+    Args:
+        template_name: имя шаблона BWA, используемого для отправки сообщений
+    """
+    # получаем данные с Amo, отправленные через вебхук
+    data = get_data_from_post_request(_request=request)
+    if not data:
+        return 'Unsupported Media Type', 415
+    lead_id = data.get('leads[status][0][id]')
+    if not lead_id:
+        return '200 OK HTTPS.', 200
+    config = Config().whatsapp
+    branch, template = None, None
+    for _branch, branch_config in config.items():
+        for _template in branch_config.get('templates') or []:
+            if _template['name'] == template_name:
+                template = _template
+                branch = _branch
+                break
+    numbers = config.get(branch).get('numbers') or [{}]
+    number_id = numbers[0].get('id')
+    if not branch or not template or not number_id:
+        return '200 OK HTTPS.', 200
+    # получаем лид из Amo
+    amo_client = API_CLIENT.get(branch)()
+    lead = amo_client.get_lead_by_id(lead_id=lead_id) or {}
+    contacts = (lead.get('_embedded') or {}).get('contacts') or [{}]
+    contact_id = contacts[0].get('id')
+    if not contact_id:
+        return '200 OK HTTPS.', 200
+    contact = amo_client.get_contact_by_id(contact_id=contact_id) or {}
+    phone = None
+    for cf in contact.get('custom_fields_values') or []:
+        if cf['field_code'] == 'PHONE':
+            phone = clear_phone(cf['values'][0]['value'])
+            break
+    if not phone:
+        return '200 OK HTTPS.', 200
+    # собственно отправляем сообщение через BWA
+    send_whatsapp_message(template=template, number_to=phone, number_id_from=number_id)
+    return '200 OK HTTPS.', 200
+
+
+def send_whatsapp_message(
     # https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages#examples
     # https://developers.facebook.com/docs/whatsapp/api/messages/message-templates#supported-languages
     number_to: str,
     number_id_from: str,
-    template: Optional[str] = None,
+    template: Optional[Dict] = None,
     message: Optional[str] = None
 ):
     if template:
