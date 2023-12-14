@@ -3,18 +3,21 @@ __author__ = 'ke.mizonov'
 
 import time
 import uuid
+from threading import Thread
 from typing import Optional, List, Dict
 import requests
-from flask import request, jsonify, Response
+from flask import request, jsonify
 
 from app.amo.api.chat_client import AmoChatsAPIClient
 from app.amo.processor.functions import clear_phone
+from app.google_api.client import GoogleAPIClient
 from app.main import bp
 from app.main.routes.telegram import BOTS
 from app.main.routes.utils import get_data_from_post_request
 from app.main.utils import API_CLIENT, DATA_PROCESSOR
 from app.whatsapp.controller import WhatsAppController
 from config import Config
+from modules.constants.constants.constants import GoogleSheets
 
 
 # @bp.route('/send_test_msg', methods=['GET', 'POST'])
@@ -131,6 +134,12 @@ def whatsapp_webhook():
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
+    Thread(target=process_whatsapp_message, args=(data,)).start()
+    return '200 OK HTTPS.', 200
+
+
+def process_whatsapp_message(data: Dict):
+    # Здесь ваш код для обработки данных, например, загрузка файла
     print('incoming WhatsApp data:', data)
     """
     {'profile': {'name': 'Kirill Mizonow'}, 'wa_id': '995591058618'}], 'messages': [{'from': '995591058618', 'id': 'wamid.HBgMOTk1NTkxMDU4NjE4FQIAEhggQkFDNTcwN0VGMzY1RDEyNUZBQTcxRDZBM0U5QjE4OTMA', 'timestamp': '1700943407', 'text': {'body': 'Сообщение отправлено из WhatsApp... 2'}, 'type': 'text'}]}, 'field': 'messages'}]}]}
@@ -261,7 +270,19 @@ def whatsapp_webhook():
         if not params:
             return '200 OK HTTPS.', 200
         domain = lead_data['_links']['self']['href'].split('https://')[1].split('.')[0]
-        msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}"
+        # тегаем пользователя через @
+        processor = DATA_PROCESSOR.get(branch)()
+        user = processor.get_user_by_id(user_id=lead_data.get('responsible_user_id'))
+        user = user.name if user else ''
+        telegram_name = None
+        managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
+        for manager in managers:
+            if manager.get('manager') == user:
+                telegram_name = manager.get('telegram')
+                break
+        telegram_name = f"@{telegram_name}" if telegram_name else ''
+        msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}" \
+              f"\nResponsible: {telegram_name if telegram_name else user}".strip()
         BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
     except Exception as exc:
         print(f'WhatsApp webhook error: {exc}')
@@ -270,7 +291,6 @@ def whatsapp_webhook():
         WhatsApp response on sending msg {"messaging_product":"whatsapp","contacts":[{"input":"375292799419","wa_id":"375292799419"}],"messages":[{"id":"wamid.HBgMMzc1MjkyNzk5NDE5FQIAERgSNEEwOTI2MUFEMDI1OEVBQjIxAA=="}]}
         2023-11-27T10:03:08.195474+00:00 app[web.1]: 10.1.37.119 - - [27/Nov/2023:10:03:08 +0000] "POST /amo_chat/3a952d6f-afb1-4154-977a-a6f2eeb2053e_59a2fb56-7492-4c16-8bbe-f776345af46c HTTP/1.1" 204 0 "-" "amoCRM amoJo/1.0"
         """
-    return '200 OK HTTPS.', 200
 
 
 @bp.route('/whatsapp_remove', methods=['GET', 'POST'])
