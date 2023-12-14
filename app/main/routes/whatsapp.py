@@ -236,6 +236,7 @@ def whatsapp_webhook():
                 phone=phone,
                 text=text,
                 # conversation_id=conversation_id or str(uuid.uuid4()),
+                conversation_id=chat_id,
                 conversation_ref_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
