@@ -220,13 +220,13 @@ def whatsapp_webhook():
             new_chat = AmoChatsAPIClient(branch=branch).get_new_message(
                 name=name,
                 phone=phone,
-                conversation_id=str(uuid.uuid4())
+                conversation_id=conversation_id
             )
             chat_id = new_chat['id']
             # связываем чат с контактом
             print('linking chat with contact', chat_id, contact_id)
             tmp = amo_client.link_chat_with_contact(contact_id=contact_id, chat_id=chat_id)
-            print(tmp)
+            print(tmp.text)
         # пишем сообщение в чат
         if chat_id and text:
             print('writing msg', name, phone, text, chat_id)
@@ -235,8 +235,8 @@ def whatsapp_webhook():
                 name=name,
                 phone=phone,
                 text=text,
-                # conversation_id=conversation_id or str(uuid.uuid4()),
-                conversation_id=chat_id,
+                conversation_id=conversation_id or str(uuid.uuid4()),
+                # conversation_id=chat_id,
                 conversation_ref_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
