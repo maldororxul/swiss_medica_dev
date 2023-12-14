@@ -10,6 +10,7 @@ from flask import request, jsonify, Response
 from app.amo.api.chat_client import AmoChatsAPIClient
 from app.amo.processor.functions import clear_phone
 from app.main import bp
+from app.main.routes.telegram import BOTS
 from app.main.routes.utils import get_data_from_post_request
 from app.main.utils import API_CLIENT, DATA_PROCESSOR
 from app.whatsapp.controller import WhatsAppController
@@ -182,6 +183,7 @@ def whatsapp_webhook():
         #         contact_id = contacts[0]['id']
         # если контакт существует, ищем связанные с ним чаты
         chat_id = None
+        conversation_id = None
         if contact_id:
             print('trying to find chats...')
             chats = amo_client.get_chats(contact_id=contact_id)
@@ -214,6 +216,7 @@ def whatsapp_webhook():
         # есть контакт, но нет чата - создаем новый чат и связываем его с контактом
         if not chat_id and text:
             print('creating chat', name, phone)
+            conversation_id = str(uuid.uuid4())
             new_chat = AmoChatsAPIClient(branch=branch).get_new_message(
                 name=name,
                 phone=phone,
@@ -222,7 +225,8 @@ def whatsapp_webhook():
             chat_id = new_chat['id']
             # связываем чат с контактом
             print('linking chat with contact', chat_id, contact_id)
-            amo_client.link_chat_with_contact(contact_id=contact_id, chat_id=chat_id)
+            tmp = amo_client.link_chat_with_contact(contact_id=contact_id, chat_id=chat_id)
+            print(tmp)
         # пишем сообщение в чат
         if chat_id and text:
             print('writing msg', name, phone, text, chat_id)
@@ -231,7 +235,7 @@ def whatsapp_webhook():
                 name=name,
                 phone=phone,
                 text=text,
-                conversation_id=str(uuid.uuid4()),
+                conversation_id=conversation_id or str(uuid.uuid4()),
                 conversation_ref_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
@@ -242,6 +246,22 @@ def whatsapp_webhook():
         print('lead_id', lead_id)
         for file in attachments:
             amo_client.upload_file(file_path=file, lead_id=lead_id)
+        # отправляем оповещение о новом сообщении в телеграм
+        config = Config()
+        lead_data = amo_client.get_lead_by_id(lead_id=lead_id)
+        pipeline_id = lead_data.get('pipeline_id')
+        branch = ...
+        params = config.new_lead_telegram.get(pipeline_id)
+        if params:
+            bot_key = pipeline_id
+        else:
+            params = config.new_lead_telegram.get(branch)
+            bot_key = branch
+        if not params:
+            return '200 OK HTTPS.', 200
+        domain = lead_data['_links']['self']['href'].split('https://')[1].split('.')[0]
+        msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}"
+        BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
     except Exception as exc:
         print(f'WhatsApp webhook error: {exc}')
         # todo WhatsApp webhook error: 'contacts'
