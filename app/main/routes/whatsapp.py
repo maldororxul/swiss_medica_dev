@@ -235,7 +235,7 @@ def whatsapp_webhook():
                 name=name,
                 phone=phone,
                 text=text,
-                conversation_id=conversation_id or str(uuid.uuid4()),
+                # conversation_id=conversation_id or str(uuid.uuid4()),
                 conversation_ref_id=chat_id,
                 msg_id=str(uuid.uuid4())
             )
@@ -250,7 +250,7 @@ def whatsapp_webhook():
         config = Config()
         lead_data = amo_client.get_lead_by_id(lead_id=lead_id)
         pipeline_id = lead_data.get('pipeline_id')
-        branch = ...
+        branch = {'SM': 'swissmedica', 'CDV': 'drvorobjev'}.get(branch)
         params = config.new_lead_telegram.get(pipeline_id)
         if params:
             bot_key = pipeline_id
