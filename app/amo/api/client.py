@@ -729,8 +729,12 @@ class APIClient:
             contact_id: идентификатор контакта
             chat_id: идентификатор чата
         """
-        params = f'chat_id={chat_id}&contact_id={contact_id}'
-        return self.__execute(endpoint='contacts/chats', params=params, method='POST')
+        # params = f'chat_id={chat_id}&contact_id={contact_id}'
+        return self.__execute(
+            endpoint='contacts/chats',
+            data=[{"contact_id": contact_id, "chat_id": chat_id}],
+            method='POST'
+        )
 
     def get_chats(
         self,
