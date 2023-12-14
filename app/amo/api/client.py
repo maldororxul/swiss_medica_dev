@@ -998,6 +998,10 @@ class APIClient:
                     )
                     return response
                 elif method == 'POST':
+                    if endpoint == 'contacts/chats':
+                        print(self.__get_url(endpoint=endpoint, params=params, entity=entity, entity_id=entity_id))
+                        print(self.headers)
+                        print(data)
                     response = requests.post(
                         url=self.__get_url(endpoint=endpoint, params=params, entity=entity, entity_id=entity_id),
                         headers=self.headers,
