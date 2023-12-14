@@ -134,14 +134,14 @@ def whatsapp_webhook():
     # see https://www.pragnakalp.com/automate-messages-using-whatsapp-business-api-flask-part-1/
     #   https://developers.facebook.com/blog/post/2022/10/24/sending-messages-with-whatsapp-in-your-python-applications/
     data = request.get_json()
-    Thread(target=process_whatsapp_message, args=(data,)).start()
+    app = current_app._get_current_object()
+    Thread(target=process_whatsapp_message, args=(data, app)).start()
     return '200 OK HTTPS.', 200
 
 
-def process_whatsapp_message(data: Dict):
+def process_whatsapp_message(data: Dict, app):
     # Здесь ваш код для обработки данных, например, загрузка файла
     print('incoming WhatsApp data:', data)
-    app = current_app._get_current_object()
     with app.app_context():
         """
         {'profile': {'name': 'Kirill Mizonow'}, 'wa_id': '995591058618'}], 'messages': [{'from': '995591058618', 'id': 'wamid.HBgMOTk1NTkxMDU4NjE4FQIAEhggQkFDNTcwN0VGMzY1RDEyNUZBQTcxRDZBM0U5QjE4OTMA', 'timestamp': '1700943407', 'text': {'body': 'Сообщение отправлено из WhatsApp... 2'}, 'type': 'text'}]}, 'field': 'messages'}]}]}
