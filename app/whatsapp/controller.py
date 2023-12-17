@@ -41,12 +41,16 @@ class WhatsAppController:
         }
         result = []
         for msg in messages:
-            document = msg.get('document')
+            _type = msg.get('type')
+            document = msg.get(_type)
             if not document:
                 continue
             # получаем id и расширение файла
             _id = document['id']
-            _, ext = os.path.splitext(document['filename'])
+            try:
+                _, ext = os.path.splitext(document['filename'])
+            except:
+                ext = f".{(document.get('mime_type') or '').split('/')[1]}"
             # отправляем запрос на получение ссылки на файл
             response = requests.get(
                 url=f'{self.base_url}{_id}/',
