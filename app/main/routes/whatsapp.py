@@ -223,6 +223,11 @@ def process_whatsapp_message(data: Dict, app):
                         msg_id=str(uuid.uuid4())
                     )
                     print('ok')
+                try:
+                    lead_id = amo_client.get_lead_id_by_contact_id(contact_id=contact_id)
+                    send_telegram_notification(amo_client, branch, lead_id)
+                except:
+                    print('failed to send Telegram notification')
                 return '200 OK HTTPS.', 200
             # есть контакт, но нет чата - создаем новый чат и связываем его с контактом
             if not chat_id and text:
@@ -258,34 +263,10 @@ def process_whatsapp_message(data: Dict, app):
             print('lead_id', lead_id)
             for file in attachments:
                 amo_client.upload_file(file_path=file, lead_id=lead_id)
-            # отправляем оповещение о новом сообщении в телеграм
-            config = Config()
-            lead_data = amo_client.get_lead_by_id(lead_id=lead_id)
-            pipeline_id = lead_data.get('pipeline_id')
-            branch = {'SM': 'swissmedica', 'CDV': 'drvorobjev'}.get(branch)
-            params = config.new_lead_telegram.get(pipeline_id)
-            if params:
-                bot_key = pipeline_id
-            else:
-                params = config.new_lead_telegram.get(branch)
-                bot_key = branch
-            if not params:
-                return '200 OK HTTPS.', 200
-            domain = lead_data['_links']['self']['href'].split('https://')[1].split('.')[0]
-            # тегаем пользователя через @
-            processor = DATA_PROCESSOR.get(branch)()
-            user = processor.get_user_by_id(user_id=lead_data.get('responsible_user_id'))
-            user = user.name if user else ''
-            telegram_name = None
-            managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
-            for manager in managers:
-                if manager.get('manager') == user:
-                    telegram_name = manager.get('telegram')
-                    break
-            telegram_name = f"@{telegram_name}" if telegram_name else ''
-            msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}" \
-                  f"\nResponsible: {telegram_name if telegram_name else user}".strip()
-            BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
+            try:
+                send_telegram_notification(amo_client, branch, lead_id)
+            except:
+                print('failed to send Telegram notification')
         except Exception as exc:
             print(f'WhatsApp webhook error: {exc}')
             # todo WhatsApp webhook error: 'contacts'
@@ -293,6 +274,37 @@ def process_whatsapp_message(data: Dict, app):
             WhatsApp response on sending msg {"messaging_product":"whatsapp","contacts":[{"input":"375292799419","wa_id":"375292799419"}],"messages":[{"id":"wamid.HBgMMzc1MjkyNzk5NDE5FQIAERgSNEEwOTI2MUFEMDI1OEVBQjIxAA=="}]}
             2023-11-27T10:03:08.195474+00:00 app[web.1]: 10.1.37.119 - - [27/Nov/2023:10:03:08 +0000] "POST /amo_chat/3a952d6f-afb1-4154-977a-a6f2eeb2053e_59a2fb56-7492-4c16-8bbe-f776345af46c HTTP/1.1" 204 0 "-" "amoCRM amoJo/1.0"
             """
+
+
+def send_telegram_notification(amo_client, branch, lead_id):
+    # отправляем оповещение о новом сообщении в телеграм
+    config = Config()
+    lead_data = amo_client.get_lead_by_id(lead_id=lead_id)
+    pipeline_id = lead_data.get('pipeline_id')
+    branch = {'SM': 'swissmedica', 'CDV': 'drvorobjev'}.get(branch)
+    params = config.new_lead_telegram.get(pipeline_id)
+    if params:
+        bot_key = pipeline_id
+    else:
+        params = config.new_lead_telegram.get(branch)
+        bot_key = branch
+    if not params:
+        return '200 OK HTTPS.', 200
+    domain = lead_data['_links']['self']['href'].split('https://')[1].split('.')[0]
+    # тегаем пользователя через @
+    processor = DATA_PROCESSOR.get(branch)()
+    user = processor.get_user_by_id(user_id=lead_data.get('responsible_user_id'))
+    user = user.name if user else ''
+    telegram_name = None
+    managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
+    for manager in managers:
+        if manager.get('manager') == user:
+            telegram_name = manager.get('telegram')
+            break
+    telegram_name = f"@{telegram_name}" if telegram_name else ''
+    msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}" \
+          f"\nResponsible: {telegram_name if telegram_name else user}".strip()
+    BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
 
 
 @bp.route('/whatsapp_remove', methods=['GET', 'POST'])
