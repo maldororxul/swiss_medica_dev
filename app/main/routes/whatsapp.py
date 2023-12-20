@@ -257,11 +257,12 @@ def process_whatsapp_message(data: Dict, app):
                     msg_id=str(uuid.uuid4())
                 )
             # всегда проверяем и вложения (вероятно, нам прислали какие-то файлы)
+            lead_id = amo_client.get_lead_id_by_contact_id(contact_id=contact_id)
+            print('lead_id', lead_id)
             try:
                 attachments: List[str] = WhatsAppController(branch=branch).get_attachments_from_incoming_msg(data=data)
                 print('attachments:', attachments)
-                lead_id = amo_client.get_lead_id_by_contact_id(contact_id=contact_id)
-                print('lead_id', lead_id)
+
                 for file in attachments:
                     amo_client.upload_file(file_path=file, lead_id=lead_id)
             except Exception as exc:
