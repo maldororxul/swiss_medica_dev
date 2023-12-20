@@ -257,16 +257,19 @@ def process_whatsapp_message(data: Dict, app):
                     msg_id=str(uuid.uuid4())
                 )
             # всегда проверяем и вложения (вероятно, нам прислали какие-то файлы)
-            attachments: List[str] = WhatsAppController(branch=branch).get_attachments_from_incoming_msg(data=data)
-            print('attachments:', attachments)
-            lead_id = amo_client.get_lead_id_by_contact_id(contact_id=contact_id)
-            print('lead_id', lead_id)
-            for file in attachments:
-                amo_client.upload_file(file_path=file, lead_id=lead_id)
+            try:
+                attachments: List[str] = WhatsAppController(branch=branch).get_attachments_from_incoming_msg(data=data)
+                print('attachments:', attachments)
+                lead_id = amo_client.get_lead_id_by_contact_id(contact_id=contact_id)
+                print('lead_id', lead_id)
+                for file in attachments:
+                    amo_client.upload_file(file_path=file, lead_id=lead_id)
+            except Exception as exc:
+                print('failed to get attachments or no attachments', exc)
             try:
                 send_telegram_notification(amo_client, branch, lead_id)
-            except:
-                print('failed to send Telegram notification')
+            except Exception as exc:
+                print('failed to send Telegram notification', exc)
         except Exception as exc:
             print(f'WhatsApp webhook error: {exc}')
             # todo WhatsApp webhook error: 'contacts'
