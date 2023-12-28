@@ -203,12 +203,11 @@ def process_request():
     # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=IT
     # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=DE
     # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=CZ
+    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=EN
 
     try:
 
         post = request.form.to_dict()
-        print(post)
-
         lang = request.args.get('lang', default='EN')  # Получаем язык из GET-параметров, по умолчанию 'EN'
         form_data = post
 
@@ -260,7 +259,7 @@ def process_request():
             utm=utm_dict,
             custom_fields_values=[
                 {"field_id": 957691, "values": [{"value": form_data['diagnosis']}]},
-                {"field_id": 1099051, "values": [{"value": spoken_language.get(lang)} or 'Another']},
+                {"field_id": 1099051, "values": [{"value": spoken_language.get(lang) or 'Another'}]},
             ]
         )
         added_lead_data = lead_added.json()
@@ -270,7 +269,7 @@ def process_request():
             for k, v in form_data.items():
                 if k in ('tags', ):
                     continue
-                note_text = f"{note_text}\n\n{k.upper()} :: {v}"
+                note_text = f"{note_text}\n{k.upper()} :: {v}"
             amo_client.add_note_simple(entity_id=lead_id, text=note_text.strip())
         except:
             pass
