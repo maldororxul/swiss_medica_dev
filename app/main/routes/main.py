@@ -238,6 +238,56 @@ def process_request():
         form_data.setdefault('detected_city', 'not_detected_city')
 
         print(form_data)
+        # вот это вообще от балды...
+        utm_dict = {
+            'utm_source': form_data.get('utm_source'),
+            'utm_campaign': form_data.get('utm_campaign'),
+            'utm_medium': form_data.get('utm_medium')
+        }
+        amo_client = SwissmedicaAPIClient()
+        lead_added = amo_client.add_lead_simple(
+            name=f"New lead |{lang}| {form_data['name']}",
+            pipeline_id=int(form_data['pipeline_id']),
+            status_id=int(form_data['status_id']),
+            contacts=[
+                {'value': form_data.get('phone'), 'field_id': 771220, 'enum_code': 'WORK'},
+                {'value': form_data.get('email'), 'field_id': 771222, 'enum_code': 'WORK'},
+            ],
+            tags=form_data['tags'],
+            referrer=form_data['utm_referer'],
+            utm=utm_dict,
+            custom_fields_values=[{
+                "field_id": 957691,
+                "values": [
+                    {
+                        "value": form_data['diagnosis']
+                    }
+                ]
+            }]
+        )
+        added_lead_data = lead_added.json()
+        try:
+            lead_id = int(added_lead_data[0]['id'])
+            note_text = ''
+            for k, v in form_data.items():
+                note_text = f"{form_data}\n{k} :: {v}"
+            amo_client.add_note_simple(entity_id=lead_id, text=note_text.strip())
+        except:
+            pass
+        # {
+        #     'name': 'test me',
+        #     'phone': '963258741',
+        #     'diagnosis': 'sdfsdg',
+        #     'email': 'Kirill.Mizonov@swissmedica21.com',
+        #     'agree': 'on',
+        #     'clientid': '864083159.1695878461',
+        #     'pipeline_id': 2047060,
+        #     'status_id': 29830081,
+        #     'tags': [{'id': 689053}],
+        #     'message': 'sdfsdg',
+        #     'detected_country': 'not_detected_country',
+        #     'detected_city': 'not_detected_city'
+        # }
 
     except Exception as exc:
         print('error', exc)

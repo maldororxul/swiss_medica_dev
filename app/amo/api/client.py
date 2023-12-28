@@ -360,7 +360,7 @@ class APIClient:
             # 'custom_fields_values': custom_fields_values,
             'responsible_user_id': responsible_user_id,
             "_embedded": {
-                "tags": [{"name": tag} for tag in tags or []],
+                "tags": [{"name": tag} for tag in tags or []] if tags and isinstance(tags[0], str) else tags,
                 'contacts': [{
                     "name": name,
                     "created_at": int(time()),
