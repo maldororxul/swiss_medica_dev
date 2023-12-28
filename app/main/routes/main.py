@@ -2,6 +2,7 @@
 __author__ = 'ke.mizonov'
 from datetime import datetime
 from typing import Union, Type
+from urllib.parse import urlparse, parse_qs
 
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
@@ -193,6 +194,50 @@ def arrival_sync():
     app = current_app._get_current_object()
     waiting_for_arrival(app=app, branch='swissmedica')
     return render_template('arrival_sync.html')
+
+
+@bp.route('/add_lead_from_cf', methods=['POST', 'GET'])
+def process_request():
+
+    try:
+        post = request.form.to_dict()
+        print(post)
+
+        lang = request.args.get('lang', default='EN')  # Получаем язык из GET-параметров, по умолчанию 'EN'
+        form_data = post
+
+        pipeline_ids = {'EN': 772717, 'DE': 2048428, 'FR': 2047060, 'IT': 5707270}
+        status_ids = {'EN': 19045762, 'DE': 29839168, 'FR': 29830081, 'IT': 50171236}
+        temptags = {'EN': 689047, 'DE': 689049, 'FR': 689053, 'IT': 689051, 'CZ': 689055}
+
+        form_data['pipeline_id'] = pipeline_ids.get(lang, 772717)
+        form_data['status_id'] = status_ids.get(lang, 19045762)
+        form_data['tags'] = [{"id": temptags.get(lang, 689057)}]
+
+        form_data['message'] = post.get('message', post.get('diagnosis', 'No message'))
+
+        if not form_data.get('name'):
+            return "NO NAME", 400
+
+        parsed_url = urlparse(post.get('utm_referer', ''))
+        getmass = parse_qs(parsed_url.query)
+
+        for key, value in getmass.items():
+            form_data[key] = value[0][:250]
+
+        if 'utm_referer' in form_data:
+            form_data['utm_referer'] = form_data['utm_referer'][:250]
+
+        form_data.setdefault('email', 'no email')
+        form_data.setdefault('detected_country', 'not_detected_country')
+        form_data.setdefault('detected_city', 'not_detected_city')
+
+        print(form_data)
+
+    except Exception as exc:
+        print(exc)
+
+    return Response(status=204)
 
 
 @bp.route('/get_token', methods=['POST'])
