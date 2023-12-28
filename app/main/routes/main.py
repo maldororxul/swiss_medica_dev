@@ -254,7 +254,7 @@ def process_request():
                 {'value': form_data.get('email'), 'field_id': 771222, 'enum_code': 'WORK'},
             ],
             tags=form_data['tags'],
-            referrer=form_data['utm_referer'],
+            referrer=form_data.get('utm_referer'),
             utm=utm_dict,
             custom_fields_values=[{
                 "field_id": 957691,
