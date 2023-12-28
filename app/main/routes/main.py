@@ -196,10 +196,15 @@ def arrival_sync():
     return render_template('arrival_sync.html')
 
 
-@bp.route('/add_lead_from_cf', methods=['POST', 'GET'])
+@bp.route('/add_lead_from_cf', methods=['POST', 'GET'], strict_slashes=False)
 def process_request():
+    # http://167.172.109.78/calltracking3/?lang=FR
+    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=FR
+
+    print('got request from webform')
 
     try:
+
         post = request.form.to_dict()
         print(post)
 
@@ -235,9 +240,9 @@ def process_request():
         print(form_data)
 
     except Exception as exc:
-        print(exc)
+        print('error', exc)
 
-    return Response(status=204)
+    return Response(status=200)
 
 
 @bp.route('/get_token', methods=['POST'])
