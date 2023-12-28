@@ -200,8 +200,9 @@ def arrival_sync():
 def process_request():
     # http://167.172.109.78/calltracking3/?lang=FR
     # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=FR
-
-    print('got request from webform')
+    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=IT
+    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=DE
+    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=CZ
 
     try:
 
@@ -245,8 +246,9 @@ def process_request():
             'utm_medium': form_data.get('utm_medium')
         }
         amo_client = SwissmedicaAPIClient()
+        spoken_language = {'EN': 'English', 'DE': 'German', 'FR': 'French', 'IT': 'Italian'}
         lead_added = amo_client.add_lead_simple(
-            name=f"New lead |{lang}| {form_data['name']}",
+            name=form_data['name'],
             pipeline_id=int(form_data['pipeline_id']),
             status_id=int(form_data['status_id']),
             contacts=[
@@ -256,21 +258,19 @@ def process_request():
             tags=form_data['tags'],
             referrer=form_data.get('utm_referer'),
             utm=utm_dict,
-            custom_fields_values=[{
-                "field_id": 957691,
-                "values": [
-                    {
-                        "value": form_data['diagnosis']
-                    }
-                ]
-            }]
+            custom_fields_values=[
+                {"field_id": 957691, "values": [{"value": form_data['diagnosis']}]},
+                {"field_id": 1099051, "values": [{"value": spoken_language.get(lang)} or 'Another']},
+            ]
         )
         added_lead_data = lead_added.json()
         try:
             lead_id = int(added_lead_data[0]['id'])
             note_text = ''
             for k, v in form_data.items():
-                note_text = f"{form_data}\n{k} :: {v}"
+                if k in ('tags', ):
+                    continue
+                note_text = f"{note_text}\n\n{k.upper()} :: {v}"
             amo_client.add_note_simple(entity_id=lead_id, text=note_text.strip())
         except:
             pass
