@@ -246,6 +246,9 @@ def process_request():
         }
         amo_client = SwissmedicaAPIClient()
         spoken_language = {'EN': 'English', 'DE': 'German', 'FR': 'French', 'IT': 'Italian'}
+        custom_fields_values = [{"field_id": 1099051, "values": [{"value": spoken_language.get(lang) or 'Another'}]}]
+        if form_data.get('diagnosis'):
+            custom_fields_values.append({"field_id": 957691, "values": [{"value": form_data.get('diagnosis')}]})
         lead_added = amo_client.add_lead_simple(
             name=form_data['name'],
             pipeline_id=int(form_data['pipeline_id']),
@@ -257,10 +260,7 @@ def process_request():
             tags=form_data['tags'],
             referrer=form_data.get('utm_referer'),
             utm=utm_dict,
-            custom_fields_values=[
-                {"field_id": 957691, "values": [{"value": form_data['diagnosis']}]},
-                {"field_id": 1099051, "values": [{"value": spoken_language.get(lang) or 'Another'}]},
-            ]
+            custom_fields_values=custom_fields_values
         )
         added_lead_data = lead_added.json()
         try:
