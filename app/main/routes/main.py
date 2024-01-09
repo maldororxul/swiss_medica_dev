@@ -214,6 +214,7 @@ def process_request():
         try:
             print('args', request.args.to_dict())
             print('headers', request.headers)
+            print('headers', request.cookies)
             print('json', request.json)
         except:
             pass
