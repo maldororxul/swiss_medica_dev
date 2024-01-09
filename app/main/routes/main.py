@@ -211,6 +211,13 @@ def process_request():
         lang = request.args.get('lang', default='EN')  # Получаем язык из GET-параметров, по умолчанию 'EN'
         form_data = post
 
+        try:
+            print('args', request.args.to_dict())
+            print('headers', request.headers)
+            print('json', request.json)
+        except:
+            pass
+
         pipeline_ids = {'EN': 772717, 'DE': 2048428, 'FR': 2047060, 'IT': 5707270}
         status_ids = {'EN': 19045762, 'DE': 29839168, 'FR': 29830081, 'IT': 50171236}
         temptags = {'EN': 689047, 'DE': 689049, 'FR': 689053, 'IT': 689051, 'CZ': 689055}
