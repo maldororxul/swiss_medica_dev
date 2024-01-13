@@ -196,8 +196,24 @@ def arrival_sync():
     return render_template('arrival_sync.html')
 
 
+@bp.route('/startstemcells_lead', methods=['POST', 'GET'], strict_slashes=False)
+def startstemcells_lead():
+    try:
+        print('startstemcells_lead data', request.json)
+    except:
+        pass
+
+
+@bp.route('/cellulestaminali_lead', methods=['POST', 'GET'], strict_slashes=False)
+def startstemcells_lead():
+    try:
+        print('cellulestaminali_lead data', request.json)
+    except:
+        pass
+
+
 @bp.route('/add_lead_from_cf', methods=['POST', 'GET'], strict_slashes=False)
-def process_request():
+def add_lead_from_cf():
     # http://167.172.109.78/calltracking3/?lang=FR
     # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=FR
     # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=IT
@@ -214,8 +230,7 @@ def process_request():
         try:
             print('args', request.args.to_dict())
             print('headers', request.headers)
-            print('headers', request.cookies)
-            print('json', request.json)
+            print('cookies', request.cookies)
         except:
             pass
 
