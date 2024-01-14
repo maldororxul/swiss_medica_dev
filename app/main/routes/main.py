@@ -205,7 +205,7 @@ def startstemcells_lead():
 
 
 @bp.route('/cellulestaminali_lead', methods=['POST', 'GET'], strict_slashes=False)
-def startstemcells_lead():
+def cellulestaminali_lead():
     try:
         print('cellulestaminali_lead data', request.json)
     except:
