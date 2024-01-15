@@ -368,7 +368,7 @@ def startstemcells_lead():
     # пустым конфиг не будет, по умолчанию всегда английская воронка
     amo_config = amo_ids.get(lang) or amo_ids.get('EN')
     # добавляем лид
-    amo_client.add_lead_simple(
+    response = amo_client.add_lead_simple(
         name=f"{name} :: startstemcells.com",
         pipeline_id=amo_config['p'],
         status_id=amo_config['s'],
@@ -382,6 +382,7 @@ def startstemcells_lead():
         custom_fields_values=custom_fields_values,
         responsible_user_id=0
     )
+    print(response.status_code, response.text)
     return Response(status=200)
 
 
