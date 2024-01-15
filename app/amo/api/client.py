@@ -310,7 +310,7 @@ class APIClient:
         pipeline_id: int,
         status_id: int,
         contacts: Optional[List[Dict]] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[Union[List[str], List[Dict]]] = None,
         referrer: Optional[str] = None,
         utm: Optional[Dict] = None,
         custom_fields_values: Optional[List] = None,
