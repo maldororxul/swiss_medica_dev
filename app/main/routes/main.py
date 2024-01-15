@@ -314,7 +314,7 @@ def arrival_sync():
 @bp.route('/startstemcells_lead', methods=['POST', 'GET'], strict_slashes=False)
 def startstemcells_lead():
     """ Пробрасывавет в AMO лиды с сайта startstemcells.com """
-    config = Config().startstemcells_forms()
+    config = Config().startstemcells_forms
     try:
         print('startstemcells_lead data', request.json)
     except:
