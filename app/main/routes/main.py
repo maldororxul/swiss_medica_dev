@@ -376,7 +376,7 @@ def startstemcells_lead():
             {'value': phone, 'field_id': 771220, 'enum_code': 'WORK'},
             {'value': email, 'field_id': 771222, 'enum_code': 'WORK'},
         ],
-        tags=[{'id': amo_config['е']}],
+        tags=[{'id': amo_config['t']}],
         utm=utm_dict,
         referrer=referer,
         custom_fields_values=custom_fields_values,
