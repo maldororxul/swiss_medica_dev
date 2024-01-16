@@ -306,6 +306,7 @@ class APIClient:
 
     def add_lead_simple(
         self,
+        title: str,
         name: str,
         pipeline_id: int,
         status_id: int,
@@ -352,7 +353,7 @@ class APIClient:
                 }]
             })
         lead_data = {
-            "name": name,
+            "name": title,
             "created_by": 0,
             'created_at': int(time()),
             'pipeline_id': pipeline_id,

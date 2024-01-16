@@ -315,10 +315,6 @@ def arrival_sync():
 def startstemcells_lead():
     """ Пробрасывавет в AMO лиды с сайта startstemcells.com """
     config = Config().startstemcells_forms
-    try:
-        print('startstemcells_lead data', request.json)
-    except:
-        pass
     data: Dict = request.json
     form_data = data.get('post') or {}
     # определяем идентификатор формы
@@ -327,23 +323,32 @@ def startstemcells_lead():
     # для части форм сделки в Amo не создаем (флаг 'l' != 1)
     if not form_config or form_config['l'] != 1:
         return Response(status=200)
-    # регион / язык, ключ "r"
-    lang = form_config['r']
-    name, diagnosis = form_data.get('name'), form_data.get('diagnosis') or ''
-    phone, email = clear_phone(form_data.get('phone') or ''), form_data.get('email') or ''
-    amo_client = SwissmedicaAPIClient()
-    # todo проверка на дубли
-    # existing_leads = list(amo_client.find_leads(query=phone, limit=1))
-    # lead_id = int(existing_leads[0]['id']) if existing_leads else None
-    # if lead_id:
-    #     # лид уже существует, отправим оповещение о том, что он попытался выйти на связь
-    #     pass
-    #     return Response(status=200)
-    # определяем географию посетителя
-    ip = (data.get('location') or {}).get('ip')
+    create_lead_based_on_form_data(
+        lang=form_config['r'],  # регион / язык, ключ "r"
+        ip=data.get('ip') or (data.get('location') or {}).get('ip'),     # fixme depr 'location'
+        headers=data.get('headers') or {},
+        name=form_data.get('name'),
+        phone=clear_phone(form_data.get('phone') or ''),
+        email=form_data.get('email') or '',
+        diagnosis=form_data.get('diagnosis') or ''
+    )
+    return Response(status=200)
+
+
+def create_lead_based_on_form_data(
+    lang: str,
+    ip: str,
+    headers: Dict,
+    name: str,
+    phone: str,
+    email: str,
+    diagnosis: str
+):
+    referer = headers.get('Referer') or ''
+    origin = headers.get('Origin') or ''
+    site = origin.replace('https://', '').replace('http://', '')
     country_data = get_country_by_ip(ip=ip) if ip else {}
     country, city = country_data.get('country'), country_data.get('city')
-    referer = (data.get('headers') or {}).get('Referer') or ''
     utm_dict = get_args_from_url(url=referer) if referer else {}
     spoken_language = {'EN': 'English', 'DE': 'German', 'FR': 'French', 'IT': 'Italian'}
     custom_fields_values = [
@@ -367,9 +372,18 @@ def startstemcells_lead():
     }
     # пустым конфиг не будет, по умолчанию всегда английская воронка
     amo_config = amo_ids.get(lang) or amo_ids.get('EN')
+    amo_client = SwissmedicaAPIClient()
+    # todo проверка на дубли
+    # existing_leads = list(amo_client.find_leads(query=phone, limit=1))
+    # lead_id = int(existing_leads[0]['id']) if existing_leads else None
+    # if lead_id:
+    #     # лид уже существует, отправим оповещение о том, что он попытался выйти на связь
+    #     pass
+    #     return Response(status=200)
     # добавляем лид
     response = amo_client.add_lead_simple(
-        name=f"{name} :: startstemcells.com",
+        title=f"{name} :: {site}",
+        name=name,
         pipeline_id=amo_config['p'],
         status_id=amo_config['s'],
         contacts=[
@@ -383,15 +397,25 @@ def startstemcells_lead():
         responsible_user_id=0
     )
     print(response.status_code, response.text)
-    return Response(status=200)
 
 
 @bp.route('/cellulestaminali_lead', methods=['POST', 'GET'], strict_slashes=False)
 def cellulestaminali_lead():
-    try:
-        print('cellulestaminali_lead data', request.json)
-    except:
-        pass
+    # try:
+    #     print('cellulestaminali_lead data', request.json)
+    # except:
+    #     pass
+    data: Dict = request.json
+    form_data = data.get('post') or {}
+    create_lead_based_on_form_data(
+        lang='IT',  # регион / язык, ключ "r"
+        ip=data.get('ip'),
+        headers=data.get('headers') or {},
+        name=form_data.get('name'),
+        phone=clear_phone(form_data.get('phone') or ''),
+        email=form_data.get('email') or '',
+        diagnosis=form_data.get('message') or ''
+    )
     return Response(status=200)
 
 
