@@ -5,15 +5,15 @@ import telebot
 from flask import request, current_app, Response
 
 from app.amo.api.client import SwissmedicaAPIClient
-from app.amo.processor.processor import SMDataProcessor
+from app.amo.processor.processor import SMDataProcessor, GoogleSheets
+from app.google_api.client import GoogleAPIClient
 from app.main import bp
 from app.main.routes.utils import get_data_from_post_request
 from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR, \
     handle_new_lead_slow_reaction, get_data_from_external_api, handle_new_interaction, DUP_TAG, \
     check_for_duplicated_leads
 from config import Config
-from modules.constants.constants.constants import GoogleSheets
-from modules.google_api.google_api.client import GoogleAPIClient
+
 
 BOTS = {
     pipeline_or_branch: telebot.TeleBot(params['TOKEN'])
