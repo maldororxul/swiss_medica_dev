@@ -14,7 +14,7 @@ from app.main.arrival.handler import waiting_for_arrival
 from app.main.processors import DATA_PROCESSOR
 from app.main.routes.utils import get_data_from_post_request, get_args_from_url
 from app.main.tasks import SchedulerTask
-from app.main.utils import DateTimeEncoder, check_for_duplicated_leads
+from app.main.utils import DateTimeEncoder
 from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
 from app.models.raw_lead_data import SMRawLeadData, CDVRawLeadData
@@ -179,13 +179,6 @@ def index():
     )
 
 
-# @bp.route('/favicon.ico')
-# def favicon():
-#     app = current_app._get_current_object()
-#     path = os.path.join(app.root_path, 'static')
-#     return send_from_directory(path, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
-
 @bp.route('/get_token', methods=['GET'])
 def get_token():
     return render_template('get_token.html')
@@ -196,119 +189,6 @@ def arrival_sync():
     app = current_app._get_current_object()
     waiting_for_arrival(app=app, branch='swissmedica')
     return render_template('arrival_sync.html')
-
-
-"""
-{
-   "post":{
-      "_hf_form_id":"59",
-      "_hf_h59":"",
-      "name":"test me",
-      "phone":"591058618",
-      "email":"Kirill.Mizonov@sw21.com",
-      "agree":"on",
-      "clientid":"506920936.1705320798"
-   },
-   "get":{
-      "action":"hf_form_submit"
-   },
-   "cookies":{
-      "wpglobus-language-old":"en",
-      "wpglobus-language":"en",
-      "_fbp":"fb.1.1705320797771.1566065836",
-      "_ga":"GA1.2.506920936.1705320798",
-      "_gid":"GA1.2.1674799066.1705320798",
-      "_ym_uid":"170532079884669612",
-      "_ym_d":"1705320798",
-      "_ym_isad":"2",
-      "_ym_visorc":"w",
-      "MCPopupClosed":"yes",
-      "_ga_Q7VEY77FDW":"GS1.1.1705320797.1.1.1705320840.0.0.0",
-      "_ga_XT3N20QTMR":"GS1.1.1705320797.1.1.1705320899.60.0.0"
-   },
-   "headers":{
-      "Host":"www.startstemcells.com",
-      "Connection":"Keep-Alive",
-      "Accept-Encoding":"gzip",
-      "X-Forwarded-For":"37.232.82.193",
-      "CF-RAY":"845e0aebcb4f2dc9-FRA",
-      "Content-Length":"761",
-      "X-Forwarded-Proto":"https",
-      "CF-Visitor":"{\"scheme\":\"https\"}",
-      "sec-ch-ua":"\"Not_A Brand\";v=\"8\", \"Chromium\";v=\"120\", \"Google Chrome\";v=\"120\"",
-      "Content-Type":"multipart/form-data; boundary=----WebKitFormBoundaryLAHjsbgAkDmJ6zHI",
-      "x-requested-with":"XMLHttpRequest",
-      "sec-ch-ua-mobile":"?0",
-      "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "sec-ch-ua-platform":"\"Windows\"",
-      "Accept":"*/*",
-      "origin":"https://www.startstemcells.com",
-      "sec-fetch-site":"same-origin",
-      "sec-fetch-mode":"cors",
-      "sec-fetch-dest":"empty",
-      "Referer":"https://www.startstemcells.com/about-us.html",
-      "Accept-Language":"en-US,en;q=0.9",
-      "Cookie":"wpglobus-language-old=en; wpglobus-language=en; _fbp=fb.1.1705320797771.1566065836; _ga=GA1.2.506920936.1705320798; _gid=GA1.2.1674799066.1705320798; _ym_uid=170532079884669612; _ym_d=1705320798; _ym_isad=2; _ym_visorc=w; MCPopupClosed=yes; _ga_Q7VEY77FDW=GS1.1.1705320797.1.1.1705320840.0.0.0; _ga_XT3N20QTMR=GS1.1.1705320797.1.1.1705320899.60.0.0",
-      "priority":"u=1, i",
-      "CF-Connecting-IP":"37.232.82.193",
-      "CDN-Loop":"cloudflare",
-      "CF-IPCountry":"GE"
-   },
-   "submission":{
-      "id":10129,
-      "form_id":59,
-      "data":{
-         "name":"test me",
-         "phone":"591058618",
-         "email":"Kirill.Mizonov@sw21.com",
-         "agree":"on",
-         "clientid":"506920936.1705320798"
-      },
-      "ip_address":"172.70.246.102",
-      "user_agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "referer_url":"https://www.startstemcells.com/about-us.html",
-      "submitted_at":"2024-01-15 12:15:10"
-   },
-   "form":{
-      "ID":59,
-      "title":"Gutenberg - Get consultation",
-      "slug":"gutenberg-get-consultation",
-      "markup":"<div class=\"article__form-inner form form--red\">\r\n  <div class=\"form__inner\">\r\n    <label class=\"form__label\">\r\n      <span class=\"form__type\">Your Name</span>\r\n\t  <input type=\"text\" name=\"name\" />\r\n      <span class=\"form__fill\">Please fill out this field</span>\r\n    </label>\r\n    <label class=\"form__label\">\r\n      <span class=\"form__type\">Phone</span>\r\n\t  <input type=\"tel\" name=\"phone\" />\r\n      <span class=\"form__fill\">Please fill out this field</span>\r\n    </label>\r\n    <label class=\"form__label\">\r\n      <span class=\"form__type\">E-mail</span>\r\n\t  <input type=\"email\" name=\"email\" />\r\n      <span class=\"form__fill\">Please fill out this field</span>\r\n    </label>\r\n  </div>\r\n  <label class=\"form__agree\">\r\n\t<input type=\"checkbox\" name=\"agree\" checked>\r\n    <span class=\"form__agree-checkbox\">\r\n\t\t<svg><use xlink:href=\"/wp-content/themes/swissmedica/images/icons/check.svg#check\"></use></svg>\r\n    </span>\r\n    <span class=\"form__agree-text\">I agree to the <a href=\"https://www.startstemcells.com/term-of-use.html\">Terms of Use</a>, <a href=\"https://www.startstemcells.com/privacy-policy.html\">Privacy Policy</a> and <a href=\"https://www.startstemcells.com/notice-swiss-medica.html\">Notice Swiss Medica</a></span>\r\n  </label>\r\n  <br>\r\n  <input type=\"hidden\" name=\"clientid\" data-formclientid>\r\n  <input type=\"submit\" class=\"form__btn\" value=\"Get consultation\" />\r\n</div>",
-      "messages":{
-         "success":"Thank you! We will be in touch soon.",
-         "invalid_email":"Sorry, that email address looks invalid.",
-         "required_field_missing":"Please fill in the required fields.",
-         "error":"Oops. An error occurred.",
-         "file_too_large":"Uploaded file is too large.",
-         "file_upload_error":"An upload error occurred. Please try again later."
-      },
-      "settings":{
-         "save_submissions":"1",
-         "hide_after_success":"0",
-         "redirect_url":"",
-         "required_fields":"",
-         "email_fields":"email",
-         "enable_notifications":"1",
-         "actions":{
-            "0":{
-               "type":"mailchimp"
-            },
-            "4":{
-               "type":"webhook",
-               "url":"https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=EN",
-               "content_type":"form"
-            }
-         }
-      }
-   },
-   "location":{
-      "country":"",
-      "city":"Batumi",
-      "ip":"37.232.82.193"
-   },
-   "country":"Batumi"
-}
-"""
 
 
 @bp.route('/startstemcells_lead', methods=['POST', 'GET'], strict_slashes=False)
@@ -373,13 +253,17 @@ def create_lead_based_on_form_data(
     # пустым конфиг не будет, по умолчанию всегда английская воронка
     amo_config = amo_ids.get(lang) or amo_ids.get('EN')
     amo_client = SwissmedicaAPIClient()
-    # todo проверка на дубли
-    # existing_leads = list(amo_client.find_leads(query=phone, limit=1))
-    # lead_id = int(existing_leads[0]['id']) if existing_leads else None
-    # if lead_id:
-    #     # лид уже существует, отправим оповещение о том, что он попытался выйти на связь
-    #     pass
-    #     return Response(status=200)
+    # проверка на дубли
+    existing_leads = []
+    if phone:
+        existing_leads = list(amo_client.find_leads(query=phone, limit=1))
+    if not existing_leads and email:
+        existing_leads = list(amo_client.find_leads(query=email, limit=1))
+    lead_id = int(existing_leads[0]['id']) if existing_leads else None
+    if lead_id:
+        # лид уже существует, отправим оповещение о том, что он попытался выйти на связь
+        pass
+        return Response(status=200)
     # добавляем лид
     response = amo_client.add_lead_simple(
         title=f"{name} :: {site}",

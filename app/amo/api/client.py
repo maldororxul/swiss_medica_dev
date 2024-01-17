@@ -844,6 +844,39 @@ class APIClient:
             result.extend(chunk)
         return result
 
+    def get_user(self, _id: int) -> Dict:
+        """ Получить пользователя по идентификатору
+
+        Args:
+            _id: идентификатор пользователя
+
+        Returns:
+            данные пользователя
+        """
+        params = f'with=role,group' \
+                 f'&limit={DATA_LIMIT}'
+        response = self.__execute(endpoint='users', params=params, entity_id=_id)
+        return response.json() if response.status_code == 200 else {}
+
+    def get_pipeline_and_status(self, pipeline_id: int, status_id: int) -> Dict:
+        """ Название воронки и статуса
+
+        Args:
+            pipeline_id: идентификатор воронки
+            status_id: идентификатор статуса
+
+        Returns:
+            Название воронки и статуса
+        """
+        response = self.__execute(endpoint=f'leads/pipelines/{pipeline_id}')
+        data = response.json() if response.status_code == 200 else {}
+        status = {}
+        for item in (data.get('_embedded') or {}).get('statuses') or []:
+            if item['id'] == int(status_id):
+                status = item
+                break
+        return {'pipeline': data.get('name'), 'status': status.get('name')}
+
     def _get_users(self) -> List[Dict]:
         """ Получить список пользователей
 

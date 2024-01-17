@@ -87,7 +87,6 @@ def handle_autocall_success(data: Dict) -> Tuple[str, str, str]:
         processor=processor,
         lead=lead,
         amo_client=amo_client,
-        lead_id=lead_id,
         branch=branch,
         existing_tags=existing_tags
     )
@@ -147,7 +146,6 @@ def handle_new_lead_slow_reaction(data: Dict) -> Tuple[Optional[str], Optional[s
         processor=processor,
         lead=lead,
         amo_client=amo_client,
-        lead_id=lead_id,
         branch=branch,
         existing_tags=existing_tags
     )
@@ -162,7 +160,7 @@ def handle_new_lead_slow_reaction(data: Dict) -> Tuple[Optional[str], Optional[s
     )
 
 
-def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, existing_tags) -> str:
+def check_for_duplicated_leads(processor, lead, amo_client, branch, existing_tags) -> str:
     contacts = []
     for contact in (lead.get('_embedded') or {}).get('contacts') or []:
         contacts.append(amo_client.get_contact_by_id(contact_id=contact['id']))
@@ -179,7 +177,7 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
             if not contact:
                 continue
             for existing_lead in amo_client.find_leads(query=contact, limit=2) or []:
-                if str(existing_lead['id']) != str(lead_id):
+                if str(existing_lead['id']) != str(lead['id']):
                     duplicated = existing_lead
                     break
             time.sleep(0.25)
@@ -193,7 +191,7 @@ def check_for_duplicated_leads(processor, lead, amo_client, lead_id, branch, exi
         loss_reason = _embedded.get('loss_reason')
         is_spam = loss_reason[0]['name'] in ('SPAM', 'СПАМ') if loss_reason else False
         # получаем пользователя, ответственного за лид
-        duplicated_user = processor.get_user_by_id(user_id=duplicated.get('responsible_user_id'))
+        duplicated_user = amo_client.get_user(_id=duplicated.get('responsible_user_id'))
         duplicate = f"Duplicate: https://{branch}.amocrm.ru/leads/detail/{duplicated['id']}\n" \
                     f"Responsible for duplicate: {duplicated_user.name if duplicated_user else '???'}"
         if is_spam:
@@ -342,7 +340,6 @@ def handle_new_lead(data: Dict) -> Tuple[Optional[str], Optional[str], Optional[
         processor=processor,
         lead=lead,
         amo_client=amo_client,
-        lead_id=lead_id,
         branch=branch,
         existing_tags=existing_tags
     )

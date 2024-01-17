@@ -6,6 +6,7 @@ import uuid
 from threading import Thread
 from typing import Optional, List, Dict
 import requests
+import telebot
 from flask import request, jsonify, current_app
 
 from app.amo.api.chat_client import AmoChatsAPIClient
@@ -296,9 +297,8 @@ def send_telegram_notification(amo_client, branch, lead_id):
         return '200 OK HTTPS.', 200
     domain = lead_data['_links']['self']['href'].split('https://')[1].split('.')[0]
     # тегаем пользователя через @
-    processor = DATA_PROCESSOR.get(branch)()
-    user = processor.get_user_by_id(user_id=lead_data.get('responsible_user_id'))
-    user = user.name if user else ''
+    user = amo_client.get_user(_id=lead_data.get('responsible_user_id'))
+    user = user.get('name') or '' if user else ''
     telegram_name = None
     managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
     for manager in managers:
@@ -309,6 +309,11 @@ def send_telegram_notification(amo_client, branch, lead_id):
     msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}" \
           f"\nResponsible: {telegram_name if telegram_name else user}".strip()
     BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
+    # BWA send_telegram_notification
+    config = Config()
+    telegram_bot_token = config.sm_telegram_bot_token
+    for chat_id in config.sm_telegram_bwa_notification:
+        telebot.TeleBot(telegram_bot_token).send_message(chat_id, msg)
 
 
 @bp.route('/whatsapp_remove', methods=['GET', 'POST'])

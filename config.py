@@ -46,9 +46,17 @@ class Config:
     def connections_limit(self):
         return int(os.environ.get('CONNECTIONS_LIMIT'))
 
+    @property
+    def sm_telegram_bwa_notification(self):
+        return [int(x) for x in (os.environ.get('SM_TELEGRAM_BWA_NOTIFICATION') or '').split(',')]
+
     # @property
     # def SQLALCHEMY_TRACK_MODIFICATIONS(self):
     #     return os.environ.get('SQLALCHEMY_TRACK_MODIFICATIONS')
+
+    @property
+    def sm_telegram_bot_token(self):
+        return os.environ.get('SM_TELEGRAM_BOT_TOKEN')
 
     @property
     def chromedriver_path(self):

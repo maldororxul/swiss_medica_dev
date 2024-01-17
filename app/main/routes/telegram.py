@@ -3,10 +3,14 @@ __author__ = 'ke.mizonov'
 from typing import Dict, Callable
 import telebot
 from flask import request, current_app, Response
+
+from app.amo.api.client import SwissmedicaAPIClient
+from app.amo.processor.processor import SMDataProcessor
 from app.main import bp
 from app.main.routes.utils import get_data_from_post_request
 from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_in_touch, DATA_PROCESSOR, \
-    handle_new_lead_slow_reaction, get_data_from_external_api, handle_new_interaction
+    handle_new_lead_slow_reaction, get_data_from_external_api, handle_new_interaction, DUP_TAG, \
+    check_for_duplicated_leads
 from config import Config
 
 BOTS = {
@@ -92,6 +96,135 @@ def set_telegram_webhooks():
 @bp.route('/new_lead', methods=['POST'])
 def new_lead():
     return reply_on_lead_event(_request=request, msg_builder=handle_new_lead)
+
+
+@bp.route('/new_lead_sm', methods=['POST'])
+def new_lead_sm():
+    """ Отправляет оповещение о новых лидах / перемещении лидов в Telegram
+
+    Notes:
+        По текущим настройкам работает с ботом sm_leads_informer_bot
+    """
+    # из GET-параметров вытаскиваем идентификаторы чатов, в которые нужно написать
+    #   Строка должна выглядеть так: /new_lead_sm?channels=-948431515,-4069329874
+    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',')]
+    # предобработка данных запроса
+    data = get_data_from_post_request(_request=request)
+    if not data:
+        return 'Unsupported Media Type', 415
+    # определяем тип события - либо добавили новый лид, либо переместили существующий
+    lead_id = data.get('leads[add][0][id]')
+    event = 'New lead'
+    key = 'add'
+    if not lead_id:
+        event = 'Lead moved'
+        key = 'status'
+        lead_id = data.get(f'leads[{key}][0][id]')
+    if not lead_id:
+        return 'Ok', 200
+    # поддомен (swissmedica) получаем из запроса
+    branch = data.get('account[subdomain]')
+    # API-клиент для обращения к Amo
+    amo_client = SwissmedicaAPIClient()
+    # получаем лид
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    # получаем пользователя, ответственного за лид
+    user = amo_client.get_user(_id=lead.get('responsible_user_id'))
+    # получаем названия воронки и статуса
+    pipeline = amo_client.get_pipeline_and_status(
+        pipeline_id=data.get(f'leads[{key}][0][pipeline_id]'),
+        status_id=data.get(f'leads[{key}][0][status_id]')
+    )
+    # получаем теги
+    existing_tags = [
+        {'name': tag['name']}
+        for tag in (lead.get('_embedded') or {}).get('tags') or []
+        if tag['name'] != DUP_TAG
+    ]
+    tags_str = ', '.join([tag['name'] for tag in existing_tags])
+    if tags_str:
+        tags_str = f'{tags_str}'
+    # проверка на дубли (находит первый дубль из возможных)
+    duplicate = check_for_duplicated_leads(
+        processor=SMDataProcessor(),
+        lead=lead,
+        amo_client=amo_client,
+        branch=branch,
+        existing_tags=existing_tags
+    )
+    message = f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n" \
+              f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n" \
+              f"Tags: {tags_str}\n" \
+              f"Responsible: {user.get('name') or ''}\n" \
+              f"{duplicate}".strip()
+    telegram_bot_token = Config().sm_telegram_bot_token
+    for chat_id in chat_ids:
+        telebot.TeleBot(telegram_bot_token).send_message(chat_id, message)
+    return 'Ok', 200
+
+
+@bp.route('/new_communication_sm', methods=['POST'])
+def new_communication_sm():
+    # из GET-параметров вытаскиваем идентификаторы чатов, в которые нужно написать
+    #   Строка должна выглядеть так: /new_communication_sm?channels=-948431515,-4069329874
+    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',')]
+    # предобработка данных запроса
+    data = get_data_from_post_request(_request=request)
+    if not data:
+        return 'Unsupported Media Type', 415
+    print('new_communication_sm', data)
+
+    # todo
+
+    telegram_bot_token = Config().sm_telegram_bot_token
+    message = 'test'
+    for chat_id in chat_ids:
+        telebot.TeleBot(telegram_bot_token).send_message(chat_id, message)
+    return 'Ok', 200
+
+
+@bp.route('/missed_call_sm', methods=['POST'])
+def missed_call_sm():
+    """ Обработка результата пропущенного звонка (Sipuni)
+
+    Args:
+        data: данные, пришедшие через webhook в формате
+            {
+              "call_args": {
+                "call_id": "1698153245.6379",
+                "event": 2,
+                "dst_type": 1,
+                "dst_num": "74996470000",
+                "src_type": 1,
+                "src_num": "74996470001",
+                "timestamp": "1698153245",
+                "pbx_user_id": "187484",
+                "is_autocall": false,
+                "operator_name": "Николай Смирнов",
+                "status": "NOANSWER",
+                "call_start_timestamp": "1698153235",
+                "call_record_link": "https://commons.wikimedia.org/wiki/File:Heart_Monitor_Beep--freesound.org.mp3",
+                "line_number": "74996470000",
+                "line_name": "Общая",
+                "tree_name": "Входащая",
+                "tree_number": "00090001"
+              },
+    Notes:
+        Запрос отправляется через Node.js функцию со стороны Sipuni
+    """
+    # todo исправить Node.js-функцию
+    # из GET-параметров вытаскиваем идентификаторы чатов, в которые нужно написать
+    #   Строка должна выглядеть так: /missed_call_sm?channels=-948431515,-4069329874
+    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',')]
+    # предобработка данных запроса
+    data = get_data_from_post_request(_request=request)
+    if not data:
+        return 'Unsupported Media Type', 415
+    message = f"Missed call: {data['src_num']}"
+    telegram_bot_token = Config().sm_telegram_bot_token
+    for chat_id in chat_ids:
+        telebot.TeleBot(telegram_bot_token).send_message(chat_id, message)
+    return 'Ok', 200
 
 
 @bp.route('/new_lead_slow_reaction', methods=['POST'])
