@@ -282,6 +282,9 @@ def process_whatsapp_message(data: Dict, app):
 
 
 def send_telegram_notification(amo_client, branch, lead_id):
+    if not lead_id:
+        # если заявка только что создана и попала в неразобранное, lead_id = None
+        return
     # отправляем оповещение о новом сообщении в телеграм
     config = Config()
     lead_data = amo_client.get_lead_by_id(lead_id=lead_id)
@@ -308,7 +311,7 @@ def send_telegram_notification(amo_client, branch, lead_id):
     telegram_name = f"@{telegram_name}" if telegram_name else ''
     msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}" \
           f"\nResponsible: {telegram_name if telegram_name else user}".strip()
-    BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
+    # deprecated BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
     # BWA send_telegram_notification
     config = Config()
     telegram_bot_token = config.sm_telegram_bot_token

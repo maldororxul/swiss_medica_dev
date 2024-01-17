@@ -225,7 +225,7 @@ def create_lead_based_on_form_data(
     diagnosis: str
 ):
     referer = headers.get('Referer') or ''
-    origin = headers.get('Origin') or ''
+    origin = headers.get('Origin') or headers.get('origin') or ''
     site = origin.replace('https://', '').replace('http://', '')
     country_data = get_country_by_ip(ip=ip) if ip else {}
     country, city = country_data.get('country'), country_data.get('city')

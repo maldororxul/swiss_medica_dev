@@ -12,6 +12,8 @@ from app.main.utils import handle_new_lead, handle_autocall_success, handle_get_
     handle_new_lead_slow_reaction, get_data_from_external_api, handle_new_interaction, DUP_TAG, \
     check_for_duplicated_leads
 from config import Config
+from modules.constants.constants.constants import GoogleSheets
+from modules.google_api.google_api.client import GoogleAPIClient
 
 BOTS = {
     pipeline_or_branch: telebot.TeleBot(params['TOKEN'])
@@ -107,7 +109,7 @@ def new_lead_sm():
     """
     # из GET-параметров вытаскиваем идентификаторы чатов, в которые нужно написать
     #   Строка должна выглядеть так: /new_lead_sm?channels=-948431515,-4069329874
-    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',')]
+    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',') if x]
     # предобработка данных запроса
     data = get_data_from_post_request(_request=request)
     if not data:
@@ -165,19 +167,62 @@ def new_lead_sm():
 
 @bp.route('/new_communication_sm', methods=['POST'])
 def new_communication_sm():
+    """
+    {'leads[call_in][0][id]': '34484349', 'leads[call_in][0][status_id]': '19045762', 'leads[call_in][0][pipeline_id]': '772717', 'account[id]': '9884604', 'account[subdomain]': 'swissmedica'}
+    Returns:
+
+    """
     # из GET-параметров вытаскиваем идентификаторы чатов, в которые нужно написать
     #   Строка должна выглядеть так: /new_communication_sm?channels=-948431515,-4069329874
-    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',')]
+    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',') if x]
     # предобработка данных запроса
     data = get_data_from_post_request(_request=request)
     if not data:
         return 'Unsupported Media Type', 415
-    print('new_communication_sm', data)
-
-    # todo
-
+    # входящий звонок или входящее письмо
+    new_call = data.get('leads[call_in][0][id]')
+    new_mail = data.get('leads[mail_in][0][id]')
+    event = 'New call' if new_call else ''
+    if not event:
+        event = 'New email' if new_mail else ''
+    lead_id = new_call or new_mail
+    if not lead_id:
+        return 'Ok', 200
+    # поддомен (swissmedica) получаем из запроса
+    branch = data.get('account[subdomain]')
+    # API-клиент для обращения к Amo
+    amo_client = SwissmedicaAPIClient()
+    # получаем лид
+    lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    # получаем пользователя, ответственного за лид
+    user = amo_client.get_user(_id=lead.get('responsible_user_id'))
+    # получаем названия воронки и статуса
+    pipeline = amo_client.get_pipeline_and_status(
+        pipeline_id=data.get(f'leads[call_in][0][pipeline_id]') or data.get(f'leads[mail_in][0][pipeline_id]'),
+        status_id=data.get(f'leads[call_in][0][status_id]') or data.get(f'leads[mail_in][0][status_id]')
+    )
+    # получаем теги
+    existing_tags = [
+        {'name': tag['name']}
+        for tag in (lead.get('_embedded') or {}).get('tags') or []
+        if tag['name'] != DUP_TAG
+    ]
+    tags_str = ', '.join([tag['name'] for tag in existing_tags])
+    if tags_str:
+        tags_str = f'{tags_str}'
+    # тегаем пользователя через @
+    telegram_name = None
+    managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
+    for manager in managers:
+        if manager.get('manager') == user:
+            telegram_name = manager.get('telegram')
+            break
+    telegram_name = f"@{telegram_name}" if telegram_name else ''
+    message = f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n" \
+              f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n" \
+              f"Tags: {tags_str}\n" \
+              f"Responsible: {telegram_name or user.get('name') or ''}".strip()
     telegram_bot_token = Config().sm_telegram_bot_token
-    message = 'test'
     for chat_id in chat_ids:
         telebot.TeleBot(telegram_bot_token).send_message(chat_id, message)
     return 'Ok', 200
@@ -212,10 +257,9 @@ def missed_call_sm():
     Notes:
         Запрос отправляется через Node.js функцию со стороны Sipuni
     """
-    # todo исправить Node.js-функцию
     # из GET-параметров вытаскиваем идентификаторы чатов, в которые нужно написать
     #   Строка должна выглядеть так: /missed_call_sm?channels=-948431515,-4069329874
-    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',')]
+    chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',') if x]
     # предобработка данных запроса
     data = get_data_from_post_request(_request=request)
     if not data:
@@ -273,6 +317,7 @@ def missed_call_handler():
             'callId': '1688471056.154959'
         }
     """
+    # deprecated
     return get_data_from_external_api(
         request=request,
         handler_func=handle_missed_call_result,
