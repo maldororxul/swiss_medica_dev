@@ -1,5 +1,7 @@
 """ Маршруты для работы Telegram-ботов """
 __author__ = 'ke.mizonov'
+
+import time
 from typing import Dict, Callable
 import telebot
 from flask import request, current_app, Response
@@ -175,6 +177,7 @@ def new_communication_sm():
     # из GET-параметров вытаскиваем идентификаторы чатов, в которые нужно написать
     #   Строка должна выглядеть так: /new_communication_sm?channels=-948431515,-4069329874
     chat_ids = [int(x) for x in (request.args.get('channels') or '').split(',') if x]
+    only_missed = request.args.get('only_missed')
     # предобработка данных запроса
     data = get_data_from_post_request(_request=request)
     if not data:
@@ -182,10 +185,13 @@ def new_communication_sm():
     # входящий звонок или входящее письмо
     new_call = data.get('leads[call_in][0][id]')
     new_mail = data.get('leads[mail_in][0][id]')
+    new_chat = data.get('leads[chat][0][id]')
     event = 'New call' if new_call else ''
     if not event:
         event = 'New email' if new_mail else ''
-    lead_id = new_call or new_mail
+    if not event:
+        event = 'New chat' if new_chat else ''
+    lead_id = new_call or new_mail or new_chat
     if not lead_id:
         return 'Ok', 200
     # поддомен (swissmedica) получаем из запроса
@@ -194,6 +200,17 @@ def new_communication_sm():
     amo_client = SwissmedicaAPIClient()
     # получаем лид
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
+    # если нам нужны только пропущенные звонки
+    if only_missed and new_call:
+        limit = 10
+        notes = amo_client.get_entity_notes(
+            params=f'filter[note_type]=call_in&limit={limit}&order=created_at',
+            limit=limit,
+            entity='lead',
+            entity_id=lead['id']
+        )
+        if notes:
+            print('last note', notes[-1])
     # получаем пользователя, ответственного за лид
     user = amo_client.get_user(_id=lead.get('responsible_user_id'))
     # получаем названия воронки и статуса

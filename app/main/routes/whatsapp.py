@@ -4,7 +4,7 @@ __author__ = 'ke.mizonov'
 import time
 import uuid
 from threading import Thread
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Callable
 import requests
 import telebot
 from flask import request, jsonify, current_app
@@ -281,7 +281,7 @@ def process_whatsapp_message(data: Dict, app):
             """
 
 
-def send_telegram_notification(amo_client, branch, lead_id):
+def send_telegram_notification(amo_client, branch: str, lead_id: int):
     if not lead_id:
         # если заявка только что создана и попала в неразобранное, lead_id = None
         return
@@ -315,7 +315,8 @@ def send_telegram_notification(amo_client, branch, lead_id):
     # BWA send_telegram_notification
     config = Config()
     telegram_bot_token = config.sm_telegram_bot_token
-    for chat_id in config.sm_telegram_bwa_notification:
+    chat_ids = config.sm_telegram_bwa_notification.split(',')
+    for chat_id in chat_ids:
         telebot.TeleBot(telegram_bot_token).send_message(chat_id, msg)
 
 

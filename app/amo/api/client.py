@@ -391,7 +391,7 @@ class APIClient:
     def get_tawk_lead_notes(self, lead_id: int) -> Optional[Dict]:
         limit = 250
         params = f'limit={limit}&order=created_at'
-        notes = self._get_entity_notes(params=params, limit=limit, entity='lead', entity_id=lead_id)
+        notes = self.get_entity_notes(params=params, limit=limit, entity='lead', entity_id=lead_id)
         for note in notes:
             params = note.get('params') or {}
             text = params.get('text')
@@ -433,12 +433,12 @@ class APIClient:
         # у нас две отдельные сущности, к которым привязаны примечания: лиды и контакты
         result = []
         for entity in ('leads', 'contacts'):
-            notes = self._get_entity_notes(params=params, limit=limit, entity=entity)
+            notes = self.get_entity_notes(params=params, limit=limit, entity=entity)
             if notes:
                 result.extend(notes)
         return result
 
-    def _get_entity_notes(self, params: str, limit: int, entity: str, entity_id: Optional[int] = None) -> List[Dict]:
+    def get_entity_notes(self, params: str, limit: int, entity: str, entity_id: Optional[int] = None) -> List[Dict]:
         """ Получить список примечаний
 
         Args:
