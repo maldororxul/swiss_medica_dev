@@ -315,8 +315,9 @@ def send_telegram_notification(amo_client, branch: str, lead_id: int):
     # BWA send_telegram_notification
     config = Config()
     telegram_bot_token = config.sm_telegram_bot_token
-    chat_ids = config.sm_telegram_bwa_notification.split(',')
-    for chat_id in chat_ids:
+    for chat_id in config.sm_telegram_bwa_notification:
+        if not chat_id:
+            continue
         telebot.TeleBot(telegram_bot_token).send_message(chat_id, msg)
 
 

@@ -43,6 +43,7 @@ def reply_on_lead_event(_request, msg_builder: Callable):
         bot_key = branch
     if not params:
         return 'Bot not found', 404
+    print('reply_on_lead_event', chat_key, params.get(chat_key))
     BOTS[bot_key].send_message(params.get(chat_key), message)
     return 'Ok', 200
 
@@ -203,12 +204,12 @@ def new_communication_sm():
     # если нам нужны только пропущенные звонки
     if only_missed and new_call:
         limit = 10
-        notes = amo_client.get_entity_notes(
+        notes = [x for x in amo_client.get_entity_notes(
             params=f'filter[note_type]=call_in&limit={limit}&order=created_at',
             limit=limit,
             entity='lead',
             entity_id=lead['id']
-        )
+        ) or []]
         if notes:
             print('last note', notes[-1])
     # получаем пользователя, ответственного за лид

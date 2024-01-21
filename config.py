@@ -48,7 +48,7 @@ class Config:
 
     @property
     def sm_telegram_bwa_notification(self):
-        return [int(x) for x in (os.environ.get('SM_TELEGRAM_BWA_NOTIFICATION') or '').split(',')]
+        return [int(x) for x in (os.environ.get('SM_TELEGRAM_BWA_NOTIFICATION') or '').split(',') if x]
 
     # @property
     # def SQLALCHEMY_TRACK_MODIFICATIONS(self):
