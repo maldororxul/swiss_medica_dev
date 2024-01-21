@@ -205,12 +205,12 @@ def new_communication_sm():
     # получаем лид
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
     # если нам нужны только пропущенные звонки
-    print('only_missed and new_call?')
     if only_missed and new_call:
-        print('yes')
+        print('only_missed and new_call')
         limit = 10
+        params = f'limit={limit}&order=created_at'
         notes = [x for x in amo_client.get_entity_notes(
-            params=f'filter[note_type]=call_in&limit={limit}&order=created_at',
+            params=params,
             limit=limit,
             entity='lead',
             entity_id=lead['id']
