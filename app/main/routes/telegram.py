@@ -194,7 +194,9 @@ def new_communication_sm():
     if not event:
         event = 'New chat' if new_chat else ''
     lead_id = new_call or new_mail or new_chat
+    print('lead_id', lead_id)
     if not lead_id:
+        print('new_communication_sm lead not found')
         return 'Ok', 200
     # поддомен (swissmedica) получаем из запроса
     branch = data.get('account[subdomain]')
@@ -203,7 +205,9 @@ def new_communication_sm():
     # получаем лид
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
     # если нам нужны только пропущенные звонки
+    print('only_missed and new_call?')
     if only_missed and new_call:
+        print('yes')
         limit = 10
         notes = [x for x in amo_client.get_entity_notes(
             params=f'filter[note_type]=call_in&limit={limit}&order=created_at',
