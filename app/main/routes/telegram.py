@@ -181,6 +181,7 @@ def new_communication_sm():
     only_missed = request.args.get('only_missed')
     # предобработка данных запроса
     data = get_data_from_post_request(_request=request)
+    print('new_communication_sm data', data)
     if not data:
         return 'Unsupported Media Type', 415
     # входящий звонок или входящее письмо
