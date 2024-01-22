@@ -391,7 +391,7 @@ class APIClient:
     def get_tawk_lead_notes(self, lead_id: int) -> Optional[Dict]:
         limit = 250
         params = f'limit={limit}&order=created_at'
-        notes = self.get_entity_notes(params=params, limit=limit, entity='lead', entity_id=lead_id)
+        notes = self.get_entity_notes(params=params, limit=limit, entity='leads', entity_id=lead_id)
         for note in notes:
             params = note.get('params') or {}
             text = params.get('text')
@@ -437,6 +437,38 @@ class APIClient:
             if notes:
                 result.extend(notes)
         return result
+
+    def get_lead_notes(self, lead_id: int, note_type: Optional[str] = None, limit: int = 10, page: Optional[int] = None):
+        params = f'filter[entity_id]={lead_id}' \
+                 f'&limit={limit}' \
+                 f'&order=created_at'
+        if note_type:
+            params = f'{params}&filter[note_type]={note_type}'
+        return self.__get_data(endpoint='notes', params=params, limit=limit, entity='leads', page=page)
+
+    def get_contact_notes(self, contact_id: int, note_type: Optional[str] = None, limit: int = 10, page: Optional[int] = None):
+        params = f'filter[entity_id]={contact_id}' \
+                 f'&limit={limit}' \
+                 f'&order=created_at'
+        if note_type:
+            params = f'{params}&filter[note_type]={note_type}'
+        return self.__get_data(endpoint='notes', params=params, limit=limit, entity='contacts', page=page)
+
+    def get_lead_events(self, lead_id: int, event_type: Optional[str] = None, limit: int = 10, page: Optional[int] = None):
+        params = f'filter[entity]=leads&filter[entity_id]={lead_id}' \
+                 f'&limit={limit}' \
+                 f'&order=created_at'
+        if event_type:
+            params = f'{params}&filter[type]={event_type}'
+        return self.__get_data(endpoint='events', params=params, limit=limit, page=page)
+
+    def get_contact_events(self, contact_id: int, event_type: Optional[str] = None, limit: int = 10, page: Optional[int] = None):
+        params = f'filter[entity]=contacts&filter[entity_id]={contact_id}' \
+                 f'&limit={limit}' \
+                 f'&order=created_at'
+        if event_type:
+            params = f'{params}&filter[type]={event_type}'
+        return self.__get_data(endpoint='events', params=params, limit=limit, page=page)
 
     def get_entity_notes(self, params: str, limit: int, entity: str, entity_id: Optional[int] = None) -> List[Dict]:
         """ Получить список примечаний
@@ -771,20 +803,40 @@ class APIClient:
                  f'&order=created_at'
         return self.__get_data(endpoint='leads', params=params)
 
-    def find_contacts(self, query: str, limit: int = 1) -> List[Dict]:
+    def find_contacts(self, query: str, limit: int = 1, field_code: Optional[str] = None) -> List[Dict]:
         """ Поиск сделок по запросу
 
         Args:
             query: запрос для поиска
             limit: ограничение по количеству найденных лидов
+            field_code: код поля, по которому ищем контакт
 
         Returns:
             список сделок
         """
+        _limit = limit
+        if field_code:
+            # если задано конкретное поле, мы должны вытянуть с источника больше записей для уточнения поиска
+            _limit += 10
+        query = query.lower()
         params = f'query={query}' \
-                 f'&limit={limit}' \
+                 f'&limit={_limit}' \
                  f'&order=created_at'
-        return self.__get_data(endpoint='contacts', params=params)
+        collection = self.__get_data(endpoint='contacts', params=params)
+        if not field_code:
+            return collection
+        result = []
+        for item in collection:
+            for cf in item.get('custom_fields_values') or []:
+                if cf.get('field_code') != field_code:
+                    continue
+                value = (cf.get('values') or [{}])[0].get('value') or ''
+                if query in str(value).lower():
+                    result.append(item)
+                    break
+            if len(result) == limit:
+                break
+        return result
 
     def _get_pipelines_and_statues(self) -> Dict:
         """ Получить словарь воронок и их статусов

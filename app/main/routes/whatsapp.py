@@ -141,7 +141,6 @@ def whatsapp_webhook():
 
 
 def process_whatsapp_message(data: Dict, app):
-    # Здесь ваш код для обработки данных, например, загрузка файла
     print('incoming WhatsApp data:', data)
     with app.app_context():
         """
@@ -183,7 +182,7 @@ def process_whatsapp_message(data: Dict, app):
             # print('init amo api client...')
             amo_client = API_CLIENT.get(branch)()
             # print('searching contacts...', phone[-8:])
-            contacts = [x for x in amo_client.find_contacts(query=phone[-8:]) or []]
+            contacts = [x for x in amo_client.find_contacts(query=phone[-8:], field_code='PHONE') or []]
             if contacts:
                 contact_id = contacts[0]['id']
                 # print('contact found!', contacts)

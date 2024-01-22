@@ -194,7 +194,6 @@ def new_communication_sm():
     if not event:
         event = 'New chat' if new_chat else ''
     lead_id = new_call or new_mail or new_chat
-    print('lead_id', lead_id)
     if not lead_id:
         print('new_communication_sm lead not found')
         return 'Ok', 200
@@ -205,24 +204,32 @@ def new_communication_sm():
     # получаем лид
     lead = amo_client.get_lead_by_id(lead_id=lead_id)
     # если нам нужны только пропущенные звонки
-    if only_missed and new_call:
-        print('only_missed and new_call')
-        limit = 10
-        params = f'limit={limit}&order=created_at'
-        notes = [x for x in amo_client.get_entity_notes(
-            params=params,
-            limit=limit,
-            entity='lead',
-            entity_id=lead['id']
+    if new_call:
+        contacts = (lead.get('_embedded') or {}).get('contacts') or [{}]
+        contact_id = contacts[0].get('id')
+        if not contact_id:
+            print('new_communication_sm contact not found')
+            return 'Ok', 200
+        # получаем заметку о последнем входящем звонке
+        notes = [x for x in amo_client.get_contact_notes(
+            contact_id=contact_id,
+            note_type='call_in',
+            limit=1,
+            page=1
         ) or []]
-        if notes:
-            print('last note', notes[-1])
+        last_note = notes[-1] if notes else {}
+        duration = (last_note.get('params') or {}).get('duration')
+        if duration == 0:
+            event = 'Missed call'
+        elif only_missed:
+            # нас интересуют только пропущенные звонки - этот звонок не пропущен
+            return 'Ok', 200
     # получаем пользователя, ответственного за лид
     user = amo_client.get_user(_id=lead.get('responsible_user_id'))
     # получаем названия воронки и статуса
     pipeline = amo_client.get_pipeline_and_status(
-        pipeline_id=data.get(f'leads[call_in][0][pipeline_id]') or data.get(f'leads[mail_in][0][pipeline_id]'),
-        status_id=data.get(f'leads[call_in][0][status_id]') or data.get(f'leads[mail_in][0][status_id]')
+        pipeline_id=data.get(f'leads[call_in][0][pipeline_id]') or data.get(f'leads[mail_in][0][pipeline_id]') or data.get(f'leads[chat][0][pipeline_id]'),
+        status_id=data.get(f'leads[call_in][0][status_id]') or data.get(f'leads[mail_in][0][status_id]') or data.get(f'leads[chat][0][status_id]')
     )
     # получаем теги
     existing_tags = [
