@@ -196,6 +196,7 @@ def swissmedica_org_lead():
     """ Пробрасывавет в AMO лиды с сайта swissmedica.org """
     data: Dict = request.json
     print(data)
+    return Response(status=200)
 
 
 @bp.route('/startstemcells_lead', methods=['POST', 'GET'], strict_slashes=False)
