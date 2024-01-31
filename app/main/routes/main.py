@@ -191,6 +191,13 @@ def arrival_sync():
     return render_template('arrival_sync.html')
 
 
+@bp.route('/swissmedica_org_lead', methods=['POST', 'GET'], strict_slashes=False)
+def swissmedica_org_lead():
+    """ Пробрасывавет в AMO лиды с сайта swissmedica.org """
+    data: Dict = request.json
+    print(data)
+
+
 @bp.route('/startstemcells_lead', methods=['POST', 'GET'], strict_slashes=False)
 def startstemcells_lead():
     """ Пробрасывавет в AMO лиды с сайта startstemcells.com """
