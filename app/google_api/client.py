@@ -364,6 +364,12 @@ class GoogleAPIClient:
         # красим A1 в белый в знак того, что обновление завершено
         self.paint_cells(sheet_id=sheet_id, red=1, green=1, blue=1)
 
+    def add_row(self, row_data_dict: Dict):
+        rows = self.get_sheet() or []
+        next_row = len(rows) + 1
+        self.__add_rows(sheet_id=self.sheet_id, next_row=next_row, length=1)
+        self.__write(collection=[row_data_dict], start_row=next_row)
+
     def update_leads_quantity(self, users: Dict):
         """ Обновляет количество лидов по менеджерам
 

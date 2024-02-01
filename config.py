@@ -537,3 +537,10 @@ class Config:
             '1847': {"n": "Contact form - FR", "r": "FR", "l": 1}
         }
         # return json.loads(os.environ.get('STARTSTEMCELLS_FORMS') or '')
+
+    @property
+    def swissmewdica_org_forms(self):
+        return {
+            'form480544796': {"n": "Innovative Therapy: EN", "r": "EN", "l": 0},
+        }
+        # return json.loads(os.environ.get('STARTSTEMCELLS_FORMS') or '')

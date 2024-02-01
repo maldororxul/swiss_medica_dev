@@ -1,14 +1,13 @@
 """ Общие маршруты """
 __author__ = 'ke.mizonov'
 from datetime import datetime
-from typing import Union, Type, Dict
-from urllib.parse import urlparse, parse_qs
-
+from typing import Union, Type, Dict, Optional
 from apscheduler.jobstores.base import JobLookupError
 from flask import render_template, current_app, redirect, url_for, request, Response
 from app import db, socketio
-from app.amo.api.chat_client import AmoChatsAPIClient
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
+from app.amo.processor.processor import GoogleSheets
+from app.google_api.client import GoogleAPIClient
 from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
 from app.main.processors import DATA_PROCESSOR
@@ -204,12 +203,39 @@ def swissmedica_org_lead():
         'Checkbox': 'yes',
         'LP4_EN': 'LP4_EN',
         'tranid': '725354:5774608671',
-        'COOKIES': ' _fbp=fb.1.1692261723692.1607646662; _ym_uid=1692261724710250210; _ym_d=1692261724; tildauid=1692261725123.513957; _gcl_au=1.1.523246661.1701948890; rerf=AAAAAGW6VFwObn+DAzEeAg==; _gid=GA1.2.164053568.1706710111; _ym_isad=2; _ym_visorc=w; tildasid=1706765241461.327595; _uetsid=fb0967f0c04211ee83e401378e0b8d50; _uetvid=fb098570c04211eeaed7851553f3f724; _gat_gtag_UA_148716138_1=1; _ga=GA1.1.601091886.1692261724; previousUrl=swissmedica.org%2Finnovative-therapy; _ga_XXMR2575TF=GS1.1.1706765238.15.1.1706769087.31.0.0', 'formid': 'form480544796'}
+        'COOKIES': ' _fbp=fb.1.1692261723692.1607646662; _ym_uid=1692261724710250210; _ym_d=1692261724; tildauid=1692261725123.513957; _gcl_au=1.1.523246661.1701948890; rerf=AAAAAGW6VFwObn+DAzEeAg==; _gid=GA1.2.164053568.1706710111; _ym_isad=2; _ym_visorc=w; tildasid=1706765241461.327595; _uetsid=fb0967f0c04211ee83e401378e0b8d50; _uetvid=fb098570c04211eeaed7851553f3f724; _gat_gtag_UA_148716138_1=1; _ga=GA1.1.601091886.1692261724; previousUrl=swissmedica.org%2Finnovative-therapy; _ga_XXMR2575TF=GS1.1.1706765238.15.1.1706769087.31.0.0',
+        'formid': 'form480544796'
+    }
     """
+    config = Config().swissmewdica_org_forms
     data: Dict = request.json
-    print(type(request.headers), request.headers)
-    print(request.cookies)
-    print(data)
+    # определяем идентификатор формы
+    # cookies = data.get('COOKIES')       # здесь приходит строка!!
+    form_id = data.get('formid')
+    form_config = config.get(form_id) or {}
+    # записываем данные в google-таблицу
+    append_form_data_to_google_sheets(form_data={
+        'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'source': f"swissmedica.org {data.get('Clients_Country') or ''}".strip(),
+        'name': data.get('Name') or '',
+        'phone': data.get('Phone') or '',
+        'email': data.get('Email') or '',
+        'msg': data.get('Please_describe_your_problem') or ''
+    })
+    # # для части форм сделки в Amo не создаем (флаг 'l' != 1)
+    # if not form_config or form_config['l'] != 1:
+    #     print('swissmedica_org_lead config error')
+    #     return Response(status=200)
+    # create_lead_based_on_form_data(
+    #     lang=form_config['r'],  # регион / язык, ключ "r"
+    #     ip=data.get('ip'),
+    #     headers=dict(request.headers) or {},        # тут есть сомнения насчет формата
+    #     name=data.get('Name'),
+    #     phone=clear_phone(data.get('Phone') or ''),
+    #     email=data.get('Email') or '',
+    #     diagnosis=data.get('Please_describe_your_problem') or '',
+    #     country_=data.get('Clients_Country')
+    # )
     return Response(status=200)
 
 
@@ -221,14 +247,23 @@ def startstemcells_lead():
     form_data = data.get('post') or {}
     # определяем идентификатор формы
     form_id = form_data.get('_hf_form_id')
-    form_config = config.get(form_id)
+    form_config = config.get(form_id) or {}
+    # записываем данные в google-таблицу
+    append_form_data_to_google_sheets(form_data={
+        'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'source': f"startstemcells {form_config.get('r') or ''}".strip(),
+        'name': form_data.get('name') or '',
+        'phone': form_data.get('phone') or '',
+        'email': form_data.get('email') or '',
+        'msg': form_data.get('diagnosis') or ''
+    })
     # для части форм сделки в Amo не создаем (флаг 'l' != 1)
     if not form_config or form_config['l'] != 1:
         print('startstemcells_lead config error')
         return Response(status=200)
     create_lead_based_on_form_data(
         lang=form_config['r'],  # регион / язык, ключ "r"
-        ip=data.get('ip') or (data.get('location') or {}).get('ip'),     # fixme depr 'location'
+        ip=data.get('ip') or (data.get('location') or {}).get('ip'),
         headers=data.get('headers') or {},
         name=form_data.get('name'),
         phone=clear_phone(form_data.get('phone') or ''),
@@ -238,6 +273,21 @@ def startstemcells_lead():
     return Response(status=200)
 
 
+def append_form_data_to_google_sheets(form_data):
+    if len(form_data) != 6:
+        return
+    for key in ('date', 'source', 'name', 'phone', 'email', 'msg'):
+        if key not in form_data:
+            return
+    try:
+        GoogleAPIClient(
+            book_id=GoogleSheets.LeadsFromSites.value,
+            sheet_title='Leads'
+        ).add_row(form_data)
+    except Exception as exc:
+        print(exc)
+
+
 def create_lead_based_on_form_data(
     lang: str,
     ip: str,
@@ -245,13 +295,17 @@ def create_lead_based_on_form_data(
     name: str,
     phone: str,
     email: str,
-    diagnosis: str
+    diagnosis: str,
+    country_: Optional[str] = None
 ):
     referer = headers.get('Referer') or ''
     origin = headers.get('Origin') or headers.get('origin') or ''
     site = origin.replace('https://', '').replace('http://', '')
     country_data = get_country_by_ip(ip=ip) if ip else {}
     country, city = country_data.get('country'), country_data.get('city')
+    # если страну по ip не определили, но она указана явно
+    if not country and country_:
+        country = country_
     utm_dict = get_args_from_url(url=referer) if referer else {}
     spoken_language = {'EN': 'English', 'DE': 'German', 'FR': 'French', 'IT': 'Italian'}
     custom_fields_values = [
@@ -308,12 +362,17 @@ def create_lead_based_on_form_data(
 
 @bp.route('/cellulestaminali_lead', methods=['POST', 'GET'], strict_slashes=False)
 def cellulestaminali_lead():
-    # try:
-    #     print('cellulestaminali_lead data', request.json)
-    # except:
-    #     pass
     data: Dict = request.json
     form_data = data.get('post') or {}
+    # записываем данные в google-таблицу
+    append_form_data_to_google_sheets(form_data={
+        'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'source': f"cellulestaminali {'IT'}".strip(),
+        'name': form_data.get('name') or '',
+        'phone': form_data.get('phone') or '',
+        'email': form_data.get('email') or '',
+        'msg': form_data.get('message') or ''
+    })
     create_lead_based_on_form_data(
         lang='IT',  # регион / язык, ключ "r"
         ip=data.get('ip'),

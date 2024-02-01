@@ -32,6 +32,7 @@ class GoogleSheets(Enum):
     ScheduleSM = '1ZnQwx14FMhzFogbvsc86AWAqY9XhRsMo7Y8kGbrrIEE'
     ArrivalSM = '1USpNOW2evtLYR73glcQOy1yEErvixBrc0UiGPOtcQog'
     Managers = '1BZB73bLbFG-zm2aRPzmzJIrN0OlktOeOEx0fEl2fplA'
+    LeadsFromSites = '1OLqMKtNBf6DlI_ks9kJZ9Utn4eyJWs9kyF7J9WW2M9k'
 
 
 CLOSE_REASON_FAILED = (

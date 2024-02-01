@@ -22,6 +22,7 @@ class GoogleSheets(Enum):
     UtmRulesSM = '11IDgZXK8LBA9UGIira8QWOlqjnPOKMV5F6y6ZEZujCE'
     ScheduleSM = '1ZnQwx14FMhzFogbvsc86AWAqY9XhRsMo7Y8kGbrrIEE'
     Managers = '1BZB73bLbFG-zm2aRPzmzJIrN0OlktOeOEx0fEl2fplA'
+    LeadsFromSites = '1OLqMKtNBf6DlI_ks9kJZ9Utn4eyJWs9kyF7J9WW2M9k'
 
 
 MISSED_CHATS_SHEET_ID = {
