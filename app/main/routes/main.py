@@ -194,7 +194,21 @@ def arrival_sync():
 @bp.route('/swissmedica_org_lead', methods=['POST', 'GET'], strict_slashes=False)
 def swissmedica_org_lead():
     """ Пробрасывавет в AMO лиды с сайта swissmedica.org """
+    """
+    {
+        'Name': 'test - please ignore',
+        'Clients_Country': 'Georgia',
+        'Email': 'Kir@swissmedica21.com',
+        'Phone': '591058618',
+        'Please_describe_your_problem': 'test - please ignore',
+        'Checkbox': 'yes',
+        'LP4_EN': 'LP4_EN',
+        'tranid': '725354:5774608671',
+        'COOKIES': ' _fbp=fb.1.1692261723692.1607646662; _ym_uid=1692261724710250210; _ym_d=1692261724; tildauid=1692261725123.513957; _gcl_au=1.1.523246661.1701948890; rerf=AAAAAGW6VFwObn+DAzEeAg==; _gid=GA1.2.164053568.1706710111; _ym_isad=2; _ym_visorc=w; tildasid=1706765241461.327595; _uetsid=fb0967f0c04211ee83e401378e0b8d50; _uetvid=fb098570c04211eeaed7851553f3f724; _gat_gtag_UA_148716138_1=1; _ga=GA1.1.601091886.1692261724; previousUrl=swissmedica.org%2Finnovative-therapy; _ga_XXMR2575TF=GS1.1.1706765238.15.1.1706769087.31.0.0', 'formid': 'form480544796'}
+    """
     data: Dict = request.json
+    print(type(request.headers), request.headers)
+    print(request.cookies)
     print(data)
     return Response(status=200)
 
