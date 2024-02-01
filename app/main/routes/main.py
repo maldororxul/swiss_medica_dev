@@ -210,6 +210,7 @@ def startstemcells_lead():
     form_config = config.get(form_id)
     # для части форм сделки в Amo не создаем (флаг 'l' != 1)
     if not form_config or form_config['l'] != 1:
+        print('startstemcells_lead config error')
         return Response(status=200)
     create_lead_based_on_form_data(
         lang=form_config['r'],  # регион / язык, ключ "r"
@@ -262,16 +263,16 @@ def create_lead_based_on_form_data(
     amo_config = amo_ids.get(lang) or amo_ids.get('EN')
     amo_client = SwissmedicaAPIClient()
     # проверка на дубли
-    existing_leads = []
-    if phone:
-        existing_leads = list(amo_client.find_leads(query=phone, limit=1))
-    if not existing_leads and email:
-        existing_leads = list(amo_client.find_leads(query=email, limit=1))
-    lead_id = int(existing_leads[0]['id']) if existing_leads else None
-    if lead_id:
-        # лид уже существует, отправим оповещение о том, что он попытался выйти на связь
-        pass
-        return Response(status=200)
+    # existing_leads = []
+    # if phone:
+    #     existing_leads = list(amo_client.find_leads(query=phone, limit=1))
+    # if not existing_leads and email:
+    #     existing_leads = list(amo_client.find_leads(query=email, limit=1))
+    # lead_id = int(existing_leads[0]['id']) if existing_leads else None
+    # if lead_id:
+    #     # лид уже существует, отправим оповещение о том, что он попытался выйти на связь
+    #     pass
+    #     return Response(status=200)
     # добавляем лид
     response = amo_client.add_lead_simple(
         title=f"{name} :: {site}",
