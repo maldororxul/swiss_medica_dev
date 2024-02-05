@@ -245,6 +245,7 @@ def startstemcells_lead():
     config = Config().startstemcells_forms
     data: Dict = request.json
     form_data = data.get('post') or {}
+    print('startstemcells_lead', form_data)
     # определяем идентификатор формы
     form_id = form_data.get('_hf_form_id')
     form_config = config.get(form_id) or {}
@@ -255,7 +256,7 @@ def startstemcells_lead():
         'name': form_data.get('name') or '',
         'phone': form_data.get('phone') or '',
         'email': form_data.get('email') or '',
-        'msg': form_data.get('diagnosis') or ''
+        'msg': form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or ''
     })
     # для части форм сделки в Amo не создаем (флаг 'l' != 1)
     if not form_config or form_config['l'] != 1:
@@ -265,10 +266,11 @@ def startstemcells_lead():
         lang=form_config['r'],  # регион / язык, ключ "r"
         ip=data.get('ip') or (data.get('location') or {}).get('ip'),
         headers=data.get('headers') or {},
+        cookies=data.get('cookies') or {},
         name=form_data.get('name'),
         phone=clear_phone(form_data.get('phone') or ''),
         email=form_data.get('email') or '',
-        diagnosis=form_data.get('diagnosis') or ''
+        diagnosis=form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or ''
     )
     return Response(status=200)
 
@@ -292,6 +294,7 @@ def create_lead_based_on_form_data(
     lang: str,
     ip: str,
     headers: Dict,
+    cookies: Dict,
     name: str,
     phone: str,
     email: str,
@@ -317,6 +320,8 @@ def create_lead_based_on_form_data(
         {"field_id": 976549, "values": [{"value": city}]},
         # Disease if other
         {"field_id": 957691, "values": [{"value": diagnosis}]},
+        # идентификатор яндекс-метрики
+        {"field_id": 1102815, "values": [{"value": cookies.get('_ym_uid') or cookies.get('_YM_UID')}]},
     ]
     # идентификаторы сущностей в Amo: p - pipeline, s - status, t - tag
     amo_ids = {
@@ -377,6 +382,7 @@ def cellulestaminali_lead():
         lang='IT',  # регион / язык, ключ "r"
         ip=data.get('ip'),
         headers=data.get('headers') or {},
+        cookies=data.get('cookies') or {},
         name=form_data.get('name'),
         phone=clear_phone(form_data.get('phone') or ''),
         email=form_data.get('email') or '',
