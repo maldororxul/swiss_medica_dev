@@ -262,6 +262,16 @@ def startstemcells_lead():
     if not form_config or form_config['l'] != 1:
         print('startstemcells_lead config error')
         return Response(status=200)
+    utm_dict = {
+        'utm_source': form_data.get('utm_source') or '',
+        'utm_medium': form_data.get('utm_medium') or '',
+        'utm_campaign': form_data.get('utm_campaign') or '',
+        'utm_content': form_data.get('utm_content') or '',
+        'utm_term': form_data.get('utm_term') or '',
+        'referer': form_data.get('referer') or '',
+        'ym_cid': form_data.get('ym_cid') or '',
+        'lead_url': form_data.get('lead_url') or ''
+    }
     create_lead_based_on_form_data(
         lang=form_config['r'],  # регион / язык, ключ "r"
         ip=data.get('ip') or (data.get('location') or {}).get('ip'),
@@ -270,7 +280,8 @@ def startstemcells_lead():
         name=form_data.get('name'),
         phone=clear_phone(form_data.get('phone') or ''),
         email=form_data.get('email') or '',
-        diagnosis=form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or ''
+        diagnosis=form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or '',
+        utm_dict=utm_dict
     )
     return Response(status=200)
 
@@ -299,7 +310,8 @@ def create_lead_based_on_form_data(
     phone: str,
     email: str,
     diagnosis: str,
-    country_: Optional[str] = None
+    country_: Optional[str] = None,
+    utm_dict: Optional[Dict] = None
 ):
     referer = headers.get('Referer') or ''
     origin = headers.get('Origin') or headers.get('origin') or ''
@@ -309,7 +321,8 @@ def create_lead_based_on_form_data(
     # если страну по ip не определили, но она указана явно
     if not country and country_:
         country = country_
-    utm_dict = get_args_from_url(url=referer) if referer else {}
+    if not utm_dict:
+        utm_dict = get_args_from_url(url=referer) if referer else {}
     spoken_language = {'EN': 'English', 'DE': 'German', 'FR': 'French', 'IT': 'Italian'}
     custom_fields_values = [
         # Spoken language
@@ -321,7 +334,7 @@ def create_lead_based_on_form_data(
         # Disease if other
         {"field_id": 957691, "values": [{"value": diagnosis}]},
         # идентификатор яндекс-метрики
-        {"field_id": 1102815, "values": [{"value": cookies.get('_ym_uid') or cookies.get('_YM_UID')}]},
+        # {"field_id": 1102815, "values": [{"value": cookies.get('_ym_uid') or cookies.get('_YM_UID')}]},
     ]
     # идентификаторы сущностей в Amo: p - pipeline, s - status, t - tag
     amo_ids = {
@@ -358,7 +371,7 @@ def create_lead_based_on_form_data(
         ],
         tags=[{'id': amo_config['t']}],
         utm=utm_dict,
-        referrer=referer,
+        referer=referer,
         custom_fields_values=custom_fields_values,
         responsible_user_id=0
     )
@@ -378,6 +391,16 @@ def cellulestaminali_lead():
         'email': form_data.get('email') or '',
         'msg': form_data.get('message') or ''
     })
+    utm_dict = {
+        'utm_source': form_data.get('utm_source') or '',
+        'utm_medium': form_data.get('utm_medium') or '',
+        'utm_campaign': form_data.get('utm_campaign') or '',
+        'utm_content': form_data.get('utm_content') or '',
+        'utm_term': form_data.get('utm_term') or '',
+        'referer': form_data.get('referer') or '',
+        'ym_cid': form_data.get('ym_cid') or '',
+        'lead_url': form_data.get('lead_url') or ''
+    }
     create_lead_based_on_form_data(
         lang='IT',  # регион / язык, ключ "r"
         ip=data.get('ip'),
@@ -386,7 +409,8 @@ def cellulestaminali_lead():
         name=form_data.get('name'),
         phone=clear_phone(form_data.get('phone') or ''),
         email=form_data.get('email') or '',
-        diagnosis=form_data.get('message') or ''
+        diagnosis=form_data.get('message') or '',
+        utm_dict=utm_dict
     )
     return Response(status=200)
 
@@ -461,7 +485,7 @@ def add_lead_from_cf():
     #             {'value': form_data.get('email'), 'field_id': 771222, 'enum_code': 'WORK'},
     #         ],
     #         tags=form_data['tags'],
-    #         referrer=form_data.get('utm_referer'),
+    #         referer=form_data.get('utm_referer'),
     #         utm=utm_dict,
     #         custom_fields_values=custom_fields_values
     #     )

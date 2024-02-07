@@ -13,7 +13,7 @@ class ChatBase(db.Model):
     date = db.Column(db.DateTime, default=datetime.now())
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=False, unique=True)
-    referrer = db.Column(db.String)
+    referer = db.Column(db.String)
     utm = db.Column(JSON)
     messages = db.Column(JSON)
 

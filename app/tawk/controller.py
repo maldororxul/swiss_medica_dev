@@ -17,7 +17,7 @@
     'property': {'id': '64d0945994cf5d49dc68dd99', 'name': 'cdv_main'}
 }
 {
-    "referrer": ...,
+    "referer": ...,
    "questions":[
       {
          "label":"Submitted From",
@@ -123,8 +123,8 @@ class TawkController:
             return None
         phone = clear_phone(phones_data[0])
         email = emails_data[0]
-        referrer = (person_dict.get('customAttributes') or {}).get('ref')
-        return name, phone, email, referrer
+        referer = (person_dict.get('customAttributes') or {}).get('ref')
+        return name, phone, email, referer
 
     @staticmethod
     def __get_config_by_site(site: str) -> Tuple:
@@ -147,8 +147,8 @@ class TawkController:
             'name': data.get('name'),
             'phone': data.get('phone'),
             'email': data.get('email'),
-            # referrer - это кастомный атрибут, передаваемый при загрузке виджета чата, прокидывается вручную
-            'referrer': data.get('referrer'),
+            # referer - это кастомный атрибут, передаваемый при загрузке виджета чата, прокидывается вручную
+            'referer': data.get('referer'),
             'utm_dict': utm_dict,
             'responsible_user_id': 0,
             'tawk_data': {},
@@ -163,7 +163,7 @@ class TawkController:
         tawk_data = self.__get_tawk_data(channel_id=channel_id, chat_id=chat_id, branch=branch)
         if not tawk_data:
             return None
-        name, phone, email, referrer = self.__get_customer_data(person_dict=tawk_data.get('person') or {})
+        name, phone, email, referer = self.__get_customer_data(person_dict=tawk_data.get('person') or {})
         if not phone or not email:
             return None
         # разбираем utm-метки из source
@@ -178,7 +178,7 @@ class TawkController:
             'name': name,
             'phone': phone,
             'email': email,
-            'referrer': referrer,
+            'referer': referer,
             'utm_dict': utm_dict,
             'responsible_user_id': responsible_user_id,
             'tawk_data': tawk_data,
@@ -194,7 +194,7 @@ class TawkController:
                 'name': ...,
                 'phone': ...,
                 'email': ...,
-                'referrer': ...,
+                'referer': ...,
                 'utm_dict': {},
                 'responsible_user_id': 0,
                 'tawk_data': {},
@@ -216,7 +216,7 @@ class TawkController:
                 title=f'TEST! Lead from Tawk: {data.get("name")}',
                 name=data.get("name"),
                 tags=['Tawk', chat_name],
-                referrer=data.get('referrer'),
+                referer=data.get('referer'),
                 utm=utm_dict,
                 pipeline_id=int(config.get('pipeline_id')),
                 status_id=int(config.get('status_id')),

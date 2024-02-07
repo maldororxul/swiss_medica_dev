@@ -38,7 +38,7 @@ class APIClient:
     note: db.Model = NotImplemented
     user: db.Model = NotImplemented
     sub_domain: str = NotImplemented
-    referrer_field_id: int = NotImplemented
+    referer_field_id: int = NotImplemented
     utm_map: Dict = NotImplemented
 
     def __init__(self):
@@ -312,19 +312,19 @@ class APIClient:
         status_id: int,
         contacts: Optional[List[Dict]] = None,
         tags: Optional[Union[List[str], List[Dict]]] = None,
-        referrer: Optional[str] = None,
+        referer: Optional[str] = None,
         utm: Optional[Dict] = None,
         custom_fields_values: Optional[List] = None,
         responsible_user_id: int = 0
     ):
         custom_fields_values = custom_fields_values or []
         utm = utm or {}
-        if referrer and self.referrer_field_id:
+        if referer and self.referer_field_id:
             custom_fields_values.append({
-                "field_id": self.referrer_field_id,
+                "field_id": self.referer_field_id,
                 "values": [
                     {
-                        "value": str(referrer)
+                        "value": str(referer)
                     }
                 ]
             })
@@ -1128,7 +1128,7 @@ class DrvorobjevAPIClient(APIClient):
     note: db.Model = CDVNote
     user: db.Model = CDVUser
     sub_domain = 'drvorobjev'
-    referrer_field_id: int = 518713
+    referer_field_id: int = 518713
     utm_map: Dict = {
         'utm_source': 46631,
         'utm_medium': 498455,
@@ -1155,13 +1155,16 @@ class SwissmedicaAPIClient(APIClient):
     note: db.Model = SMNote
     user: db.Model = SMUser
     sub_domain = 'swissmedica'
-    referrer_field_id: int = 954029
+    referer_field_id: int = 954029
     utm_map: Dict = {
         'utm_source': 954543,
         'utm_medium': 954545,
         'utm_campaign': 954547,
         'utm_content': 968677,
         'utm_term': 956715,
+        'referer': 954029,
+        'ym_cid': 1102815,
+        'lead_url': 1102817
     }
 
     def __init__(self, *args, **kwargs):

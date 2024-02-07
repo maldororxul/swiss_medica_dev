@@ -40,7 +40,7 @@ class SyncController:
         'visitor': visitor,
         'message': message,
         'utm': utmParams,
-        'referrer': referrer,
+        'referer': referer,
         'create_lead': create_lead,
         'chat_name': CHANNEL_NAME
         """
@@ -77,7 +77,7 @@ class SyncController:
                         messages=messages,
                         lead_id=lead_id,
                         name=data['visitor']['name'],
-                        referrer=data['referrer'],
+                        referer=data['referer'],
                         utm=data['utm']
                     )
                     connection.execute(insert_stmt)

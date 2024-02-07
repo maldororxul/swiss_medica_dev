@@ -10,7 +10,7 @@ UTM_MAP = {
     'UTM_NETWORK': 'final_utm_network',
     'UTM_MATCH': 'final_utm_match',
     'REFERER': 'final_utm_referer',
-    'utm_referrer': 'final_utm_referer',
+    'utm_referer': 'final_utm_referer',
     'UTM_DEVICE': 'final_utm_device',
     'UTM_PLACEMENT': 'final_utm_placement',
     'UTM_TARGET': 'final_utm_target',

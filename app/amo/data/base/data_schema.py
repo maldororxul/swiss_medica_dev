@@ -756,10 +756,10 @@ class Lead:
             Documentation="""""",
             Key='utm_placement'
         ))
-        Referrer: LeadField = field(default_factory=lambda: LeadField(
-            DisplayName='utm_referrer',
+        Referer: LeadField = field(default_factory=lambda: LeadField(
+            DisplayName='utm_referer',
             Documentation="""""",
-            Key='utm_referrer'
+            Key='utm_referer'
         ))
         Network: LeadField = field(default_factory=lambda: LeadField(
             DisplayName='utm_network',
@@ -899,5 +899,5 @@ CLUSTER_SUBJECT = (
     # Lead.Utm.Network,
     # Lead.Utm.Placement,
     # Lead.Utm.Position,
-    # Lead.Utm.Referrer,
+    # Lead.Utm.Referer,
 )
