@@ -157,10 +157,18 @@ def new_lead_sm():
         branch=branch,
         existing_tags=existing_tags
     )
+    # тегаем пользователя через @
+    telegram_name = None
+    managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
+    for manager in managers:
+        if manager.get('manager') == user.get('name'):
+            telegram_name = manager.get('telegram')
+            break
+    telegram_name = f"@{telegram_name}" if telegram_name else ''
     message = f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n" \
               f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n" \
               f"Tags: {tags_str}\n" \
-              f"Responsible: {user.get('name') or ''}\n" \
+              f"Responsible: {telegram_name or user.get('name') or ''}\n" \
               f"{duplicate}".strip()
     telegram_bot_token = Config().sm_telegram_bot_token
     for chat_id in chat_ids:
@@ -244,7 +252,7 @@ def new_communication_sm():
     telegram_name = None
     managers = GoogleAPIClient(book_id=GoogleSheets.Managers.value, sheet_title='managers').get_sheet()
     for manager in managers:
-        if manager.get('manager') == user:
+        if manager.get('manager') == user.get('name'):
             telegram_name = manager.get('telegram')
             break
     telegram_name = f"@{telegram_name}" if telegram_name else ''
