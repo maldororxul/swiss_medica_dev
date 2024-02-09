@@ -164,7 +164,7 @@ def new_lead_sm():
         if manager.get('manager') == user.get('name'):
             telegram_name = manager.get('telegram')
             break
-    telegram_name = f"@{telegram_name}" if telegram_name else ''
+    telegram_name = f"{user.get('name')} (@{telegram_name})" if telegram_name else ''
     message = f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n" \
               f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n" \
               f"Tags: {tags_str}\n" \
@@ -255,10 +255,15 @@ def new_communication_sm():
         if manager.get('manager') == user.get('name'):
             telegram_name = manager.get('telegram')
             break
-    telegram_name = f"@{telegram_name}" if telegram_name else ''
+    telegram_name = f"{user.get('name')} (@{telegram_name})" if telegram_name else ''
+    # имя пациента
+    contacts = (lead.get('_embedded') or {}).get('contacts') or [{}]
+    contact_id = contacts[0].get('id')
+    contact = amo_client.get_contact_by_id(contact_id) or {} if contact_id else {}
     message = f"{pipeline.get('pipeline') or ''} :: {pipeline.get('status') or ''}\n" \
               f"{event}: https://{branch}.amocrm.ru/leads/detail/{lead_id}\n" \
               f"Tags: {tags_str}\n" \
+              f"Patient: {contact.get('name') or ''}\n" \
               f"Responsible: {telegram_name or user.get('name') or ''}".strip()
     telegram_bot_token = Config().sm_telegram_bot_token
     for chat_id in chat_ids:
