@@ -113,12 +113,12 @@ class LeadsInsurance:
                 text = lead.get('msg') or ''
                 if len(text) > 3500:
                     text = f"{text[:3000]} <...>"
-                item = f"*Source*: {lead.get('source')}\n" \
-                       f"*Name*: {lead.get('name')}\n" \
-                       f"*Phone*: {lead.get('phone')}\n" \
-                       f"*Email*: {lead.get('email')}\n" \
-                       f"*Msg*: {text}".strip()
-                message = f'*Restored lead*\n{item}' if not message else f'{message}\n{item}'
+                item = f"Source: {lead.get('source')}\n" \
+                       f"Name: {lead.get('name')}\n" \
+                       f"Phone: {lead.get('phone')}\n" \
+                       f"Email: {lead.get('email')}\n" \
+                       f"Msg: {text}".strip()
+                message = f'Restored lead\n{item}' if not message else f'{message}\n{item}'
             if not message:
                 continue
             telegram_bot_token = Config().sm_telegram_bot_token
