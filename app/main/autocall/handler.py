@@ -9,13 +9,8 @@ import gc
 import time
 from datetime import datetime
 from typing import Dict, Optional
-
 import requests
 from flask import current_app, Flask
-# from app import db
-# from app.amo.processor.functions import clear_phone
-# from app.main.autocall.error import SipuniConfigError
-# from app.main.browser import KmBrowser
 from config import Config
 from modules.external.sipuni.sipuni_api import Sipuni
 
@@ -215,45 +210,12 @@ class Autocall:
         #         break
         # send_wahtsapp_message(number_id_from=number_from['id'], template=template, number_to=number)
 
-    # def start_autocall(self, autocall_id: int):
-    #     """ Начинает автообзвон
-    #
-    #     Args:
-    #         autocall_id: идентификатор автообзвона в Sipuni
-    #     """
-        # from app.main.autocall.constants import DATA_PROCESSOR
-        # processor = DATA_PROCESSOR.get(self.__branch)()
-        # processor.log.add(text='starting autocall')
-        # try:
-        #     self.__start_autocall(autocall_id=autocall_id)
-        # except Exception as exc:
-        #     processor.log.add(str(exc))
-
-    # def __start_autocall(self, autocall_id: int):
-    #     from app.main.autocall.error import SipuniConfigError
-    #     from app.main.browser import KmBrowser
-    #     try:
-    #         browser: KmBrowser = self.__get_sipuni_browser()
-    #     except SipuniConfigError:
-    #         try:
-    #             browser.close()
-    #         except:
-    #             pass
-    #         return
-    #     browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
-    #     time.sleep(10)
-    #     browser.close()
-
     def start_autocalls(self, app: Flask):
         """ Перезапускает все автообзвоны """
         from app.main.autocall.constants import DATA_PROCESSOR
         with app.app_context():
             processor = DATA_PROCESSOR.get(self.__branch)()
-            # processor.log.add(text=f'starting autocalls')
-            # try:
             self.__start_autocalls(processor=processor)
-            # except Exception as exc:
-            #     processor.log.add(str(exc))
 
     def get_cookies(self):
         cookies = {
@@ -348,8 +310,6 @@ class Autocall:
 
     def __start_autocalls(self, processor):
         from app import db
-        # from app.main.autocall.error import SipuniConfigError
-        # from app.main.browser import KmBrowser
         from app.main.autocall.constants import API_CLIENT, AUTOCALL_NUMBER
         branch_config = self.__sipuni_branch_config
         if not branch_config:
@@ -357,10 +317,7 @@ class Autocall:
             return
         autocall_ids = list(branch_config.get('autocall').keys())
         amo_client = API_CLIENT.get(self.__branch)()
-        # app = current_app._get_current_object()
-        # with app.app_context():
         # читаем номера из БД и добавляем в автообзвон те, которые удовлетворяют условию
-        # for branch in self.__sipuni_config.keys():
         autocall_model = AUTOCALL_NUMBER.get(self.__branch)
         all_numbers = autocall_model.query.all()
         branch_config = self.__sipuni_branch_config
@@ -371,8 +328,6 @@ class Autocall:
             db.session.refresh(line)
             # с момента last_call_timestamp должно пройти не менее 23 часов (если звонок не первый)
             if line.last_call_timestamp + 23 * 3600 > time.time() and line.calls > 0:
-                # waiting_for = f"waiting for {line.last_call_timestamp + 23 * 3600}, now {time.time()}"
-                # processor.log.add(text=f'out of schedule (0) {line.autocall_id} number {line.number} ({waiting_for})')
                 continue
             # конфиг SIPUNI существует
             autocall_config = (branch_config.get('autocall') or {}).get(str(line.autocall_id))
@@ -381,20 +336,16 @@ class Autocall:
                 continue
             # лимит звонков еще не достигнут
             if line.calls >= int(autocall_config.get('calls_limit')):
-                # processor.log.add(text=f'calls limit reached {line.autocall_id} number {line.number}')
                 db.session.delete(line)
                 continue
             schedule = autocall_config.get('schedule')
             # существует расписание для данного автообзвона
             if not schedule:
-                # processor.log.add(text=f'schedule not found (0) {line.autocall_id} number {line.number}')
                 continue
             # лид все еще находится в воронке автообзвона
             lead = amo_client.get_lead_by_id(lead_id=line.lead_id)
             pipeline_id, status_id = lead.get('pipeline_id'), lead.get('status_id')
             if not pipeline_id or not status_id:
-                # processor.log.add(text=f'lead pipeline or status not found {line.autocall_id} number {line.number}')
-                # processor.log.add(text=f"removing number {line.number} from database")
                 db.session.delete(line)
                 db.session.commit()
                 time.sleep(0.25)
@@ -402,7 +353,6 @@ class Autocall:
             if autocall_config.get('pipeline_id') != str(pipeline_id) \
                     or autocall_config.get('status_id') != str(status_id):
                 # лид был перемещен, удаляем номер из БД автообзвона
-                # processor.log.add(text=f"removing number {line.number} from database")
                 db.session.delete(line)
                 db.session.commit()
                 time.sleep(0.25)
@@ -416,7 +366,6 @@ class Autocall:
                 processor.log.add(text=f'schedule not found {line.autocall_id} number {line.number}')
                 continue
             # сейчас время, подходящее для звонка
-            # processor.log.add(text=f'schedule: {weekday_schedule}, current {curr_dt}')
             for period in weekday_schedule:
                 _from, _to = period.split(' - ')
                 _from = self.__build_datetime_from_timestring(timestring=_from)
@@ -424,53 +373,24 @@ class Autocall:
                 if _from <= curr_dt <= _to:
                     break
             else:
-                # processor.log.add(text=f'out of schedule {line.autocall_id} number {line.number}')
                 continue
-            # processor.log.add(text=f'added to autocall {line.autocall_id} number {line.number}')
             numbers_added.append({'number': line.number, 'autocall_id': line.autocall_id})
         # запускаем все автообзвоны Sipuni
         if not numbers_added:
-            # processor.log.add(text=f'no numbers for autocall')
             return
-        # processor.log.add(text=f'got {len(numbers_added)} numbers for autocall')
-        # try:
-        #     # browser: KmBrowser = self.__get_sipuni_browser()
-        #
-        #     print(self.__branch, 'autocall response, ')
-        # # except SipuniConfigError:
-        # #     processor.log.add(text=f'SipuniConfigError')
-        # #     try:
-        # #         browser.close()
-        # #         print(self.__branch, 'browser closed - config error')
-        # #     except:
-        # #         print(self.__branch, 'failed to close browser - config error')
-        # #         pass
-        # #     return
-        # except Exception as exc:
-        #     processor.log.add(text=f'browser error: {exc}')
-        #     try:
-        #         browser.close()
-        #         print(self.__branch, 'browser closed - common exc')
-        #     except:
-        #         print(self.__branch, 'failed to close browser - common exc')
-        #         pass
-        #     return
         # удаляем все номера из всех автообзвонов Sipuni (через браузер)
         for autocall_id in autocall_ids:
-            # browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}')
             response = requests.get(
                 url=f'https://sipuni.com/ru_RU/settings/autocall/delete_numbers_all/{autocall_id}',
                 cookies=self.get_cookies(),
                 headers=self.get_headers(autocall_id=autocall_id)
             )
-            print('numbers delete response', response.status_code)
             time.sleep(1)
         for item in numbers_added:
             sipuni_client.add_number_to_autocall(number=item['number'], autocall_id=item['autocall_id'])
             time.sleep(0.25)
         for autocall_id in autocall_ids:
             try:
-                # browser.open(url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}')
                 response = requests.get(
                     url=f'https://sipuni.com/ru_RU/settings/autocall/start/{autocall_id}',
                     cookies=self.get_cookies(),
@@ -478,19 +398,8 @@ class Autocall:
                 )
                 print('autocall start response', response.status_code)
             except Exception as exc:
-                # try:
-                #     browser.close()
-                #     print(self.__branch, 'browser closed - common exc 2')
-                # except:
-                #     print(self.__branch, 'failed to close browser - common exc 2')
-                #     pass
                 processor.log.add(text=f'autocall error: {exc}')
             time.sleep(1)
-        # try:
-        #     browser.close()
-        #     print(self.__branch, 'browser closed - autocall iteration done')
-        # except:
-        #     print(self.__branch, 'failed to close browser - autocall iteration done')
         db.session.close()
 
     def __get_autocall_id(self, pipeline_id: str, status_id: str) -> Optional[int]:
@@ -526,26 +435,6 @@ class Autocall:
                 return number_entity
         else:
             return None
-
-    # def __get_sipuni_browser(self):
-    #     """ Получить экземпляр браузера с авторизацией в личном кабинете Sipuni """
-    #     from app.main.autocall.error import SipuniConfigError
-    #     from app.main.browser import KmBrowser
-    #     browser = KmBrowser()
-    #     browser.open(url='https://sipuni.com/ru_RU/login')
-    #     sipuni_config = self.__sipuni_branch_config
-    #     if not sipuni_config:
-    #         raise SipuniConfigError(f'Sipuni Config for branch {self.__branch} is absent')
-    #     login_line = browser.find_element_by_selector(selector='#login_username_email')
-    #     login_line.send_keys(sipuni_config.get('login'))
-    #     password_line = browser.find_element_by_selector(selector='#login_password')
-    #     password_line.send_keys(sipuni_config.get('password'))
-    #     submit_btn = browser.find_element_by_selector(selector='#login_button')
-    #     submit_btn.click()
-    #     browser.wait(
-    #         selector='body > header > div.navigation.row-fluid > div.pull-left.menu-top > ul > li:nth-child(1) > a'
-    #     )
-    #     return browser
 
     @staticmethod
     def __build_datetime_from_timestring(timestring: str) -> datetime:

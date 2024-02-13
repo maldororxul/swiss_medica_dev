@@ -199,9 +199,7 @@ def check_for_duplicated_leads(processor, lead, amo_client, branch, existing_tag
         else:
             # перемещаем лид
             try:
-                # from modules.constants.constants.constants import CLOSE_REASON_FAILED
-                # loss_reason = duplicated['loss_reason'][0]['name'] if lead.get('loss_reason') else None
-                if duplicated.get('closed_at'):
+                if duplicated.get('loss_reason_id') and duplicated.get('closed_at'):
                     move_lead_to_continue_to_work(lead=duplicated, branch=branch, amo_client=amo_client)
             except Exception as exc:
                 print('failed to move lead', exc)

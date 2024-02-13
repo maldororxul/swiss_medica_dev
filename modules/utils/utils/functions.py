@@ -36,7 +36,8 @@ def clear_phone(phone: Union[int, str], digits: Optional[int] = None) -> Optiona
     """
     phone = str(phone)
     for text, replacement in (
-        ('.0', ''), ('+', ''), ('*', ''), ('"', ''), (' ', ''), (':', ''), ('#', ''), ('-', ''), ('.', '')
+        ('.0', ''), ('+', ''), ('*', ''), ('"', ''), (' ', ''), (':', ''), ('#', ''), ('-', ''), ('.', ''), ('`', ''),
+        ('(', ''), (')', ''), ('tel', ''), ('=', '')
     ):
         phone = phone.replace(text, replacement)
     phone = phone.strip().lstrip('0')

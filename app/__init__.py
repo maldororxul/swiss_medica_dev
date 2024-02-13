@@ -54,7 +54,8 @@ def create_app() -> Flask:
     app.cli.add_command(create_tables)
     # запускаем фоновые задачи
     from app.main.autocall.run import run as run_autocall
-    from app.main.arrival.run import run as run_arrival
+    from app.main.leads_insurance.run import run as run_leads_insurance
+    # from app.main.arrival.run import run as run_arrival
     # автообзвон
     for branch in ('swissmedica', 'drvorobjev'):
         app.scheduler.add_job(
@@ -63,6 +64,16 @@ def create_app() -> Flask:
             args=[run_autocall, app, branch],
             trigger='interval',
             seconds=int(Config().autocall_interval),
+            max_instances=1
+        )
+    # подстраховка проброса лидов в Amo
+    for branch in ('swissmedica', ):
+        app.scheduler.add_job(
+            id=f'leads_insurance_{branch}',
+            func=socketio.start_background_task,
+            args=[run_leads_insurance, app, branch],
+            trigger='interval',
+            seconds=int(Config().leads_insurance_interval),
             max_instances=1
         )
     # обновление Arrival

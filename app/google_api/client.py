@@ -17,6 +17,8 @@ from time import sleep
 from typing import Dict, List, Optional, Union
 from googleapiclient.discovery import build, Resource
 from google.oauth2 import service_account
+from googleapiclient.errors import HttpError
+
 from config import Config
 from app.google_api.constants import SCOPES
 from app.google_api.errors import SpreadSheetNotFoundError
@@ -75,13 +77,15 @@ class GoogleAPIClient:
         }
         self.service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
 
-    def delete_row(self, sheet_id: str, row: int):
+    def delete_row(self, row: int, rows_number: int = 1, sheet_id: Optional[str] = None):
         """ Удаляет строку на указанном листе
 
         Args:
             sheet_id: идентификатор листа
             row: номер удаляемой строки
+            rows_number: количество удаляемых строк
         """
+        sheet_id = sheet_id or self.sheet_id
         request = {
             "requests": [{
                 "deleteDimension": {
@@ -89,7 +93,7 @@ class GoogleAPIClient:
                         "sheetId": sheet_id,
                         "dimension": "ROWS",
                         "startIndex": row - 1,  # 0-indexed
-                        "endIndex": row
+                        "endIndex": row + rows_number - 1
                     }
                 }
             }]
@@ -184,6 +188,31 @@ class GoogleAPIClient:
             ]
         }
         self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=sort_request).execute()
+
+    def write_value_to_cell(self, row: int, col: int, value: str):
+        """ Записать значение в ячейку таблицы
+
+        Args:
+            row: Номер строки
+            col: Номер колонки
+            value: Значение для записи
+        """
+        sheet_range = f"{self.__sheet_title}!{chr(ord('A') + col)}{row + 1}"  # Пример формирования диапазона
+        values = [[value]]  # Значение для записи (в виде двумерного списка)
+
+        body = {
+            "values": values
+        }
+
+        try:
+            self.sheets_service.spreadsheets().values().update(
+                spreadsheetId=self.__book_id,
+                range=sheet_range,
+                valueInputOption="RAW",  # Если значение не должно интерпретироваться как формула
+                body=body
+            ).execute()
+        except HttpError as e:
+            print(f"An error occurred: {e}")
 
     def update_arrival_schedule(self, source_sheet_title: str):
         """ Обновление расписания клиник

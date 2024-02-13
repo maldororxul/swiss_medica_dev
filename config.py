@@ -59,6 +59,14 @@ class Config:
         return os.environ.get('SM_TELEGRAM_BOT_TOKEN')
 
     @property
+    def leads_insurance(self):
+        return {'swissmedica': '1OLqMKtNBf6DlI_ks9kJZ9Utn4eyJWs9kyF7J9WW2M9k'}
+
+    @property
+    def sm_leads_insurance_channel(self):
+        return os.environ.get('SM_LEADS_INSURANCE_CHANNEL')
+
+    @property
     def chromedriver_path(self):
         return os.environ.get('CHROMEDRIVER_PATH')
 
@@ -447,6 +455,10 @@ class Config:
     @property
     def autocall_interval(self):
         return os.environ.get('AUTOCALL_INTERVAL')
+
+    @property
+    def leads_insurance_interval(self):
+        return os.environ.get('LEADS_INSURANCE_INTERVAL')
 
     @property
     def new_lead_telegram(self):
