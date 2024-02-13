@@ -108,16 +108,22 @@ class LeadsInsurance:
         """
         if not saved_leads:
             return
-        message = ''
-        for lead in saved_leads:
-            item = f"___\nSource: {lead.get('source')}\n" \
-                   f"Name: {lead.get('name')}\n" \
-                   f"Phone: {lead.get('phone')}\n" \
-                   f"Email: {lead.get('email')}\n" \
-                   f"Msg: {lead.get('msg')}".strip()
-            message = f'*** Restored leads from sites ***\n{item}' if not message else f'{message}\n{item}'
-        telegram_bot_token = Config().sm_telegram_bot_token
-        telebot.TeleBot(telegram_bot_token).send_message(self.__channel_id, message)
+        step = 5
+        total = int(len(saved_leads) / step) or 1
+        for i in range(0, total+1):
+            message = ''
+            for lead in saved_leads[i*step:i*step+step]:
+                item = f"___\nSource: {lead.get('source')}\n" \
+                       f"Name: {lead.get('name')}\n" \
+                       f"Phone: {lead.get('phone')}\n" \
+                       f"Email: {lead.get('email')}\n" \
+                       f"Msg: {lead.get('msg')}".strip()
+                message = f'*** Restored leads from sites ***\n{item}' if not message else f'{message}\n{item}'
+            if not message:
+                continue
+            telegram_bot_token = Config().sm_telegram_bot_token
+            telebot.TeleBot(telegram_bot_token).send_message(self.__channel_id, message)
+            time.sleep(2)
 
     @staticmethod
     def __is_spam(rules: Dict, line: Dict) -> bool:
