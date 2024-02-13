@@ -47,7 +47,7 @@ class GoogleAPIClient:
             last_col: колонка, на которой заканчиваются данные
         """
         # авторизация
-        self.service: Resource = self.__auth()
+        self.sheets_service: Resource = self.__auth()
         self.__book_id = book_id
         self.__sheet_title = sheet_title
         self.__start_col = start_col
@@ -75,7 +75,7 @@ class GoogleAPIClient:
                 "values": data_list
             }]
         }
-        self.service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
+        self.sheets_service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
 
     def delete_row(self, row: int, rows_number: int = 1, sheet_id: Optional[str] = None):
         """ Удаляет строку на указанном листе
@@ -98,7 +98,7 @@ class GoogleAPIClient:
                 }
             }]
         }
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=request).execute()
+        self.sheets_service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=request).execute()
 
     def get_sheet(self, dictionary: bool = True) -> Union[List[Dict], List[List]]:
         """ Получить данные с листа
@@ -109,7 +109,7 @@ class GoogleAPIClient:
         Returns:
             список словарей или список списков с данными листа
         """
-        response = self.service.spreadsheets().values().get(
+        response = self.sheets_service.spreadsheets().values().get(
             spreadsheetId=self.__book_id,
             range=f'{self.__sheet_title}!A1:{self.__last_col}').execute()
         values = response.get('values', [])
@@ -165,7 +165,7 @@ class GoogleAPIClient:
                 }
             ]
         }
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=request).execute()
+        self.sheets_service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=request).execute()
 
     def sort(self, sheet_id: Optional[str] = None, column: int = 0):
         sheet_id = sheet_id or self.__get_sheet_id(sheet_title=self.__sheet_title)
@@ -187,7 +187,7 @@ class GoogleAPIClient:
                 }
             ]
         }
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=sort_request).execute()
+        self.sheets_service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=sort_request).execute()
 
     def write_value_to_cell(self, row: int, col: int, value: str):
         """ Записать значение в ячейку таблицы
@@ -223,7 +223,7 @@ class GoogleAPIClient:
         # считываем данные таблицы Arrival и строим на их основе расписание
         rows = GoogleAPIClient(book_id=self.__book_id, sheet_title=source_sheet_title).get_sheet()
         # уникальные клиники берем с листа расписания
-        result = self.service.spreadsheets().values().get(
+        result = self.sheets_service.spreadsheets().values().get(
             spreadsheetId=self.__book_id,
             range=f'{self.__sheet_title}!A1:1').execute()
         values = result.get('values', [])
@@ -407,7 +407,7 @@ class GoogleAPIClient:
         """
         # Read the names from the first row
         names_range = f"{self.__sheet_title}!1:1"
-        names_response = self.service.spreadsheets().values().get(
+        names_response = self.sheets_service.spreadsheets().values().get(
             spreadsheetId=self.__book_id,
             range=names_range
         ).execute()
@@ -415,7 +415,7 @@ class GoogleAPIClient:
         # Prepare the values for the second row
         values = [users.get(name, '') for name in names]
         # Write the values to the second row
-        self.service.spreadsheets().values().update(
+        self.sheets_service.spreadsheets().values().update(
             spreadsheetId=self.__book_id,
             range=f"{self.__sheet_title}!2:2",
             valueInputOption='RAW',
@@ -437,7 +437,7 @@ class GoogleAPIClient:
                  "values": [titles]},
             ]
         }
-        self.service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
+        self.sheets_service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
 
     def write_data_to_sheet(
         self,
@@ -491,7 +491,7 @@ class GoogleAPIClient:
                 }
             ]
         }
-        self.service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
+        self.sheets_service.spreadsheets().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
 
     def __get_sheet_id(self, sheet_title):
         """ Идентификатор листа
@@ -502,7 +502,7 @@ class GoogleAPIClient:
         Raises:
             SpreadSheetNotFoundError: Лист онлайн-таблицы не найден
         """
-        for sheet in self.service.spreadsheets().get(spreadsheetId=self.__book_id).execute().get('sheets'):
+        for sheet in self.sheets_service.spreadsheets().get(spreadsheetId=self.__book_id).execute().get('sheets'):
             if sheet['properties']['title'] == sheet_title:
                 return sheet['properties']['sheetId']
         raise SpreadSheetNotFoundError(f'Лист "{sheet_title}" не найден в онлайн-таблице')
@@ -526,7 +526,7 @@ class GoogleAPIClient:
                 },
             ]
         }
-        self.service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
+        self.sheets_service.spreadsheets().values().batchUpdate(spreadsheetId=self.__book_id, body=body).execute()
         sleep(pause)
 
     @staticmethod
