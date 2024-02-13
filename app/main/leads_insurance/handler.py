@@ -21,7 +21,7 @@ def start_leads_insurance_iteration(app: Flask, branch: str):
 
 class LeadsInsurance:
     """ Класс, управляющий проверкой лидов """
-    leads_storage_limit = 0
+    leads_storage_limit = 1000
 
     def __init__(self, branch: Optional[str] = None):
         self.__branch = branch
@@ -79,7 +79,7 @@ class LeadsInsurance:
         self.__send_telegram_notification(saved_leads=saved_leads)
         # удаляем старые записи о лидах
         if len(collection) > self.leads_storage_limit:
-            leads_google_client.delete_row(row=2, rows_number=self.leads_storage_limit - len(collection))
+            leads_google_client.delete_row(row=2, rows_number=len(collection) - self.leads_storage_limit)
 
     def __build_spam_rules(self) -> Dict:
         """ Строит словарь с правилами спама
