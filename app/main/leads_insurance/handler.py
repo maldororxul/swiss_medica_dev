@@ -61,10 +61,7 @@ class LeadsInsurance:
                 status = 'contact not found'
                 is_spam = self.__is_spam(rules=spam_rules, line=line)
                 # делаем пометку о спаме в таблице
-                leads_google_client.write_value_to_cell(
-                    row=row,
-                    col=7,
-                    value='1' if is_spam else '0')
+                leads_google_client.write_value_to_cell(row=row, col=7, value='1' if is_spam else '0')
                 if not is_spam:
                     # отправляем оповещение в Telegram
                     saved_leads.append(line)
@@ -108,17 +105,20 @@ class LeadsInsurance:
         """
         if not saved_leads:
             return
-        step = 5
+        step = 1
         total = int(len(saved_leads) / step) or 1
         for i in range(0, total+1):
             message = ''
             for lead in saved_leads[i*step:i*step+step]:
-                item = f"___\nSource: {lead.get('source')}\n" \
-                       f"Name: {lead.get('name')}\n" \
-                       f"Phone: {lead.get('phone')}\n" \
-                       f"Email: {lead.get('email')}\n" \
-                       f"Msg: {lead.get('msg')}".strip()
-                message = f'*** Restored leads from sites ***\n{item}' if not message else f'{message}\n{item}'
+                text = lead.get('msg') or ''
+                if len(text) > 3500:
+                    text = f"{text[:3000]} <...>"
+                item = f"*Source*: {lead.get('source')}\n" \
+                       f"*Name*: {lead.get('name')}\n" \
+                       f"*Phone*: {lead.get('phone')}\n" \
+                       f"*Email*: {lead.get('email')}\n" \
+                       f"*Msg*: {text}".strip()
+                message = f'*Restored lead*\n{item}' if not message else f'{message}\n{item}'
             if not message:
                 continue
             telegram_bot_token = Config().sm_telegram_bot_token

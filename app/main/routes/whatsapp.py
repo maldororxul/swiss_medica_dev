@@ -308,8 +308,8 @@ def send_telegram_notification(amo_client, branch: str, lead_id: int):
             telegram_name = manager.get('telegram')
             break
     telegram_name = f"@{telegram_name}" if telegram_name else ''
-    msg = f"New WhatsApp message: https://{domain}.amocrm.ru/leads/detail/{lead_id}" \
-          f"\nResponsible: {telegram_name if telegram_name else user}".strip()
+    msg = f"*New WhatsApp message*: https://{domain}.amocrm.ru/leads/detail/{lead_id}" \
+          f"\n*Responsible*: {telegram_name if telegram_name else user}".strip()
     # deprecated BOTS[bot_key].send_message(params.get('NEW_LEAD'), msg)
     # BWA send_telegram_notification
     config = Config()
