@@ -212,7 +212,7 @@ def swissmedica_org_lead():
     # определяем идентификатор формы
     # cookies = data.get('COOKIES')       # здесь приходит строка!!
     form_id = data.get('formid')
-    form_config = config.get(form_id) or {}
+    # form_config = config.get(form_id) or {}
     # записываем данные в google-таблицу
     append_form_data_to_google_sheets(form_data={
         'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -375,7 +375,7 @@ def create_lead_based_on_form_data(
         custom_fields_values=custom_fields_values,
         responsible_user_id=0
     )
-    print(response.status_code, response.text)
+    print('lead creation result', response.status_code, response.text)
 
 
 @bp.route('/cellulestaminali_lead', methods=['POST', 'GET'], strict_slashes=False)
