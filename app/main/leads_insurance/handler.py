@@ -136,16 +136,18 @@ class LeadsInsurance:
         Returns:
             True - заявка является спамом, иначе Flase
         """
+        is_spam = False
         if line.get('phone'):
             phone = clear_phone(line['phone'])
-            return phone in rules['phone']
-        if line.get('email'):
-            return line['email'].lower().strip() in rules['email']
-        msg = line.get('msg')
-        if not msg:
-            return False
-        msg = msg.lower()
-        for _spam_msg in rules['msg']:
-            if _spam_msg in msg:
-                return True
-        return False
+            is_spam = phone in rules['phone']
+        if not is_spam and line.get('email'):
+            is_spam = line['email'].lower().strip() in rules['email']
+        if not is_spam:
+            msg = line.get('msg')
+            if not msg:
+                return False
+            msg = msg.lower()
+            for _spam_msg in rules['msg']:
+                if _spam_msg in msg:
+                    return True
+        return is_spam
