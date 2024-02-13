@@ -76,7 +76,8 @@ class LeadsInsurance:
         self.__send_telegram_notification(saved_leads=saved_leads)
         # удаляем старые записи о лидах
         if len(collection) > self.leads_storage_limit:
-            leads_google_client.delete_row(row=2, rows_number=len(collection) - self.leads_storage_limit)
+            rows_number = len(collection) - self.leads_storage_limit
+            leads_google_client.delete_row(row=2, rows_number=rows_number+1)
 
     def __build_spam_rules(self) -> Dict:
         """ Строит словарь с правилами спама
