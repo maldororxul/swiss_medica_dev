@@ -207,11 +207,12 @@ def swissmedica_org_lead():
         'formid': 'form480544796'
     }
     """
-    config = Config().swissmewdica_org_forms
+    # config = Config().swissmewdica_org_forms
     data: Dict = request.json
+    print('swissmedica_org_lead', data)
     # определяем идентификатор формы
     # cookies = data.get('COOKIES')       # здесь приходит строка!!
-    form_id = data.get('formid')
+    # form_id = data.get('formid')
     # form_config = config.get(form_id) or {}
     # записываем данные в google-таблицу
     append_form_data_to_google_sheets(form_data={
