@@ -218,9 +218,9 @@ def swissmedica_org_lead():
     append_form_data_to_google_sheets(form_data={
         'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'source': f"swissmedica.org {data.get('Clients_Country') or ''}".strip(),
-        'name': data.get('Name') or '',
-        'phone': data.get('Phone') or '',
-        'email': data.get('Email') or '',
+        'name': data.get('Name') or data.get('name') or '',
+        'phone': data.get('Phone') or data.get('phone') or '',
+        'email': data.get('Email') or data.get('email') or '',
         'msg': data.get('Please_describe_your_problem') or ''
     })
     # # для части форм сделки в Amo не создаем (флаг 'l' != 1)
