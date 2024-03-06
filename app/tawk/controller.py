@@ -103,6 +103,7 @@ class TawkController:
 
     @staticmethod
     def __get_offline_form_site(data: Dict) -> Optional[str]:
+        print(data)
         for question in data.get('questions') or []:
             if question.get('label') != "Submitted From":
                 continue
