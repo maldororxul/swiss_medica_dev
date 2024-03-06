@@ -80,6 +80,21 @@ class TawkController:
     """ Класс для управления чатами Tawk, интеграции с Amo """
 
     def handle(self, request: Request):
+        """ Прилетают примерно такие данные
+        {
+            'questions': [
+                {'label': 'Name', 'answer': '...'},
+                {'label': 'Email', 'answer': '...'},
+                {'label': 'Phone', 'answer': '...'},
+                {'label': 'Your question', 'answer': '...'}
+            ],
+            'name': '...',
+            'email': '...',
+            'phone': '...',
+            'submittedFrom': 'https://...',
+            'referrer': ''
+        }
+        """
         data = request.json or {}
         # print('DATA FROM TAWK', data)
         lead_data = None
@@ -103,13 +118,12 @@ class TawkController:
 
     @staticmethod
     def __get_offline_form_site(data: Dict) -> Optional[str]:
-        print(data)
         for question in data.get('questions') or []:
             if question.get('label') != "Submitted From":
                 continue
             url = question.get('answer')
             return url
-        return None
+        return data.get('submittedFrom')
 
     @staticmethod
     def __get_customer_data(person_dict: Dict) -> [Tuple[str, str, str, str]]:
@@ -138,6 +152,21 @@ class TawkController:
         return None, None
 
     def __handle_offline_form_event(self, site: str, data: Dict) -> Optional[Dict]:
+        """ Прилетают примерно такие данные
+        {
+            'questions': [
+                {'label': 'Name', 'answer': '...'},
+                {'label': 'Email', 'answer': '...'},
+                {'label': 'Phone', 'answer': '...'},
+                {'label': 'Your question', 'answer': '...'}
+            ],
+            'name': '...',
+            'email': '...',
+            'phone': '...',
+            'submittedFrom': 'https://...',
+            'referrer': ''
+        }
+        """
         # зная сайт, попытаемся вытащить из общего конфига TAWK конфиг конкретного канала
         chat_name, config = self.__get_config_by_site(site=site)
         if not config:
