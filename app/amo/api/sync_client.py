@@ -328,7 +328,7 @@ class APIClient:
         Returns:
             True - если получены новые данные
         """
-        return self.get_and_sync_data(endpoint='pipelines', params='', entity='leads')
+        return self.get_and_sync_data(endpoint='pipelines', params='', entity='leads', db_table='Pipeline')
 
     def add_lead(self, data: Union[Dict, List]):
         return self.__execute(endpoint='leads/complex', method='POST', data=data)
