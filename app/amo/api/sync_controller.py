@@ -153,9 +153,8 @@ class SyncController:
 
     def sync_records(self, records: List[Dict], table_name: str, connection, engine) -> bool:
         target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
-        exclude_fileds = ('_links',)
+        exclude_fileds = ('_links', 'email')
         # Подготовка данных для вставки
-        # Убираем '_links' из записей перед подготовкой запроса на вставку
         insert_records = [{
             key: value for key, value in record.items() if key not in exclude_fileds
         } for record in records]
