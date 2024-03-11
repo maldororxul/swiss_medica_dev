@@ -151,31 +151,42 @@ class SyncController:
     #     with engine.begin() as connection:
     #         return self.__sync_record(target_table=target_table, record=record, connection=connection)
 
-    def sync_records(self, records: List[Dict], table_name: str, connection, engine) -> bool:
+    def sync_records(self, records: List[Dict], table_name: str, connection, engine):
         target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
-        # Подготовка данных для вставки/обновления
-        insert_records = [{
-            **record,
-            'id_on_source': record.pop('id'),
-        } for record in records]
-        rows_inserted = False
-        rows_updated = False
+        # Подготовка списка для вставки новых записей и списка для обновления существующих
+        insert_records = []
+        update_records = []
+        for record in records:
+            # Предполагается, что 'id' является уникальным идентификатором каждой записи в 'records'
+            stmt = select(target_table).where(target_table.c.id_on_source == record['id'])
+            db_record = connection.execute(stmt).fetchone()
+            # Удаление 'id' из данных, чтобы предотвратить его перезапись
+            db_data = {key: value for key, value in record.items() if key != 'id'}
+            if db_record:
+                # Если запись существует, добавляем в список для обновления
+                if not record.get('updated_at') or db_record.updated_at < record['updated_at']:
+                    update_records.append((db_data, record['id']))
+            else:
+                # Если записи нет, добавляем в список для вставки
+                insert_records.append(db_data)
+        # Пакетная вставка новых записей
         if insert_records:
             try:
-                stmt = pg_insert(target_table).values(insert_records)
-                on_conflict_stmt = stmt.on_conflict_do_update(
-                    index_elements=[target_table.c.id_on_source],
-                    set_={name: stmt.excluded[name] for name in stmt.excluded if name != 'id_on_source'}
-                )
-                result = connection.execute(on_conflict_stmt)
-                # Проверяем, были ли изменены (обновлены или вставлены) строки
-                if result.rowcount > 0:
-                    rows_inserted = True  # Это может включать как вставки, так и обновления
-                    # Для более точного определения между вставкой и обновлением потребуются дополнительные механизмы
+                connection.execute(insert(target_table), insert_records)
             except Exception as exc:
-                print(f'Error during UPSERT operation: {exc}')
-        # Возвращаем информацию о том, были ли вставлены или обновлены строки
-        return rows_inserted or rows_updated
+                print(f'Error during bulk insert: {exc}')
+        # Обновление существующих записей
+        for update_record, id_on_source in update_records:
+            try:
+                update_stmt = (
+                    target_table.update().
+                    where(target_table.c.id_on_source == id_on_source).
+                    values(**update_record)
+                )
+                connection.execute(update_stmt)
+            except Exception as exc:
+                print(f'Error during record update: {exc}')
+        return len(insert_records) > 0 or len(update_records) > 0
 
     # @staticmethod
     # def __sync_record(target_table: Table, record: Dict, connection) -> bool:
