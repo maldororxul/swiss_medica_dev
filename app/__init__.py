@@ -53,7 +53,7 @@ def create_app() -> Flask:
     # Register CLI commands
     app.cli.add_command(create_tables)
     # запускаем фоновые задачи
-    from app.main.sync import run as run_amo_data_sync
+    from app.main.sync.run import run as run_amo_data_sync
     # загрузка данных из Amo
     for branch in ('cdv', 'sm'):
         app.scheduler.add_job(
