@@ -4,6 +4,8 @@ import gc
 import random
 import time
 from datetime import datetime, timedelta
+from typing import Optional
+
 from flask import Flask
 from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
@@ -17,10 +19,11 @@ is_running = {
 
 class SchedulerTask:
 
-    def get_data_from_amo(self, app: Flask, branch: str, starting_date: datetime):
+    def get_data_from_amo(self, app: Flask, branch: str, starting_date: Optional[datetime] = None):
         key = 'get_data_from_amo'
         if self.__is_running(key=key, branch=branch):
             return
+        starting_date = starting_date or datetime.now()
         self.__get_data_from_amo(app=app, branch=branch, starting_date=starting_date, key=key)
         gc.collect()
 
@@ -96,6 +99,9 @@ class SchedulerTask:
 
                 for line in data_processor.update(date_from=date_from, date_to=date_to):
                     item = {key.split('_(')[0]: value for key, value in line.items()}
+
+                    # todo это надо переписать!
+
                     if not controller.sync_record(
                         record={
                             'id': line['id'],

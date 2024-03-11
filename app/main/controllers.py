@@ -1,12 +1,13 @@
 """ Контроллеры синхронизации данных с Amo """
 __author__ = 'ke.mizonov'
-from app.amo.sync.controller import SMSyncController, CDVSyncController
+
+from app.amo.api.sync_client import SwissmedicaAPIClient, DrvorobjevAPIClient
 
 SYNC_CONTROLLER = {
-    'sm': SMSyncController,
-    'cdv': CDVSyncController,
-    'SM': SMSyncController,
-    'CDV': CDVSyncController,
-    'swissmedica': SMSyncController,
-    'drvorobjev': CDVSyncController
+    'sm': SwissmedicaAPIClient,
+    'cdv': DrvorobjevAPIClient,
+    'SM': SwissmedicaAPIClient,
+    'CDV': DrvorobjevAPIClient,
+    'swissmedica': SwissmedicaAPIClient,
+    'drvorobjev': DrvorobjevAPIClient
 }

@@ -53,6 +53,17 @@ def create_app() -> Flask:
     # Register CLI commands
     app.cli.add_command(create_tables)
     # запускаем фоновые задачи
+    from app.main.sync import run as run_amo_data_sync
+    # загрузка данных из Amo
+    for branch in ('cdv', 'sm'):
+        app.scheduler.add_job(
+            id=f'amo_data_sync_{branch}',
+            func=socketio.start_background_task,
+            args=[run_amo_data_sync, app, branch],
+            trigger='interval',
+            seconds=60,
+            max_instances=1
+        )
     # from app.main.autocall.run import run as run_autocall
     # from app.main.leads_insurance.run import run as run_leads_insurance
     # from app.main.arrival.run import run as run_arrival

@@ -172,6 +172,11 @@ class TawkController:
         if not config:
             return None
         utm_dict = self.__get_utm_dict_from_url(url=site)
+        msg = None
+        for question in data.get('questions') or []:
+            if 'question' in question['label'].lower():
+                msg = question['answer']
+                break
         return {
             'chat_name': chat_name,
             'name': data.get('name'),
@@ -182,6 +187,7 @@ class TawkController:
             'utm_dict': utm_dict,
             'responsible_user_id': 0,
             'tawk_data': {},
+            'msg': msg
         }
 
     def __handle_chat_end_event(self, chat_name: str, channel_id: str, chat_id: str) -> Optional[Dict]:
@@ -228,6 +234,7 @@ class TawkController:
                 'utm_dict': {},
                 'responsible_user_id': 0,
                 'tawk_data': {},
+                'msg': ... (optional)
             }
         """
         chat_name = data.get('chat_name')
@@ -263,7 +270,7 @@ class TawkController:
                 lead_id = int(added_lead_data[0]['id'])
             except:
                 pass
-        messages = tawk_data.get('messages')
+        messages = tawk_data.get('messages') or data.get('msg')
         if lead_id and messages:
             amo_client.add_note_simple(entity_id=lead_id, text=messages)
 

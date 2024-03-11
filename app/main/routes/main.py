@@ -57,14 +57,14 @@ DATA_MODEL = {
 
 
 def start_get_data_from_amo_scheduler(branch: str):
-
+    """ Запуск циклической загрузки данных из Amo """
     scheduler_id = f'get_data_from_amo_{branch}'
     lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
     # current_app - это проксированный экземпляр приложения,
     # _get_current_object - доступ к объекту приложения напрямую
     # с проксированным объектом получается некорректный контекст => костыляем
     app = current_app._get_current_object()
-    # загрузка данных из Amo CDV
+    # загрузка данных из Amo
     try:
         app.scheduler.remove_job(scheduler_id)
     except JobLookupError:

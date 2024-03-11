@@ -7,7 +7,10 @@ from datetime import datetime
 import random
 import requests
 from time import sleep, time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Type
+
+from app.amo.api.sync_controller import SMSyncController, CDVSyncController
+from app.engine import get_engine
 from app.extensions import db
 from app.amo.api.constants import AmoEvent
 from app.models.amo_credentials import CDVAmoCredentials, SMAmoCredentials
@@ -25,6 +28,8 @@ DATA_LIMIT = 50     # Больше 50 не ставить, т.к. по конт�
 
 MULTI_PROCESS = False
 
+TSyncController = Union[Type[SMSyncController], Type[CDVSyncController]]
+
 
 class APIClient:
     """ Базовый API-клиент AMO """
@@ -40,11 +45,13 @@ class APIClient:
     sub_domain: str = NotImplemented
     referer_field_id: int = NotImplemented
     utm_map: Dict = NotImplemented
+    sync_controller_class: TSyncController
 
     def __init__(self):
         # self.token_pkl: str = f'{self.sub_domain}_token'
         # self.amo_settings_pkl: str = f'amo_{self.sub_domain}_settings'
         self.session = db.session
+        self.sync_controller = self.sync_controller_class()
 
         # # fixme tmp
         # credentials = self.credentials(
@@ -146,7 +153,7 @@ class APIClient:
             )
         return data
 
-    def get_tasks(self, date_from: datetime, date_to: datetime) -> List[Dict]:
+    def get_tasks(self, date_from: datetime, date_to: datetime) -> bool:
         """ Получить список задач
 
         Args:
@@ -154,13 +161,13 @@ class APIClient:
             date_to: дата по
 
         Returns:
-            список задач
+            True - если получены новые данные
         """
         params = f'filter[updated_at][from]={date_from.timestamp()}' \
                  f'&filter[updated_at][to]={date_to.timestamp()}' \
                  f'&limit={50}' \
                  f'&order=created_at'
-        return self.__get_data(endpoint='tasks', params=params, limit=50)
+        return self.get_and_sync_data(endpoint='tasks', params=params, limit=50, db_table='Task')
 
     def get_companies(self, date_from: datetime, date_to: datetime) -> List[Dict]:
         """ Получить список компаний
@@ -180,7 +187,7 @@ class APIClient:
                  f'&order=created_at'
         return self.__get_data(endpoint='companies', params=params, limit=250)
 
-    def get_contacts(self, date_from: datetime, date_to: datetime) -> List[Dict]:
+    def get_contacts(self, date_from: datetime, date_to: datetime) -> bool:
         """ Получить список контактов
 
         Args:
@@ -188,7 +195,7 @@ class APIClient:
             date_to: дата по
 
         Returns:
-            список контактов
+            True - если получены новые данные
         """
         # с источника мы получаем лиды по updated_at всегда
         params = f'filter[updated_at][from]={date_from.timestamp()}' \
@@ -196,7 +203,7 @@ class APIClient:
                  f'&limit={50}' \
                  f'&with=customers' \
                  f'&order=created_at'
-        return self.__get_data(endpoint='contacts', params=params, limit=50)
+        return self.get_and_sync_data(endpoint='contacts', params=params, limit=50, db_table='Contact')
 
     def write_credentials(self, auth_code: str, client_id: str, client_secret: str, redirect_url: str):
         # fixme depr
@@ -243,27 +250,22 @@ class APIClient:
         """ Получение ссылки на сделку по идентификатору """
         return f'https://{cls.sub_domain}.amocrm.ru/leads/detail/{lead_id}'
 
-    def get_users(self):
-        """ Получить список пользователей
-
-        Returns:
-            список пользователей
+    def run(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None) -> bool:
         """
-        return self._get_users()
-
-    def get_leads(self, date_from: datetime, date_to: datetime) -> List[Dict]:
-        """ Получить список сделок
-
-        Args:
-            date_from: дата с
-            date_to: дата по
-
         Returns:
-            список сделок
+            True - если на источнике была обнаружена хотя бы одна новая / измененная запись за период
         """
-        return self._get_leads(date_from=date_from, date_to=date_to)
+        self.get_users()
+        self.get_pipelines()
+        return any([
+            self.get_contacts(date_from=date_from, date_to=date_to),
+            self.get_events(date_from=date_from, date_to=date_to),
+            self.get_leads(date_from=date_from, date_to=date_to),
+            self.get_notes(date_from=date_from, date_to=date_to),
+            self.get_tasks(date_from=date_from, date_to=date_to),
+        ])
 
-    def get_events(self, date_from: datetime, date_to: datetime) -> List[Dict]:
+    def get_events(self, date_from: datetime, date_to: datetime) -> bool:
         """ Получить список событий
 
         Args:
@@ -271,15 +273,15 @@ class APIClient:
             date_to: дата по
 
         Returns:
-            список событий
+            True - если получены новые данные
         """
         params = f'filter[created_at][from]={date_from.timestamp()}' \
                  f'&filter[created_at][to]={date_to.timestamp()}' \
                  f'&limit={100}' \
                  f'&order=created_at'
-        return self.__get_data(endpoint='events', params=params, limit=100)
+        return self.get_and_sync_data(endpoint='events', params=params, limit=100, db_table='Event')
 
-    def get_notes(self, date_from: datetime, date_to: datetime) -> List[Dict]:
+    def get_notes(self, date_from: datetime, date_to: datetime) -> bool:
         """ Получить список примечаний
 
         Args:
@@ -289,17 +291,44 @@ class APIClient:
         Returns:
             список примечаний
         """
-        return self._get_notes(date_from=date_from, date_to=date_to)
+        """ Получить список примечаний
 
-    def get_pipelines(self) -> List[Dict]:
+        Args:
+            date_from: дата с
+            date_to: дата по
+
+        Returns:
+            True - если получены новые данные
+        """
+        limit = 250
+        params = f'filter[updated_at][from]={date_from.timestamp()}' \
+                 f'&filter[updated_at][to]={date_to.timestamp()}' \
+                 f'&limit={limit}' \
+                 f'&order=created_at'
+        # у нас две отдельные сущности, к которым привязаны примечания: лиды и контакты
+        update_leads_notes = self.get_and_sync_data(
+            params=params,
+            limit=limit,
+            entity='leads',
+            endpoint='notes',
+            db_table='Note'
+        )
+        update_contacts_notes = self.get_and_sync_data(
+            params=params,
+            limit=limit,
+            entity='contacts',
+            endpoint='notes',
+            db_table='Note'
+        )
+        return update_leads_notes or update_contacts_notes
+
+    def get_pipelines(self) -> bool:
         """ Получить список воронок
 
         Returns:
-            список воронок
+            True - если получены новые данные
         """
-        response = requests.get(url=self.__get_url(endpoint='pipelines', entity='leads'), headers=self.headers)
-        json_response = response.json()
-        return (json_response.get('_embedded') or {}).get('pipelines') or []
+        return self.get_and_sync_data(endpoint='pipelines', params='', entity='leads')
 
     def add_lead(self, data: Union[Dict, List]):
         return self.__execute(endpoint='leads/complex', method='POST', data=data)
@@ -414,29 +443,6 @@ class APIClient:
             }
         }
         self.update_note(lead_id=lead_id, data=[note_data])
-
-    def _get_notes(self, date_from: datetime, date_to: datetime) -> List[Dict]:
-        """ Получить список примечаний
-
-        Args:
-            date_from: дата с
-            date_to: дата по
-
-        Returns:
-            Список примечаний
-        """
-        limit = 250
-        params = f'filter[updated_at][from]={date_from.timestamp()}' \
-                 f'&filter[updated_at][to]={date_to.timestamp()}' \
-                 f'&limit={limit}' \
-                 f'&order=created_at'
-        # у нас две отдельные сущности, к которым привязаны примечания: лиды и контакты
-        result = []
-        for entity in ('leads', 'contacts'):
-            notes = self.get_entity_notes(params=params, limit=limit, entity=entity)
-            if notes:
-                result.extend(notes)
-        return result
 
     def get_lead_notes(self, lead_id: int, note_type: Optional[str] = None, limit: int = 10, page: Optional[int] = None):
         params = f'filter[entity_id]={lead_id}' \
@@ -714,7 +720,7 @@ class APIClient:
 
         return result
 
-    def _get_leads(self, date_from: datetime, date_to: datetime) -> List[Dict]:
+    def get_leads(self, date_from: datetime, date_to: datetime) -> bool:
         """ Получить список сделок
 
         Args:
@@ -722,7 +728,7 @@ class APIClient:
             date_to: дата по
 
         Returns:
-            список сделок
+            True - если получены новые данные
         """
         # с источника мы получаем лиды по updated_at всегда
         params = f'filter[updated_at][from]={date_from.timestamp()}' \
@@ -730,7 +736,7 @@ class APIClient:
                  f'&with=contacts,loss_reason' \
                  f'&limit={250}' \
                  f'&order=created_at'
-        return self.__get_data(endpoint='leads', params=params)
+        return self.get_and_sync_data(endpoint='leads', params=params, db_table='Lead')
 
     def get_contact_by_id(self, contact_id: Union[int, str]) -> Dict:
         """ Получение контакта по идентификатору  """
@@ -929,15 +935,15 @@ class APIClient:
                 break
         return {'pipeline': data.get('name'), 'status': status.get('name')}
 
-    def _get_users(self) -> List[Dict]:
+    def get_users(self) -> bool:
         """ Получить список пользователей
 
         Returns:
-            список пользователей
+            True - если получены новые данные
         """
         params = f'with=role,group' \
                  f'&limit={DATA_LIMIT}'
-        return self.__get_data(endpoint='users', params=params, limit=50)
+        return self.get_and_sync_data(endpoint='users', params=params, limit=50, db_table='User')
 
     def __get_token_data(self):
         return self.session.query(self.token).order_by(self.token.id.desc()).first()
@@ -1011,6 +1017,74 @@ class APIClient:
             # нам вернули данных меньше предельного размера чанка, значит, записей больше нет
             if len(chunk) < limit:
                 break
+
+    def get_and_sync_data(
+        self,
+        endpoint: str,
+        params: str,
+        limit: int = DATA_LIMIT,
+        entity: str = '',
+        entity_id: Optional[int] = None,
+        db_table: str = '',
+        key: Optional[str] = None
+    ) -> bool:
+        """ Читает данные с источника и записывает их построчно в указанную таблицу БД (синхронизирует)
+
+        Args:
+            endpoint: адрес запроса (leads, contacts, etc.)
+            params: параметры запроса (сортировка, даты и проч.)
+            limit: ограничение по размеру выдачи
+            entity: сущность, например, leads, может использоваться как дополнение к эндпоинту
+            entity_id: идентификатор сущности
+            db_table: таблица БД, с которой производится синхронизация данных
+            key: ключ данных в _embedded
+
+        Returns:
+            True - если были вставлены или обновлены записи
+        """
+        page = 0
+        base_params = params
+        engine = get_engine()
+        updated_or_inserted_records = []
+        with engine.begin() as connection:
+            while True:
+                page += 1
+                params = f'{base_params}&page={page}'
+                response = self.__execute(endpoint=endpoint, params=params, entity=entity, entity_id=entity_id)
+                if not response:
+                    print('no response', response)
+                    break
+                # нет данных - выходим из цикла
+                if response.status_code == 204:
+                    print(f'{datetime.now()} response.status_code == 204', response.text)
+                    break
+                try:
+                    json_response = response.json()
+                    # print(response.status_code, len((json_response.get('_embedded') or {}).get(endpoint) or []))
+                except requests.exceptions.JSONDecodeError as exc:
+                    print('JSONDecodeError')
+                    if '500 Internal Server Error' in response.text:
+                        print(f'{endpoint} 500 Internal Server Error')
+                    elif '414 Request-URI Too Large' in response.text:
+                        print(f'{endpoint} 414 Request-URI Too Large')
+                    raise exc
+                except Exception as exc:
+                    print(exc)
+                    print(response.status_code, response.text)
+                chunk = (json_response.get('_embedded') or {}).get(key or endpoint) or []
+                records = [item for item in chunk]
+                result = self.sync_controller.sync_records(
+                    records=records,
+                    table_name=db_table,
+                    connection=connection,
+                    engine=engine
+                )
+                updated_or_inserted_records.append(result)
+                sleep(random.uniform(0.1, REQUEST_SLEEP_INTERVAL))
+                # нам вернули данных меньше предельного размера чанка, значит, записей больше нет
+                if len(chunk) < limit:
+                    break
+        return any(updated_or_inserted_records)
 
     def __get_url(self, endpoint: str, params: str = '', entity: str = '', entity_id: Optional[int] = None):
         """ Адрес для запроса в AMO
@@ -1125,6 +1199,7 @@ class DrvorobjevAPIClient(APIClient):
         'gclid': 498451,
         'fbclid': 498815,
     }
+    sync_controller_class: TSyncController = CDVSyncController
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1152,14 +1227,7 @@ class SwissmedicaAPIClient(APIClient):
         'ym_cid': 1102815,
         'lead_url': 1102817
     }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-
-class CDVPsyAPIClient(APIClient):
-    """ API-клиент AMO для психологов """
-    sub_domain = 'cdvinner'
+    sync_controller_class: TSyncController = SMSyncController
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
