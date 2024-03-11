@@ -157,11 +157,10 @@ class SyncController:
         # Подготовка данных для вставки
         # Убираем '_links' из записей перед подготовкой запроса на вставку
         insert_records = [{
-            key: value for key, value in record.items() if key not in exclude_fileds and key != 'id'
+            key: value for key, value in record.items() if key not in exclude_fileds
         } for record in records]
         for record in insert_records:
-            record['id_on_source'] = record.pop(
-                'id')  # Предполагаемое изменение, если 'id' используется для других целей
+            record['id_on_source'] = record.pop('id')  # Предполагаемое изменение, если 'id' используется для других целей
         if insert_records:
             try:
                 stmt = pg_insert(target_table).values(insert_records)
