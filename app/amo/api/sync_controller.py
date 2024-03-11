@@ -158,13 +158,13 @@ class SyncController:
             **record,
             'id_on_source': record.pop('id'),  # Предполагается, что 'id' теперь 'id_on_source'
         } for record in records]
-
         if insert_records:
+            exclude_fileds = ('_links',)
             try:
                 stmt = pg_insert(target_table).values(insert_records)
                 on_conflict_stmt = stmt.on_conflict_do_update(
                     index_elements=['id_on_source'],  # Уникальный идентификатор для обновления
-                    set_={name: stmt.excluded[name] for name in insert_records[0].keys()}
+                    set_={name: stmt.excluded[name] for name in insert_records[0].keys() if name not in exclude_fileds}
                 )
                 result = connection.execute(on_conflict_stmt)
                 # Проверяем, были ли затронуты строки
