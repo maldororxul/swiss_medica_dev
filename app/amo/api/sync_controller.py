@@ -153,13 +153,16 @@ class SyncController:
 
     def sync_records(self, records: List[Dict], table_name: str, connection, engine) -> bool:
         target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
+        exclude_fileds = ('_links',)
         # Подготовка данных для вставки
+        # Убираем '_links' из записей перед подготовкой запроса на вставку
         insert_records = [{
-            **record,
-            'id_on_source': record.pop('id'),  # Предполагается, что 'id' теперь 'id_on_source'
+            key: value for key, value in record.items() if key not in exclude_fileds and key != 'id'
         } for record in records]
+        for record in insert_records:
+            record['id_on_source'] = record.pop(
+                'id')  # Предполагаемое изменение, если 'id' используется для других целей
         if insert_records:
-            exclude_fileds = ('_links',)
             try:
                 stmt = pg_insert(target_table).values(insert_records)
                 on_conflict_stmt = stmt.on_conflict_do_update(
