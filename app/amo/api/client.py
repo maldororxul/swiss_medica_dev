@@ -987,7 +987,7 @@ class APIClient:
                 break
             # нет данных - выходим из цикла
             if response.status_code == 204:
-                print(f'{datetime.now()} response.status_code == 204', response.text)
+                # print(f'{datetime.now()} response.status_code == 204', response.text)
                 break
             try:
                 json_response = response.json()

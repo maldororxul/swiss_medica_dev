@@ -1,4 +1,4 @@
-""" Контроллеры синхронизации данных Amo """
+""" DEPRECATED Контроллеры синхронизации данных Amo """
 __author__ = 'ke.mizonov'
 from datetime import datetime
 from typing import Dict, List, Callable, Optional

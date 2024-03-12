@@ -159,7 +159,7 @@ class SyncController:
             key: value for key, value in record.items() if key not in exclude_fileds
         } for record in records]
         for record in insert_records:
-            record['id_on_source'] = record.pop('id')  # Предполагаемое изменение, если 'id' используется для других целей
+            record['id_on_source'] = record.pop('id')
         if insert_records:
             try:
                 stmt = pg_insert(target_table).values(insert_records)

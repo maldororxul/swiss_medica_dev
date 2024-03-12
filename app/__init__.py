@@ -7,6 +7,7 @@ https://www.digitalocean.com/community/tutorials/how-to-structure-a-large-flask-
 __author__ = 'ke.mizonov'
 import logging
 from flask import Flask
+from flask_login import LoginManager
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 # from apscheduler.events import (
@@ -19,10 +20,18 @@ from apscheduler.schedulers.background import BackgroundScheduler
 #     EVENT_JOB_MISSED
 # )
 from app.commands import create_tables
+from app.models.app_user import SMAppUser
 # from app.event_listener import scheduler_listener
 # from app.main.routes.autocall import start_autocalls
 from config import Config
 from app.extensions import db, socketio
+
+login_manager = LoginManager()
+
+
+@login_manager.user_loader
+def load_user(user_id: int):
+    return SMAppUser.query.get(int(user_id))
 
 
 def create_app() -> Flask:
@@ -40,6 +49,7 @@ def create_app() -> Flask:
     app.logger.setLevel(gunicorn_logger.level)
     # Initialize Flask extensions here
     db.init_app(app)
+    # login_manager.init_app(app)
     socketio.init_app(app, async_mode='eventlet', cors_allowed_origins="*")
     app.scheduler = BackgroundScheduler()
     # app.scheduler.add_listener(
@@ -55,7 +65,7 @@ def create_app() -> Flask:
     # запускаем фоновые задачи
     from app.main.sync.run import run as run_amo_data_sync
     # загрузка данных из Amo
-    for branch in ('cdv', 'sm'):
+    for branch in ('sm', ):
         app.scheduler.add_job(
             id=f'amo_data_sync_{branch}',
             func=socketio.start_background_task,
