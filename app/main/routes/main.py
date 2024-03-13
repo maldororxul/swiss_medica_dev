@@ -601,11 +601,16 @@ def register():
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
+        print('current_user.is_authenticated == True')
         return redirect(url_for('main.offer'))
     if request.method == 'POST':
+        print('/login POST')
         username = request.form.get('username')
         password = request.form.get('password')
+        print(f"User: {username} / {password}")
         user = SMAppUser.query.filter_by(username=username).first()
+        print(user)
+        print('check_password_hash', check_password_hash(user.password_hash, password))
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             print(f"User {user.username} logged in successfully")
