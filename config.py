@@ -26,6 +26,7 @@ class Config:
         self.MANAGERS = self.managers
         self.SIPUNI_COOKIES = self.sipuni_cookies
         self.AMO_CHAT = self.amo_chat
+        self.SECRET_KEY = self.secret_key
 
     @property
     def sqlalchemy_database_uri(self):
@@ -45,6 +46,10 @@ class Config:
     @property
     def connections_limit(self):
         return int(os.environ.get('CONNECTIONS_LIMIT'))
+
+    @property
+    def secret_key(self):
+        return os.environ.get('SECRET_KEY')
 
     @property
     def sm_telegram_bwa_notification(self):
