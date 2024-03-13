@@ -13,7 +13,7 @@ class AppUserBase(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
     def __repr__(self):
-        return f'<Application user "{self.name}">'
+        return f'<Application user "{self.username}">'
 
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns if c.name != 'to_dict'}
