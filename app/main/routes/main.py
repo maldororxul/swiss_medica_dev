@@ -2,7 +2,7 @@
 __author__ = 'ke.mizonov'
 from datetime import datetime
 from typing import Union, Type, Dict, Optional
-from flask import render_template, current_app, redirect, url_for, request, Response, flash
+from flask import render_template, current_app, redirect, url_for, request, Response, flash, jsonify
 from flask_login import login_required, logout_user, current_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -597,10 +597,18 @@ def register():
     return render_template('register.html', form=form)
 
 
+@bp.route('/site-map')
+def site_map():
+    links = []
+    for rule in bp.url_map.iter_rules():
+        links.append((rule.endpoint, url_for(rule.endpoint)))
+    return jsonify(links)
+
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('login'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')

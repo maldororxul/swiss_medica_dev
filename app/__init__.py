@@ -60,39 +60,5 @@ def create_app() -> Flask:
             seconds=60,
             max_instances=1
         )
-    # from app.main.autocall.run import run as run_autocall
-    # from app.main.leads_insurance.run import run as run_leads_insurance
-    # from app.main.arrival.run import run as run_arrival
-    # автообзвон
-    # for branch in ('swissmedica', 'drvorobjev'):
-    #     app.scheduler.add_job(
-    #         id=f'autocalls_{branch}',
-    #         func=socketio.start_background_task,
-    #         args=[run_autocall, app, branch],
-    #         trigger='interval',
-    #         seconds=int(Config().autocall_interval),
-    #         max_instances=1
-    #     )
-    # # подстраховка проброса лидов в Amo
-    # for branch in ('swissmedica', ):
-    #     app.scheduler.add_job(
-    #         id=f'leads_insurance_{branch}',
-    #         func=socketio.start_background_task,
-    #         args=[run_leads_insurance, app, branch],
-    #         trigger='interval',
-    #         seconds=int(Config().leads_insurance_interval),
-    #         max_instances=1
-    #     )
-    # обновление Arrival
-    # branch = 'swissmedica'
-    # app.scheduler.add_job(
-    #     id=f'arrival_{branch}',
-    #     func=socketio.start_background_task,
-    #     args=[run_arrival, app, branch],
-    #     trigger='interval',
-    #     seconds=int(Config().arrival.get(branch).get('interval')),
-    #     max_instances=1
-    # )
-
     app.scheduler.start()
     return app
