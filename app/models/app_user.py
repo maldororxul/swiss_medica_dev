@@ -1,6 +1,5 @@
 """ Пользователь приложения """
 __author__ = 'ke.mizonov'
-from sqlalchemy.orm import declared_attr
 from app.extensions import db
 
 
@@ -20,22 +19,17 @@ class AppUserBase(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     is_authenticated = db.Column(db.Boolean, default=True)
 
-    @declared_attr
-    def role_id(cls):
-        return db.Column(db.Integer, db.ForeignKey('role.id'))
-
-    @declared_attr
-    def role(cls):
-        return db.relationship('Role', backref='appusers')
-
 
 class SMAppUser(AppUserBase):
-    __tablename__ = 'app_user'
+    __tablename__ = 'app_user_sm'
     __table_args__ = {"schema": "sm"}
-    __mapper_args__ = {'polymorphic_identity': 'sm'}
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    role = db.relationship('Role', backref=db.backref('sm_users', lazy=True))
 
 
 class CDVAppUser(AppUserBase):
-    __tablename__ = 'app_user'
+    __tablename__ = 'app_user_cdv'
     __table_args__ = {"schema": "cdv"}
     __mapper_args__ = {'polymorphic_identity': 'cdv'}
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    role = db.relationship('Role', backref=db.backref('cdv_users', lazy=True))
