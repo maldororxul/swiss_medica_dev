@@ -2,7 +2,7 @@
 __author__ = 'ke.mizonov'
 from datetime import datetime
 from typing import Union, Type, Dict, Optional
-from flask import render_template, current_app, redirect, url_for, request, Response, flash, jsonify
+from flask import render_template, current_app, redirect, url_for, request, Response, flash
 from flask_login import login_required, logout_user, current_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -25,7 +25,7 @@ from app.utils.country_by_ip import get_country_by_ip
 from app.whatsapp.controller import WhatsAppController
 from config import Config
 from modules.utils.utils.functions import clear_phone
-from wsgi import app
+
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
@@ -596,14 +596,6 @@ def register():
         flash('Registration successful.')
         return redirect(url_for('main.login'))
     return render_template('register.html', form=form)
-
-
-@bp.route('/site-map')
-def site_map():
-    links = []
-    for rule in app.url_map.iter_rules():
-        links.append((rule.endpoint, url_for(rule.endpoint)))
-    return jsonify(links)
 
 
 @bp.route('/login', methods=['GET', 'POST'])
