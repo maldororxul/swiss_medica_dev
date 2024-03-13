@@ -26,7 +26,7 @@ class AppUserBase(db.Model):
 
     @declared_attr
     def role(cls):
-        return db.relationship('Role', backref='users')
+        return db.relationship('Role', backref='appusers')
 
 
 class SMAppUser(AppUserBase):
