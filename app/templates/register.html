@@ -29,6 +29,15 @@
             {% endif %}
         </div>
         <div class="form-group">
+            {{ form.role.label(class_="form-control-label") }}
+            {{ form.role(class_="form-control") }}
+            {% if form.role.errors %}
+                {% for error in form.role.errors %}
+                    <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <div class="form-group">
             {{ form.password.label(class_="form-control-label") }}
             {{ form.password(class_="form-control") }}
             {% if form.password.errors %}

@@ -3,6 +3,11 @@ __author__ = 'ke.mizonov'
 from app.extensions import db
 
 
+class Role(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+
 class AppUserBase(db.Model):
     __abstract__ = True
 
@@ -12,6 +17,8 @@ class AppUserBase(db.Model):
     password_hash = db.Column(db.String(128))
     is_active = db.Column(db.Boolean, default=True)
     is_authenticated = db.Column(db.Boolean, default=True)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
+    role = db.relationship('Role', backref=db.backref('users', lazy=True))
 
     def __repr__(self):
         return f'<Application user "{self.username}">'

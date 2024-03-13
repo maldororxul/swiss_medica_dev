@@ -13,6 +13,7 @@ from app.google_api.client import GoogleAPIClient
 from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
 from app.main.auth.form import RegistrationForm
+from app.main.auth.utils import requires_roles
 from app.main.processors import DATA_PROCESSOR
 from app.main.routes.utils import get_data_from_post_request, get_args_from_url
 from app.main.utils import DateTimeEncoder
@@ -61,6 +62,7 @@ DATA_MODEL = {
 
 
 @bp.route('/')
+@requires_roles('admin', 'superadmin')
 def index():
     # границы данных и текущая дата SM
     processor = DATA_PROCESSOR.get('sm')()
@@ -590,7 +592,12 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         hashed_password = generate_password_hash(form.password.data)
-        new_user = SMAppUser(username=form.username.data, email=form.email.data, password_hash=hashed_password)
+        new_user = SMAppUser(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=hashed_password,
+            role_id=form.role.data.id
+        )
         db.session.add(new_user)
         db.session.commit()
         flash('Registration successful.')
@@ -601,19 +608,13 @@ def register():
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        print('current_user.is_authenticated == True')
         return redirect(url_for('main.offer'))
     if request.method == 'POST':
-        print('/login POST')
         username = request.form.get('username')
         password = request.form.get('password')
-        print(f"User: {username} / {password}")
         user = SMAppUser.query.filter_by(username=username).first()
-        print(user)
-        print('check_password_hash', check_password_hash(user.password_hash, password))
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            print(f"User {user.username} logged in successfully")
             flash('You have been logged in!', 'success')
             return redirect(url_for('main.offer'))
         else:
