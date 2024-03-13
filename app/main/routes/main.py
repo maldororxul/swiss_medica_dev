@@ -601,7 +601,7 @@ def register():
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.login'))
+        return redirect(url_for('main.index'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')

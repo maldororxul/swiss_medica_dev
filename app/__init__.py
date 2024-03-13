@@ -6,6 +6,7 @@ https://www.digitalocean.com/community/tutorials/how-to-structure-a-large-flask-
 """
 __author__ = 'ke.mizonov'
 import logging
+from datetime import timedelta
 from flask import Flask
 from flask_login import LoginManager
 from flask_cors import CORS
@@ -32,6 +33,9 @@ def create_app() -> Flask:
     app = Flask(__name__)
     CORS(app)
     app.config.from_object(Config())
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
     # Logging
     gunicorn_logger = logging.getLogger('gunicorn.error')
     app.logger.handlers = gunicorn_logger.handlers
