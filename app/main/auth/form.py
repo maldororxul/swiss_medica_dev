@@ -19,6 +19,6 @@ def available_roles():
 
 class RegistrationForm(FlaskForm):
     username = StringField('Username', validators=[InputRequired(), Length(min=4, max=80)])
-    email = StringField('Email', validators=[InputRequired(), Length(max=120)])
+    email = StringField('Email', validators=[InputRequired(), email_validator, Length(max=120)])
     password = PasswordField('Password', validators=[InputRequired(), Length(min=8)])
     role = QuerySelectField('Role', query_factory=available_roles, allow_blank=False, get_label='name')
