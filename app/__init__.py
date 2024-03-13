@@ -10,23 +10,14 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
-# from apscheduler.events import (
-#     EVENT_SCHEDULER_STARTED,
-#     EVENT_SCHEDULER_SHUTDOWN,
-#     EVENT_SCHEDULER_PAUSED,
-#     EVENT_SCHEDULER_RESUMED,
-#     EVENT_JOB_EXECUTED,
-#     EVENT_JOB_ERROR,
-#     EVENT_JOB_MISSED
-# )
 from app.commands import create_tables
 from app.models.app_user import SMAppUser
-# from app.event_listener import scheduler_listener
-# from app.main.routes.autocall import start_autocalls
 from config import Config
 from app.extensions import db, socketio
 
 login_manager = LoginManager()
+# имя функции или endpoint для входа
+login_manager.login_view = 'bp.login'
 
 
 @login_manager.user_loader
@@ -49,14 +40,9 @@ def create_app() -> Flask:
     app.logger.setLevel(gunicorn_logger.level)
     # Initialize Flask extensions here
     db.init_app(app)
-    # login_manager.init_app(app)
+    login_manager.init_app(app)
     socketio.init_app(app, async_mode='eventlet', cors_allowed_origins="*")
     app.scheduler = BackgroundScheduler()
-    # app.scheduler.add_listener(
-    #     scheduler_listener,
-    #     EVENT_SCHEDULER_STARTED | EVENT_SCHEDULER_SHUTDOWN | EVENT_SCHEDULER_PAUSED | EVENT_SCHEDULER_RESUMED |
-    #     EVENT_JOB_MISSED | EVENT_JOB_EXECUTED | EVENT_JOB_ERROR
-    # )
     # Register blueprints
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)

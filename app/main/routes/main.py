@@ -2,18 +2,21 @@
 __author__ = 'ke.mizonov'
 from datetime import datetime
 from typing import Union, Type, Dict, Optional
-from apscheduler.jobstores.base import JobLookupError
-from flask import render_template, current_app, redirect, url_for, request, Response
+from flask import render_template, current_app, redirect, url_for, request, Response, flash
+from flask_login import login_required, logout_user, current_user, login_user
+from werkzeug.security import generate_password_hash, check_password_hash
+
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import GoogleSheets
 from app.google_api.client import GoogleAPIClient
 from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
+from app.main.auth.form import RegistrationForm
 from app.main.processors import DATA_PROCESSOR
 from app.main.routes.utils import get_data_from_post_request, get_args_from_url
-from app.main.tasks import SchedulerTask
 from app.main.utils import DateTimeEncoder
+from app.models.app_user import SMAppUser
 from app.models.chat import SMChat, CDVChat
 from app.models.data import SMData, CDVData
 from app.models.raw_lead_data import SMRawLeadData, CDVRawLeadData
@@ -54,109 +57,6 @@ DATA_MODEL = {
     'sm': SMData,
     'cdv': CDVData
 }
-
-
-def start_get_data_from_amo_scheduler(branch: str):
-    """ Запуск циклической загрузки данных из Amo """
-    scheduler_id = f'get_data_from_amo_{branch}'
-    lowest_dt = datetime.strptime(request.args.get('time', default=None, type=str), "%Y-%m-%dT%H:%M")
-    # current_app - это проксированный экземпляр приложения,
-    # _get_current_object - доступ к объекту приложения напрямую
-    # с проксированным объектом получается некорректный контекст => костыляем
-    app = current_app._get_current_object()
-    # загрузка данных из Amo
-    try:
-        app.scheduler.remove_job(scheduler_id)
-    except JobLookupError:
-        pass
-    processor = DATA_PROCESSOR.get(branch)()
-    if not app.scheduler.get_job(scheduler_id):
-        app.scheduler.add_job(
-            id=scheduler_id,
-            func=socketio.start_background_task,
-            args=[SchedulerTask().get_data_from_amo, app, branch, lowest_dt],
-            trigger='interval',
-            seconds=60,
-            max_instances=1
-        )
-        if not app.scheduler.running:
-            app.scheduler.start()
-        with app.app_context():
-            processor.log.add(text=f'Amo data loader has started', log_type=1)
-            return Response(status=204)
-    with app.app_context():
-        processor.log.add(text=f'Amo data loader is already running', log_type=1)
-    return Response(status=204)
-    # return render_template('index.html')
-
-
-def stop_get_data_from_amo_scheduler(branch: str):
-    scheduler_id = f'get_data_from_amo_{branch}'
-    # current_app - это проксированный экземпляр приложения,
-    # _get_current_object - доступ к объекту приложения напрямую
-    # с проксированным объектом получается некорректный контекст => костыляем
-    app = current_app._get_current_object()
-    # загрузка данных из Amo CDV
-    try:
-        app.scheduler.remove_job(scheduler_id)
-    except JobLookupError:
-        pass
-    processor = DATA_PROCESSOR.get(branch)()
-    # if not app.scheduler.running:
-    #     app.scheduler.start()
-    with app.app_context():
-        processor.log.add(text=f'Amo data loader has stopped', log_type=1)
-    return Response(status=204)
-
-
-def start_update_pivot_data(branch: str):
-    scheduler_id = f'update_pivot_data_{branch}'
-    # current_app - это проксированный экземпляр приложения,
-    # _get_current_object - доступ к объекту приложения напрямую
-    # с проксированным объектом получается некорректный контекст => костыляем
-    app = current_app._get_current_object()
-    # загрузка данных из Amo CDV
-    try:
-        app.scheduler.remove_job(scheduler_id)
-    except JobLookupError:
-        pass
-    processor = DATA_PROCESSOR.get(branch)()
-    if not app.scheduler.get_job(scheduler_id):
-        app.scheduler.add_job(
-            id=scheduler_id,
-            func=socketio.start_background_task,
-            args=[SchedulerTask().update_pivot_data, app, branch],
-            trigger='interval',
-            seconds=60,
-            max_instances=1
-        )
-        if not app.scheduler.running:
-            app.scheduler.start()
-        with app.app_context():
-            processor.log.add(text=f'Amo data builder has started', log_type=1)
-            return Response(status=204)
-    with app.app_context():
-        processor.log.add(text=f'Amo data builder is already running', log_type=1)
-    return Response(status=204)
-
-
-def stop_update_pivot_data(branch: str):
-    scheduler_id = f'update_pivot_data_{branch}'
-    # current_app - это проксированный экземпляр приложения,
-    # _get_current_object - доступ к объекту приложения напрямую
-    # с проксированным объектом получается некорректный контекст => костыляем
-    app = current_app._get_current_object()
-    # загрузка данных из Amo CDV
-    try:
-        app.scheduler.remove_job(scheduler_id)
-    except JobLookupError:
-        pass
-    processor = DATA_PROCESSOR.get(branch)()
-    # if not app.scheduler.running:
-    #     app.scheduler.start()
-    with app.app_context():
-        processor.log.add(text=f'Amo data builder has stopped', log_type=1)
-    return Response(status=204)
 
 
 @bp.route('/')
@@ -654,11 +554,6 @@ def new_raw_lead():
     return Response(status=204)
 
 
-@bp.route('/get_amo_data_sm')
-def get_amo_data_sm():
-    return start_get_data_from_amo_scheduler(branch='sm')
-
-
 @bp.route('/amo_chat/<scope_id>', methods=['POST'])
 def amo_chat(scope_id):
     """ Пришло сообщение из Amo Chat:
@@ -684,44 +579,46 @@ def amo_chat(scope_id):
     return Response(status=204)
 
 
-@bp.route('/get_amo_data_cdv')
-def get_amo_data_cdv():
-    return start_get_data_from_amo_scheduler(branch='cdv')
-
-
 @bp.route('/tawk', methods=['POST'])
 def tawk():
     return TawkController().handle(request=request)
 
 
-@bp.route('/stop_get_amo_data_sm')
-def stop_get_amo_data_sm():
-    return stop_get_data_from_amo_scheduler(branch='sm')
+@bp.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data)
+        new_user = SMAppUser(username=form.username.data, email=form.email.data, password_hash=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Registration successful.')
+        return redirect(url_for('login'))
+    return render_template('register.html', form=form)
 
 
-@bp.route('/stop_get_amo_data_cdv')
-def stop_get_amo_data_cdv():
-    return stop_get_data_from_amo_scheduler(branch='cdv')
+@bp.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = SMAppUser.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
+            flash('You have been logged in!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Login Unsuccessful. Please check username and password', 'danger')
+    return render_template('login.html')
 
 
-@bp.route('/start_update_pivot_data_sm')
-def start_update_pivot_data_sm():
-    return start_update_pivot_data(branch='sm')
-
-
-@bp.route('/start_update_pivot_data_cdv')
-def start_update_pivot_data_cdv():
-    return start_update_pivot_data(branch='cdv')
-
-
-@bp.route('/stop_update_pivot_data_sm')
-def stop_update_pivot_data_sm():
-    return stop_update_pivot_data(branch='sm')
-
-
-@bp.route('/stop_update_pivot_data_cdv')
-def stop_update_pivot_data_cdv():
-    return stop_update_pivot_data(branch='cdv')
+@bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
 
 
 @bp.route('/create_all')

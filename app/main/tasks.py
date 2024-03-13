@@ -23,7 +23,7 @@ class SchedulerTask:
         key = 'get_data_from_amo'
         if self.__is_running(key=key, branch=branch):
             return
-        starting_date = starting_date or datetime.now()
+        starting_date = starting_date or datetime(2023, 12, 27)     # todo временно! datetime.now()
         self.__get_data_from_amo(app=app, branch=branch, starting_date=starting_date, key=key)
         gc.collect()
 

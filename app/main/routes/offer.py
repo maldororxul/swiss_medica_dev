@@ -1,4 +1,5 @@
 from flask import render_template, jsonify
+from flask_login import login_required
 
 from app.main import bp
 
@@ -428,6 +429,7 @@ class OfferConstructorDataController:
 
 
 @bp.route('/offer')
+@login_required
 def offer():
     return render_template('offer.html')
 

@@ -10,7 +10,6 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     </head>
     <body>
-
         <!-- Google tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-YFMB84204P"></script>
         <script>
@@ -23,6 +22,11 @@
 
         <div class="container">
             <div class="row">
+                <div class="col-12 col-md-12 mt-3">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a> <!-- Добавлена ссылка на страницу авторизации -->
+                </div>
+            </div>
+            <div class="row">
                 <div class="col-12 col-md-12 offset-md-1 mt-3">
                     <div id="events"></div>
                 </div>
@@ -30,25 +34,11 @@
             <div class="row">
                 <div class="col-12 col-md-12 offset-md-1">
                     <div class="button-group">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text mr-3" id="inputGroup-sizing-default-sm">{{ sm_df }} - {{ sm_dt }}</span>
-                            <input type="datetime-local" id="time-sm" value="{{ sm_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-sm">
-                        </div>
-                        <div class="d-flex justify-content-between mt-3">
-                            <button class="btn btn-custom mr-3" id="get_amo_data_sm">Load Amo data SM</button>
-                        </div>
                         <div class="d-flex justify-content-between mt-3">
                             <button class="btn btn-custom mr-3" id="build_pivot_data_sm">Build pivot data SM</button>
                         </div>
                     </div>
                     <div class="button-group">
-                        <div class="input-group mb-3">
-                            <span class="input-group-text mr-3" id="inputGroup-sizing-default-cdv">{{ cdv_df }} - {{ cdv_dt }}</span>
-                            <input type="datetime-local" id="time-cdv" value="{{ cdv_curr }}" class="form-control datetime-input" aria-label="Default" aria-describedby="inputGroup-sizing-default-cdv">
-                        </div>
-                        <div class="d-flex justify-content-between mt-3">
-                            <button class="btn btn-custom mr-3" id="get_amo_data_cdv">Load Amo data CDV</button>
-                        </div>
                         <div class="d-flex justify-content-between mt-3">
                             <button class="btn btn-custom mr-3" id="build_pivot_data_cdv">Build pivot data CDV</button>
                         </div>
