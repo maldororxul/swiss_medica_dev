@@ -17,7 +17,7 @@ from app.extensions import db, socketio
 
 login_manager = LoginManager()
 # имя функции или endpoint для входа
-login_manager.login_view = 'main.login'
+login_manager.login_view = 'bp.login'
 
 
 @login_manager.user_loader
