@@ -21,7 +21,9 @@ login_manager = LoginManager()
 
 @login_manager.user_loader
 def load_user(user_id: int):
-    return SMAppUser.query.get(int(user_id))
+    user = SMAppUser.query.get(int(user_id))
+    print(f"Loading user: {user}")  # Для отладки
+    return user
 
 
 def create_app() -> Flask:
