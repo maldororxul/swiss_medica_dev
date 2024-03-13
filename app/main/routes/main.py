@@ -25,6 +25,7 @@ from app.utils.country_by_ip import get_country_by_ip
 from app.whatsapp.controller import WhatsAppController
 from config import Config
 from modules.utils.utils.functions import clear_phone
+from wsgi import app
 
 API_CLIENT = {
     'SM': SwissmedicaAPIClient,
@@ -600,7 +601,7 @@ def register():
 @bp.route('/site-map')
 def site_map():
     links = []
-    for rule in bp.url_map.iter_rules():
+    for rule in app.url_map.iter_rules():
         links.append((rule.endpoint, url_for(rule.endpoint)))
     return jsonify(links)
 
