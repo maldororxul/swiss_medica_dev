@@ -16,8 +16,6 @@ from config import Config
 from app.extensions import db, socketio
 
 login_manager = LoginManager()
-# имя функции или endpoint для входа
-login_manager.login_view = 'main.login'
 
 
 @login_manager.user_loader
@@ -46,6 +44,8 @@ def create_app() -> Flask:
     # Register blueprints
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
+    # Login endpoint
+    login_manager.login_view = 'main.login'
     # Register CLI commands
     app.cli.add_command(create_tables)
     # запускаем фоновые задачи
