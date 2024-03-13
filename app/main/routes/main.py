@@ -594,7 +594,7 @@ def register():
         db.session.add(new_user)
         db.session.commit()
         flash('Registration successful.')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('register.html', form=form)
 
 
@@ -609,7 +609,7 @@ def site_map():
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -617,7 +617,7 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             flash('You have been logged in!', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('main.index'))
         else:
             flash('Login Unsuccessful. Please check username and password', 'danger')
     return render_template('login.html')
@@ -627,7 +627,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
 
 @bp.route('/create_all')
