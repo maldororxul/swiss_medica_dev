@@ -1,8 +1,6 @@
 from typing import Optional, Dict
 from flask import request
 from urllib.parse import urlparse, parse_qs
-
-
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
