@@ -53,7 +53,7 @@ def create_app() -> Flask:
     # Register CLI commands
     app.cli.add_command(create_tables)
     # запускаем фоновые задачи
-    from app.main.sync.run import run as run_amo_data_sync
+    from app.main.sync.run import run_amo_data_sync, run_pivot_data_builder
     # загрузка данных из Amo
     for branch in ('sm', ):
         app.scheduler.add_job(
@@ -64,5 +64,13 @@ def create_app() -> Flask:
             seconds=60,
             max_instances=1
         )
+        # app.scheduler.add_job(
+        #     id=f'update_pivot_data_{branch}',
+        #     func=socketio.start_background_task,
+        #     args=[run_pivot_data_builder, app, branch],
+        #     trigger='interval',
+        #     seconds=60,
+        #     max_instances=1
+        # )
     app.scheduler.start()
     return app

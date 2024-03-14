@@ -1086,6 +1086,16 @@ class APIClient:
                     break
         return any(updated_or_inserted_records)
 
+    def sync_records(self, records: List[Dict], table_name: str) -> bool:
+        engine = get_engine()
+        with engine.begin() as connection:
+            return self.sync_controller.sync_records(
+                records=records,
+                table_name=table_name,
+                connection=connection,
+                engine=engine
+            )
+
     def __get_url(self, endpoint: str, params: str = '', entity: str = '', entity_id: Optional[int] = None):
         """ Адрес для запроса в AMO
 

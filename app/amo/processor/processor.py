@@ -157,8 +157,6 @@ class DataProcessor:
         if date_to:
             self.__date_to = date_to
         leads = self.leads()
-        # if len(leads) > 0:
-        #     print('leads', self.__date_from, self.__date_to, len(leads))
         if not leads:
             return None
         pre_data = self._pre_build()
@@ -169,17 +167,23 @@ class DataProcessor:
             # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
             self.__fix_created_at_lead(lead=lead)
             # подмешиваем время реакции и эффективность коммуникации в целом
-            self.Communication(
-                sub_domain=self.sub_domain,
-                time_shift_function=self._convert_date_time_from_unix_timestamp,
-                trying_to_get_in_touch=('1. TRYING TO GET IN TOUCH',),  # todo хардкод
-                closed=CLOSE_REASON_FAILED,
-                schedule=schedule,
-                pipelines_dict=self.pipelines_dict,
-                users_dict=self.users_dict,
-            ).process_lead(lead=lead)
+            # self.Communication(
+            #     sub_domain=self.sub_domain,
+            #     time_shift_function=self._convert_date_time_from_unix_timestamp,
+            #     trying_to_get_in_touch=('1. TRYING TO GET IN TOUCH',),
+            #     closed=CLOSE_REASON_FAILED,
+            #     schedule=schedule,
+            #     pipelines_dict=self.pipelines_dict,
+            #     users_dict=self.users_dict,
+            # ).process_lead(lead=lead)
             # подмешиваем страны, определенные по номерам телефонов
             self.__process_lead_country_by_phone_code(lead=lead)
+            # подмешиваем данные Sipuni
+            # todo
+            # подмешиваем маркетинговые данные
+            # todo
+            # убираем телефоны
+            # todo
             yield lead
 
     def users(self) -> List[Dict]:

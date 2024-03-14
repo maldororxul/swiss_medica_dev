@@ -4,7 +4,7 @@ import gc
 import random
 import time
 from datetime import datetime, timedelta
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 
 from flask import Flask
 from flask_sqlalchemy.session import Session
@@ -58,7 +58,6 @@ class SchedulerTask:
             # Получаем минимальное значение timestamp для каждой указанной колонки каждой модели
             query_result = session.query(func.min(getattr(model, column_name))).scalar()
             if query_result:
-                print(model, query_result, datetime.fromtimestamp(query_result))
                 earliest_dates.append(query_result)
 
         # Возвращаем самый ранний timestamp из всех найденных
@@ -127,11 +126,20 @@ class SchedulerTask:
         self.__get_data_from_amo(app=app, branch=branch, starting_date=datetime.now(), key=key)
 
     @staticmethod
-    def __update_pivot_data(app: Flask, branch: str, key: str):
+    def __build_pivot_data_item(line: Dict) -> Dict:
+        item = {key.split('_(')[0]: value for key, value in line.items()}
+        return {
+            'id': line['id'],
+            'created_at': line['created_at_ts'],
+            'updated_at': line['updated_at_ts'],
+            'data': DateTimeEncoder.encode(item)
+        }
+
+    def __update_pivot_data(self, app: Flask, branch: str, key: str):
         interval = 60
-        empty_steps_limit = 0
+        empty_steps_limit = 10
         empty_steps = 0
-        # starting_date = datetime(2023, 8, 3, 15, 0, 0)
+        batch_size = 100
         starting_date = datetime.now()
         date_from = starting_date - timedelta(minutes=interval)
         date_to = starting_date
@@ -143,36 +151,28 @@ class SchedulerTask:
             )
             controller = SYNC_CONTROLLER.get(branch)()
             while True:
-                not_updated = 0
-                total = 0
-
-                # todo tmp - образец работы с JSON-конвертацией для RawLeadData
-
+                batch_data = []
+                has_new = False
+                # используем генератор для получения обновленных данных
                 for line in data_processor.update(date_from=date_from, date_to=date_to):
-                    item = {key.split('_(')[0]: value for key, value in line.items()}
-
-                    # todo это надо переписать!
-
-                    if not controller.sync_record(
-                        record={
-                            'id': line['id'],
-                            'created_at': line['created_at_ts'],
-                            'updated_at': line['updated_at_ts'],
-                            'data': DateTimeEncoder.encode(item)
-                        },
-                        table_name='Data'
-                    ):
-                        not_updated += 1
-                    total += 1
-                if total == not_updated:
+                    batch_data.append(self.__build_pivot_data_item(line=line))
+                    if len(batch_data) >= batch_size:
+                        # пакетная синхронизация
+                        has_new = controller.sync_records(records=batch_data, table_name='Data')
+                        batch_data.clear()
+                # убеждаемся, что "хвост" данных тоже будет синхронизирован
+                if batch_data:
+                    has_new = controller.sync_records(records=batch_data, table_name='Data')
+                    batch_data.clear()
+                # проверяем условие выхода из цикла
+                if not has_new:
                     empty_steps += 1
                 if empty_steps_limit > 0 and empty_steps_limit == empty_steps:
-                    is_running.get(key)[branch] = False
                     data_processor.log.add(
                         text='updating pivot data :: iteration finished',
                         log_type=1
                     )
-                    return
+                    break
                 df = date_from.strftime("%Y-%m-%d %H:%M:%S")
                 dt = date_to.strftime("%H:%M:%S")
                 data_processor.log.add(
@@ -182,3 +182,4 @@ class SchedulerTask:
                 date_from = date_from - timedelta(minutes=interval)
                 date_to = date_to - timedelta(minutes=interval)
                 time.sleep(random.uniform(0.01, 1.5))
+        self.__update_pivot_data(app=app, branch=branch, key=key)
