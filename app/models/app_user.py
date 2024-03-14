@@ -33,12 +33,12 @@ class AppUserBase(db.Model):
 class SMAppUser(AppUserBase):
     __tablename__ = 'app_user'
     __table_args__ = {"schema": "sm"}
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    role_id = db.Column(db.Integer, db.ForeignKey('sm.role.id'))
     role = db.relationship('SMRole', backref=db.backref('app_users', lazy=True))
 
 
 class CDVAppUser(AppUserBase):
     __tablename__ = 'app_user'
     __table_args__ = {"schema": "cdv"}
-    role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
+    role_id = db.Column(db.Integer, db.ForeignKey('cdv.role.id'))
     role = db.relationship('CDVRole', backref=db.backref('app_users', lazy=True))
