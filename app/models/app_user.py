@@ -29,6 +29,9 @@ class AppUserBase(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     is_authenticated = db.Column(db.Boolean, default=True)
 
+    def get_id(self):
+        return self.id
+
 
 class SMAppUser(AppUserBase):
     __tablename__ = 'app_user'
