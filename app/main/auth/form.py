@@ -4,7 +4,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, ValidationError
 from wtforms.validators import InputRequired, Length
 from wtforms_alchemy import QuerySelectField
-from app.models.app_user import Role
+from app.models.app_user import SMRole
 
 
 def email_validator(form, field):
@@ -14,7 +14,7 @@ def email_validator(form, field):
 
 
 def available_roles():
-    return Role.query.all()
+    return SMRole.query.all()
 
 
 class RegistrationForm(FlaskForm):
