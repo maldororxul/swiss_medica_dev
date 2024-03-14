@@ -3,6 +3,28 @@ from flask import request
 from urllib.parse import urlparse, parse_qs
 
 
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
+
+def add_if_not_exists(session: Session, model, filter_by: Dict):
+    instance = session.query(model).filter_by(**filter_by).first()
+    if instance:
+        return instance, False  # Возвращает существующий экземпляр и False, указывая, что новая запись не была создана
+    else:
+        instance = model(filter_by)
+        try:
+            session.add(instance)
+            session.commit()
+            return instance, True  # Возвращает новый экземпляр и True, указывая, что была создана новая запись
+        except IntegrityError:
+            session.rollback()
+            # Если запись была добавлена в базу данных во время выполнения этого кода другим процессом,
+            # можно повторить запрос, чтобы получить существующий экземпляр
+            instance = session.query(model).filter_by(filter_by).first()
+            return instance, False
+
+
 def get_data_from_post_request(_request) -> Optional[Dict]:
     if request.content_type == 'application/json':
         return _request.json

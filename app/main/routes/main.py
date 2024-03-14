@@ -5,7 +5,6 @@ from typing import Union, Type, Dict, Optional
 from flask import render_template, current_app, redirect, url_for, request, Response, flash
 from flask_login import login_required, logout_user, current_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
 from app.amo.processor.processor import GoogleSheets
@@ -14,8 +13,9 @@ from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
 from app.main.auth.form import RegistrationForm
 from app.main.auth.utils import requires_roles
+from app.main.leads_insurance.handler import LeadsInsurance
 from app.main.processors import DATA_PROCESSOR
-from app.main.routes.utils import get_data_from_post_request, get_args_from_url
+from app.main.routes.utils import get_data_from_post_request, get_args_from_url, add_if_not_exists
 from app.main.utils import DateTimeEncoder
 from app.models.app_user import SMAppUser
 from app.models.chat import SMChat, CDVChat
@@ -162,6 +162,18 @@ def startstemcells_lead():
         'email': form_data.get('email') or '',
         'msg': form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or ''
     })
+    # проверяем лид на спам
+    is_spam = False
+    phone = clear_phone(form_data.get('phone') or '')
+    email = form_data.get('email') or ''
+    msg = form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or ''
+    try:
+        is_spam = LeadsInsurance(branch='swissmedica').is_spam(line={'phone': phone, 'email': email, 'msg': msg})
+    except Exception as exc:
+        print('failed to perform spam check', exc)
+    if is_spam:
+        print('spam lead detected')
+        return Response(status=200)
     # для части форм сделки в Amo не создаем (флаг 'l' != 1)
     if not form_config or form_config['l'] != 1:
         print('startstemcells_lead config error')
@@ -182,9 +194,9 @@ def startstemcells_lead():
         headers=data.get('headers') or {},
         cookies=data.get('cookies') or {},
         name=form_data.get('name'),
-        phone=clear_phone(form_data.get('phone') or ''),
-        email=form_data.get('email') or '',
-        diagnosis=form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or '',
+        phone=phone,
+        email=email,
+        diagnosis=msg,
         utm_dict=utm_dict
     )
     return Response(status=200)
@@ -295,6 +307,18 @@ def cellulestaminali_lead():
         'email': form_data.get('email') or '',
         'msg': form_data.get('message') or ''
     })
+    # проверяем лид на спам
+    is_spam = False
+    phone = clear_phone(form_data.get('phone') or '')
+    email = form_data.get('email') or ''
+    msg = form_data.get('diagnosis') or form_data.get('message') or form_data.get('msg') or ''
+    try:
+        is_spam = LeadsInsurance(branch='swissmedica').is_spam(line={'phone': phone, 'email': email, 'msg': msg})
+    except Exception as exc:
+        print('failed to perform spam check', exc)
+    if is_spam:
+        print('spam lead detected')
+        return Response(status=200)
     utm_dict = {
         'utm_source': form_data.get('utm_source') or '',
         'utm_medium': form_data.get('utm_medium') or '',
@@ -311,9 +335,9 @@ def cellulestaminali_lead():
         headers=data.get('headers') or {},
         cookies=data.get('cookies') or {},
         name=form_data.get('name'),
-        phone=clear_phone(form_data.get('phone') or ''),
-        email=form_data.get('email') or '',
-        diagnosis=form_data.get('message') or '',
+        phone=phone,
+        email=email,
+        diagnosis=msg,
         utm_dict=utm_dict
     )
     return Response(status=200)
@@ -640,6 +664,7 @@ def create_all():
     from app.models.note import SMNote, CDVNote
     from app.models.pipeline import CDVPipeline, SMPipeline
     from app.models.user import SMUser, CDVUser
+    from app.models.app_user import SMRole, CDVRole, SMAppUser, CDVAppUser
     from app.models.task import SMTask, CDVTask
     from app.models.company import SMCompany, CDVCompany
     from app.models.data import SMData, CDVData
@@ -649,6 +674,11 @@ def create_all():
     from app.models.raw_lead_data import SMRawLeadData, CDVRawLeadData
     with current_app.app_context():
         db.create_all()
+        # добавляем роли
+        session = db.session
+        for model in (SMRole, CDVRole):
+            for name in ('user', 'admin', 'superadmin', 'guest'):
+                add_if_not_exists(session=session, model=model, filter_by={'name': name})
     return 'tables created'
 
 

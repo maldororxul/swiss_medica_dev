@@ -3,10 +3,19 @@ __author__ = 'ke.mizonov'
 from app.extensions import db
 
 
-class Role(db.Model):
-    __tablename__ = 'role'
+class RoleBase(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
+
+
+class SMRole(RoleBase):
+    __tablename__ = 'role'
+    __table_args__ = {"schema": "sm"}
+
+
+class CDVRole(RoleBase):
+    __tablename__ = 'role'
+    __table_args__ = {"schema": "cdv"}
 
 
 class AppUserBase(db.Model):
@@ -21,15 +30,14 @@ class AppUserBase(db.Model):
 
 
 class SMAppUser(AppUserBase):
-    __tablename__ = 'app_user_sm'
+    __tablename__ = 'app_user'
     __table_args__ = {"schema": "sm"}
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-    role = db.relationship('Role', backref=db.backref('sm_users', lazy=True))
+    role = db.relationship('SMRole', backref=db.backref('app_users', lazy=True))
 
 
 class CDVAppUser(AppUserBase):
-    __tablename__ = 'app_user_cdv'
+    __tablename__ = 'app_user'
     __table_args__ = {"schema": "cdv"}
-    __mapper_args__ = {'polymorphic_identity': 'cdv'}
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-    role = db.relationship('Role', backref=db.backref('cdv_users', lazy=True))
+    role = db.relationship('CDVRole', backref=db.backref('app_users', lazy=True))
