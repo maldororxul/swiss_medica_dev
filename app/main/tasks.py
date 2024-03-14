@@ -57,6 +57,7 @@ class SchedulerTask:
         for model, column_name in models_with_columns:
             # Получаем минимальное значение timestamp для каждой указанной колонки каждой модели
             query_result = session.query(func.min(getattr(model, column_name))).scalar()
+            print(model, query_result)
             if query_result:
                 earliest_dates.append(query_result)
 
