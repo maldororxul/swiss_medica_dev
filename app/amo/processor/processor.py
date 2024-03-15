@@ -182,8 +182,14 @@ class DataProcessor:
             # todo
             # подмешиваем маркетинговые данные
             # todo
+            # поля для упрощенной группировки по периодам
+            created_at = lead['created_at']
+            lead['year'] = created_at.year
+            lead['month'] = created_at.month
+            lead['day'] = created_at.day
+            lead['week'] = created_at.isocalendar()[1]
             # убираем лишние поля
-            for key in ('phone', 'budget', 'discount'):
+            for key in ('phone', 'budget', 'discount', 'events', 'notes', 'tasks'):
                 if key not in lead:
                     continue
                 lead.pop(key)
