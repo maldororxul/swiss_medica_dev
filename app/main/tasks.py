@@ -317,10 +317,10 @@ class SchedulerTask:
     #                 sipuni_processor.get_record(id_=_call['ID записи'])
 
     def __update_pivot_data(self, app: Flask, branch: str, key: str):
-        interval = 60 * 6
-        empty_steps_limit = 50
+        interval = 60
+        empty_steps_limit = 48
         empty_steps = 0
-        batch_size = 100
+        batch_size = 20
         starting_date = datetime.now()
         date_from = starting_date - timedelta(minutes=interval)
         date_to = starting_date

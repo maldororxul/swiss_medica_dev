@@ -1,26 +1,22 @@
 """ Схема данных для сводных отчетов Swiss Medica """
 __author__ = 'ke.mizonov'
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from app.amo.data.base.data_schema import Lead, StageItem, StageBase, LeadField
-
-
-@dataclass()
-class StageItemHA(StageItem):
-    def __post_init__(self):
-        super().__post_init__(prefix='ha')
-
-
-@dataclass()
-class StageItemDiabetes(StageItem):
-    def __post_init__(self):
-        super().__post_init__(prefix='diabetes')
+from amo.data.base.data_schema import Lead, StageItem, StageBase, LeadField
 
 
 @dataclass()
 class StageSM(StageBase):
     """ Стадия воронки """
-    Lead: StageItem = field(default_factory=lambda: StageItem(
+    RawLead: StageItem = StageItem(
+        DisplayName='Raw leads',
+        Documentation="""Сырой лид, потенциальный клиент - этап сделки, через который проходят все заявки.""",
+        IncludeStages=[],
+        IncludeFields=[],
+        Key='raw_lead',
+        Priority=0
+    )
+    Lead: StageItem = StageItem(
         DisplayName='Leads',
         Documentation="""
             Лид, потенциальный клиент
@@ -39,24 +35,24 @@ class StageSM(StageBase):
         IncludeFields=[],
         Key='lead',
         Priority=1
-    ))
-    ContinueToWork: StageItem = field(default_factory=lambda: StageItem(
+    )
+    ContinueToWork: StageItem = StageItem(
         DisplayName='Continue to work',
         Documentation="""Продолжить работу""",
         IncludeStages=[],
         IncludeFields=[],
         Key='continue_to_work',
         Priority=2
-    ))
-    TryingToGetInTouch: StageItem = field(default_factory=lambda: StageItem(
+    )
+    TryingToGetInTouch: StageItem = StageItem(
         DisplayName='Trying to get in touch',
         Documentation="""Выход на контакт""",
         IncludeStages=[],
         IncludeFields=[],
         Key='trying_to_get_in_touch',
         Priority=3
-    ))
-    Target: StageItem = field(default_factory=lambda: StageItem(
+    )
+    Target: StageItem = StageItem(
         DisplayName='Target leads',
         Documentation="""Целевой лид (контакт верный, человек нуждается в услугах клиники)""",
         IncludeStages=[],  # целевой лид определяется по другой логике, тут оставляем пустой список
@@ -67,8 +63,8 @@ class StageSM(StageBase):
         ],
         Key='target',
         Priority=4
-    ))
-    GettingQuestionnaire: StageItem = field(default_factory=lambda: StageItem(
+    )
+    GettingQuestionnaire: StageItem = StageItem(
         DisplayName='Getting questionnaire',
         Documentation="""Получение опросника""",
         IncludeStages=[
@@ -79,8 +75,8 @@ class StageSM(StageBase):
         ],
         Key='getting_questionnaire',
         Priority=5
-    ))
-    AnamnesisGathering: StageItem = field(default_factory=lambda: StageItem(
+    )
+    AnamnesisGathering: StageItem = StageItem(
         DisplayName='Anamnesis gathering',
         Documentation="""Досбор анамнеза""",
         IncludeStages=[
@@ -89,8 +85,8 @@ class StageSM(StageBase):
         IncludeFields=[],
         Key='anamnesis_gathering',
         Priority=6
-    ))
-    Qualification: StageItem = field(default_factory=lambda: StageItem(
+    )
+    Qualification: StageItem = StageItem(
         DisplayName='Qual leads',
         Documentation="""Квалифицированный лид (получил консультацию, готов вести иалог дальше)""",
         IncludeStages=[
@@ -104,8 +100,8 @@ class StageSM(StageBase):
         Key='qualification',
         # TargetValue='month: all 250, autism 200',
         Priority=7
-    ))
-    SchedulingConsultation: StageItem = field(default_factory=lambda: StageItem(
+    )
+    SchedulingConsultation: StageItem = StageItem(
         DisplayName='Scheduling consultation (questionnaire was sent)',
         Documentation="""Планирование консультации""",
         IncludeStages=[
@@ -116,8 +112,8 @@ class StageSM(StageBase):
         ],
         Key='scheduling_consultation',
         Priority=8
-    ))
-    WaitingForConsultation: StageItem = field(default_factory=lambda: StageItem(
+    )
+    WaitingForConsultation: StageItem = StageItem(
         DisplayName='Waiting for consultation',
         Documentation="""Ожидание консультации""",
         IncludeStages=[
@@ -126,8 +122,8 @@ class StageSM(StageBase):
         IncludeFields=[],
         Key='waiting_for_consultation',
         Priority=9
-    ))
-    TreatmentDiscussion: StageItem = field(default_factory=lambda: StageItem(
+    )
+    TreatmentDiscussion: StageItem = StageItem(
         DisplayName='Treatment discussion (Offer was sent)',
         Documentation="""Переговоры по программе, отправлен offer""",
         IncludeStages=[
@@ -139,8 +135,8 @@ class StageSM(StageBase):
         Key='treatment_discussion',
         PurchaseRate=.12,
         Priority=10
-    ))
-    PriorConsent: StageItem = field(default_factory=lambda: StageItem(
+    )
+    PriorConsent: StageItem = StageItem(
         DisplayName='Prior consent',
         Documentation="""Предварительное согласие на лечение""",
         IncludeStages=[
@@ -152,8 +148,47 @@ class StageSM(StageBase):
         Key='prior_consent',
         PurchaseRate=.51,
         Priority=11
-    ))
-    WaitingForArrival: StageItem = field(default_factory=lambda: StageItem(
+    )
+    DiscountRequest: StageItem = StageItem(
+        DisplayName='Discount request',
+        Documentation="""Запрос скидки""",
+        IncludeStages=[
+            '4.1. ЗАПРОС СКИДКИ',
+        ],
+        IncludeFields=[
+            'Запрос скидки',
+        ],
+        Key='discount_request',
+        PurchaseRate=.51,
+        Priority=12
+    )
+    PreReserved: StageItem = StageItem(
+        DisplayName='PreReserved',
+        Documentation="""Предварительная бронь""",
+        IncludeStages=[
+            '4.2. ПРЕДВАРИТЕЛЬНАЯ БРОНЬ',
+        ],
+        IncludeFields=[
+            'Предварительная бронь',
+        ],
+        Key='pre_reserved',
+        PurchaseRate=.51,
+        Priority=13
+    )
+    PrePaid: StageItem = StageItem(
+        DisplayName='PrePaid',
+        Documentation="""Есть предоплата""",
+        IncludeStages=[
+            '4.3. ЕСТЬ ПРЕДОПЛАТА',
+        ],
+        IncludeFields=[
+            'Есть предоплата',
+        ],
+        Key='pre_paid',
+        PurchaseRate=.85,
+        Priority=14
+    )
+    WaitingForArrival: StageItem = StageItem(
         DisplayName='Waiting for arrival',
         Documentation="""Ожидаем приезда""",
         IncludeStages=[
@@ -164,9 +199,9 @@ class StageSM(StageBase):
         ],
         Key='waiting_for_arrival',
         PurchaseRate=.85,
-        Priority=12
-    ))
-    Treatment: StageItem = field(default_factory=lambda: StageItem(
+        Priority=15
+    )
+    Treatment: StageItem = StageItem(
         DisplayName='Treatment',
         Documentation="""Лечение""",
         IncludeStages=[
@@ -177,9 +212,9 @@ class StageSM(StageBase):
         ],
         Key='treatment',
         PurchaseRate=1,
-        Priority=13
-    ))
-    Audit: StageItem = field(default_factory=lambda: StageItem(
+        Priority=16
+    )
+    Audit: StageItem = StageItem(
         DisplayName='Audit',
         Documentation="""Выписан из клиники (аудит)""",
         IncludeStages=[
@@ -191,9 +226,9 @@ class StageSM(StageBase):
         Key='audit',
         PurchaseRate=1,
         AtWork=False,
-        Priority=14
-    ))
-    Purchase: StageItem = field(default_factory=lambda: StageItem(
+        Priority=17
+    )
+    Purchase: StageItem = StageItem(
         DisplayName='Purchase',
         Documentation="""Покупка""",
         IncludeStages=[
@@ -205,341 +240,8 @@ class StageSM(StageBase):
         Key='purchase',
         PurchaseRate=1,
         AtWork=False,
-        Priority=15
-    ))
-
-    def __post_init__(self):
-        super().__init__()
-
-
-@dataclass()
-class StageHA(StageBase):
-    """ Стадия воронки """
-    RawLead: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Raw leads',
-        Documentation="""Сырой лид, потенциальный клиент - этап сделки, через который проходят все заявки.""",
-        IncludeStages=[],
-        IncludeFields=[],
-        Key='raw_lead',
-        Priority=0
-    ))
-    Lead: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Leads',
-        Documentation="""
-            Лид, потенциальный клиент
-
-            Исключения:
-            - имеющие причину закрытия 'Duplicate Lead' (дубликаты)
-            - удаленные (в том числе в результате объединения)
-
-            Удаленные сделки выявляются по событиям в Amo.
-        """,
-        IncludeStages=[
-            'NEW LEAD',
-            'ПРОДОЛЖИТЬ РАБОТУ ИЗ ЗАМОРОЗКИ'
-        ],
-        IncludeFields=[],
-        Key='lead',
-        Priority=1
-    ))
-    TryingToGetInTouch: StageItemHA = field(default_factory=lambda: StageItem(
-        DisplayName='Trying to get in touch',
-        Documentation="""Выход на контакт""",
-        IncludeStages=['ПЫТАЮСЬ ВЫЙТИ НА КОНТАКТ'],
-        IncludeFields=[],
-        Key='trying_to_get_in_touch',
-        Priority=2
-    ))
-    Target: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Target leads',
-        Documentation="""Целевой лид (контакт верный, человек нуждается в услугах клиники)""",
-        IncludeStages=[],  # целевой лид определяется по другой логике, тут оставляем пустой список
-        IncludeFields=[
-            'tselevoj',
-            'tselevoj!',
-            'Целевой!'
-        ],
-        Key='target',
-        Priority=3
-    ))
-    Discussion: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Discussion',
-        Documentation="""Переговоры""",
-        IncludeStages=['ПЕРЕГОВОРЫ'],
-        IncludeFields=['1 Квалификация'],
-        Key='discussion',
-        Priority=4
-    ))
-    Qualification: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Qual leads',
-        Documentation="""Квалифицированный лид (получил консультацию, готов вести иалог дальше)""",
-        IncludeStages=['ПЕРЕГОВОРЫ'],
-        IncludeFields=[
-            '1 Квалификация',
-            'Qualification',
-            '1_kvalifikatsija'
-        ],
-        Key='qualification',
-        Priority=5
-    ))
-    SchedulingConsultation: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Scheduling consultation',
-        Documentation="""Планирование консультации""",
-        IncludeStages=['НАЗНАЧЕНА КОНСУЛЬТАЦИЯ'],
-        IncludeFields=['Получен опросник'],
-        Key='scheduling_consultation',
-        Priority=6
-    ))
-    SchedulingConsultationRepeated: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Scheduling consultation (repeated)',
-        Documentation="""Планирование консультации (повторно)""",
-        IncludeStages=['ПОВТОРНОЕ НАЗНАЧЕНИЕ ПЕРВИЧНОЙ КОНСУЛЬТАЦИИ'],
-        IncludeFields=['Не пришел на первичную консультацию'],
-        Key='scheduling_consultation_repeated',
-        Priority=7
-    ))
-    FutureLead: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Future lead',
-        Documentation="""Планирование консультации (повторно)""",
-        IncludeStages=['ПОТЕНЦИАЛЬНЫЕ В БУДУЩЕМ'],
-        IncludeFields=['2 Есть общий интерес'],
-        Key='future_lead',
-        Priority=8
-    ))
-    ConsultationAnalysis: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Consultation analysis',
-        Documentation="""Анализ первичной консультации""",
-        IncludeStages=['АНАЛИЗ ПЕРВИЧНОЙ КОНСУЛЬТАЦИИ'],
-        IncludeFields=['Прошла первичная консультация'],
-        Key='consultation_analysis',
-        Priority=9
-    ))
-    TreatmentPreparation: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Treatment preparation',
-        Documentation="""Подготовка программы""",
-        IncludeStages=['ПОДГОТОВКА ПРОГРАММЫ'],
-        IncludeFields=['Отправлен Offer'],
-        Key='treatment_preparation',
-        Priority=10
-    ))
-    TreatmentDiscussion: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Treatment discussion',
-        Documentation="""Переговоры по программе""",
-        IncludeStages=['ОБСУЖДЕНИЕ ПРОГРАММЫ'],
-        IncludeFields=['Обсуждение программы'],
-        Key='treatment_discussion',
-        Priority=11
-    ))
-    WaitingForReservation: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Waiting for reservation',
-        Documentation="""Ожидаем бронирования""",
-        IncludeStages=['ОЖИДАЕМ БРОНИРОВАНИЯ'],
-        IncludeFields=['Предварительное согласие', '3 Ожидаем брониров'],
-        Key='waiting_for_reservation',
-        Priority=12
-    ))
-    WaitingForArrival: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Waiting for arrival',
-        Documentation="""Ожидаем приезда""",
-        IncludeStages=['ОЖИДАЕМ ПРИЕЗДА'],
-        IncludeFields=['4 Ожидаем приезда', 'Ожидаем приезда'],
-        Key='waiting_for_arrival',
-        Priority=13
-    ))
-    Treatment: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Treatment',
-        Documentation="""В отеле (лечение)""",
-        IncludeStages=['В ОТЕЛЕ'],
-        IncludeFields=['Сейчас В клинике'],
-        Key='treatment',
-        Priority=14
-    ))
-    Audit: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Audit',
-        Documentation="""Выписан из клиники (аудит)""",
-        IncludeStages=['АУДИТ СДЕЛКИ'],
-        IncludeFields=['Аудит', '5 Аудит сделки'],
-        Key='audit',
-        AtWork=False,
-        Priority=15
-    ))
-    Purchase: StageItem = field(default_factory=lambda: StageItemHA(
-        DisplayName='Purchase',
-        Documentation="""Покупка""",
-        IncludeStages=['УСПЕШНО РЕАЛИЗОВАНО'],
-        IncludeFields=['6 Успешно закрыта'],
-        Key='purchase',
-        AtWork=False,
-        Priority=16
-    ))
-
-    def __post_init__(self):
-        super().__init__()
-
-
-@dataclass()
-class StageDiabetes(StageBase):
-    """ Стадия воронки """
-    RawLead: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Raw leads',
-        Documentation="""Сырой лид, потенциальный клиент - этап сделки, через который проходят все заявки.""",
-        IncludeStages=[],
-        IncludeFields=[],
-        Key='raw_lead',
-        Priority=0
-    ))
-    Lead: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Leads',
-        Documentation="""
-            Лид, потенциальный клиент
-
-            Исключения:
-            - имеющие причину закрытия 'Duplicate Lead' (дубликаты)
-            - удаленные (в том числе в результате объединения)
-
-            Удаленные сделки выявляются по событиям в Amo.
-        """,
-        IncludeStages=[
-            'NEW LEAD',
-            'ПРОДОЛЖИТЬ РАБОТУ ИЗ ЗАМОРОЗКИ'
-        ],
-        IncludeFields=[],
-        Key='lead',
-        Priority=1
-    ))
-    TryingToGetInTouch: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Trying to get in touch',
-        Documentation="""Выход на контакт""",
-        IncludeStages=['ПЫТАЮСЬ ВЫЙТИ НА КОНТАКТ'],
-        IncludeFields=[],
-        Key='trying_to_get_in_touch',
-        Priority=2
-    ))
-    Target: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Target leads',
-        Documentation="""Целевой лид (контакт верный, человек нуждается в услугах клиники)""",
-        IncludeStages=[],  # целевой лид определяется по другой логике, тут оставляем пустой список
-        IncludeFields=[
-            'tselevoj',
-            'tselevoj!',
-            'Целевой!'
-        ],
-        Key='target_diabetes',
-        Priority=3
-    ))
-    Discussion: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Discussion',
-        Documentation="""Переговоры""",
-        IncludeStages=['ПЕРЕГОВОРЫ'],
-        IncludeFields=['1 Квалификация'],
-        Key='discussion',
-        Priority=4
-    ))
-    Qualification: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Qual leads',
-        Documentation="""Квалифицированный лид (получил консультацию, готов вести иалог дальше)""",
-        IncludeStages=['ПЕРЕГОВОРЫ'],
-        IncludeFields=[
-            '1 Квалификация',
-            'Qualification',
-            '1_kvalifikatsija'
-        ],
-        Key='qualification',
-        Priority=5
-    ))
-    SchedulingConsultation: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Scheduling consultation',
-        Documentation="""Планирование консультации""",
-        IncludeStages=['НАЗНАЧЕНА КОНСУЛЬТАЦИЯ'],
-        IncludeFields=['Получен опросник'],
-        Key='scheduling_consultation',
-        Priority=6
-    ))
-    SchedulingConsultationRepeated: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Scheduling consultation (repeated)',
-        Documentation="""Планирование консультации (повторно)""",
-        IncludeStages=['ПОВТОРНОЕ НАЗНАЧЕНИЕ ПЕРВИЧНОЙ КОНСУЛЬТАЦИИ'],
-        IncludeFields=['Не пришел на первичную консультацию'],
-        Key='scheduling_consultation_repeated',
-        Priority=7
-    ))
-    FutureLead: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Future lead',
-        Documentation="""Планирование консультации (повторно)""",
-        IncludeStages=['ПОТЕНЦИАЛЬНЫЕ В БУДУЩЕМ'],
-        IncludeFields=['2 Есть общий интерес'],
-        Key='future_lead',
-        Priority=8
-    ))
-    ConsultationAnalysis: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Consultation_analysis',
-        Documentation="""Анализ первичной консультации""",
-        IncludeStages=['АНАЛИЗ ПЕРВИЧНОЙ КОНСУЛЬТАЦИИ'],
-        IncludeFields=['Прошла первичная консультация'],
-        Key='consultation_analysis',
-        Priority=9
-    ))
-    TreatmentPreparation: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Treatment preparation',
-        Documentation="""Подготовка программы""",
-        IncludeStages=['ПОДГОТОВКА ПРОГРАММЫ'],
-        IncludeFields=['Отправлен Offer'],
-        Key='treatment_preparation',
-        Priority=10
-    ))
-    TreatmentDiscussion: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Treatment discussion',
-        Documentation="""Переговоры по программе""",
-        IncludeStages=['ОБСУЖДЕНИЕ ПРОГРАММЫ'],
-        IncludeFields=['Обсуждение программы'],
-        Key='treatment_discussion',
-        Priority=11
-    ))
-    WaitingForReservation: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Waiting for reservation',
-        Documentation="""Ожидаем бронирования""",
-        IncludeStages=['ОЖИДАЕМ БРОНИРОВАНИЯ'],
-        IncludeFields=['Предварительное согласие', '3 Ожидаем брониров'],
-        Key='waiting_for_reservation',
-        Priority=12
-    ))
-    WaitingForArrival: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Waiting for arrival',
-        Documentation="""Ожидаем приезда""",
-        IncludeStages=['ОЖИДАЕМ ПРИЕЗДА'],
-        IncludeFields=['4 Ожидаем приезда', 'Ожидаем приезда'],
-        Key='waiting_for_arrival',
-        Priority=13
-    ))
-    Treatment: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Treatment',
-        Documentation="""В отеле (лечение)""",
-        IncludeStages=['В ОТЕЛЕ'],
-        IncludeFields=['Сейчас В клинике'],
-        Key='treatment',
-        Priority=14
-    ))
-    Audit: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Audit',
-        Documentation="""Выписан из клиники (аудит)""",
-        IncludeStages=['АУДИТ СДЕЛКИ'],
-        IncludeFields=['Аудит', '5 Аудит сделки'],
-        Key='audit',
-        AtWork=False,
-        Priority=15
-    ))
-    Purchase: StageItem = field(default_factory=lambda: StageItemDiabetes(
-        DisplayName='Purchase',
-        Documentation="""Покупка""",
-        IncludeStages=['УСПЕШНО РЕАЛИЗОВАНО'],
-        IncludeFields=['6 Успешно закрыта'],
-        Key='purchase',
-        AtWork=False,
-        Priority=16
-    ))
-
-    def __post_init__(self):
-        super().__init__()
+        Priority=18
+    )
 
 
 class CloseReasonSm(Enum):
@@ -573,218 +275,205 @@ class LeadSM(Lead):
     Stage = StageSM
     AutodocsSheet = 'SM'
 
-    AddedToArrivalTimetable: LeadField = field(default_factory=lambda: LeadField(
+    AddedToArrivalTimetable: LeadField = LeadField(
         DisplayName='Added to arrival timetable',
         Documentation="""Внесен в Arrival Timetable - берем из доп. полей""",
         Key='added_to_arrival_timetable',
         CustomField='Внесен в Arrival Timetable'
-    ))
-    Agent: LeadField = field(default_factory=lambda: LeadField(
+    )
+    Agent: LeadField = LeadField(
         DisplayName='Agent',
         Documentation="""...""",
         Key='agent',
         CustomField='Agent'
-    ))
-    OfferSendingSpeed: LeadField = field(default_factory=lambda: LeadField(
+    )
+    OfferSendingSpeed: LeadField = LeadField(
         DisplayName='Offer sent in (days)',
         Documentation="""Через сколько дней после получения опросника был отправлен оффер""",
         Key='offer_sent_in_days'
-    ))
-    ArrivalChance: LeadField = field(default_factory=lambda: LeadField(
+    )
+    ArrivalChance: LeadField = LeadField(
         DisplayName='Arrival chance',
         Documentation="""Шанс приезда""",
         Key='arrival_chance',
         CustomField='(%) Arrival chance'
-    ))
-    Budget: LeadField = field(default_factory=lambda: LeadField(
-        DisplayName='Budget',
-        Documentation="""Бюджет""",
-        Key='budget',
-        CustomField='Бюджет'
-    ))
-    Clinic: LeadField = field(default_factory=lambda: LeadField(
+    )
+    # Budget: LeadField = LeadField(
+    #     DisplayName='Budget',
+    #     Documentation="""Бюджет""",
+    #     Key='budget',
+    #     CustomField='Бюджет'
+    # )
+    Clinic: LeadField = LeadField(
         DisplayName='Clinic',
         Documentation="""Клиника""",
         Key='clinic',
         CustomField='Клиника'
-    ))
-    ConsultingDoctor: LeadField = field(default_factory=lambda: LeadField(
+    )
+    ConsultingDoctor: LeadField = LeadField(
         DisplayName='Consulting doctor',
         Documentation="""Консультирующий врач""",
         Key='consulting_doctor',
         CustomField='Консультирующий доктор'
-    ))
-    CuringDoctor: LeadField = field(default_factory=lambda: LeadField(
+    )
+    Country: LeadField = LeadField(
+        DisplayName='Country',
+        Documentation="""
+            Предполагаемая страна лида.
+
+            Взято из доп. полей 'Country', 'Country_from_Jivo', 'CLIENTS_COUNTRY'.
+            В приоритете значение из поля 'Country'.
+            IP и MAC-адреса, содержащиеся в этих полях, исключены.
+        """,
+        Key='country',
+        CustomField='Country'
+    )
+    CuringDoctor: LeadField = LeadField(
         DisplayName='Curing doctor',
         Documentation="""Лечащий врач""",
         Key='curing_doctor',
         CustomField='Лечащий врач'
-    ))
-    DateOfAdmission: LeadField = field(default_factory=lambda: LeadField(
+    )
+    DateOfAdmission: LeadField = LeadField(
         DisplayName='Date of admission',
         Documentation="""Дата посещения (начала лечения)""",
         Key='date_of_admission',
         CustomField='Дата начала лечения',
         IsDate=True
-    ))
-    DateOfOffer: LeadField = field(default_factory=lambda: LeadField(
+    )
+    DateOfOffer: LeadField = LeadField(
         DisplayName='Date of offer',
         Documentation="""Дата отправки оффера""",
         Key='date_of_offer',
         CustomField='Отправили OFFER Пациенту.',
         IsDate=True
-    ))
-    DateOfQuestionnaireRecieved: LeadField = field(default_factory=lambda: LeadField(
+    )
+    DateOfQuestionnaireRecieved: LeadField = LeadField(
         DisplayName='Date of questionnaire recieved',
         Documentation="""Дата отправки опросника""",
         Key='date_of_questionnaire_recieved',
         CustomField='Recieved Questionnair',
         IsDate=True
-    ))
-    DateOfPriorConsent: LeadField = field(default_factory=lambda: LeadField(
+    )
+    DateOfPriorConsent: LeadField = LeadField(
         DisplayName='Date of prior consent',
         Documentation="""Дата предварительного согласия""",
         Key='date_of_prior_consent',
         CustomField='Дата предварительного согласия',
         IsDate=True
-    ))
-    DateOfTreatmentEnd: LeadField = field(default_factory=lambda: LeadField(
+    )
+    DateOfTreatmentEnd: LeadField = LeadField(
         DisplayName='Date of treatment end',
         Documentation="""Дата завершения лечения (начала лечения)""",
         Key='date_of_treatment_end',
         CustomField='Дата завершения лечения',
         IsDate=True
-    ))
-    DaysAtTheClinic: LeadField = field(default_factory=lambda: LeadField(
+    )
+    DaysAtTheClinic: LeadField = LeadField(
         DisplayName='Days at the clinic',
         Documentation="""Количество дней, проведенных в клинике""",
         Key='days_at_the_clinic',
         CustomField='Days in Clinic (Stay duration)'
-    ))
-    Discount: LeadField = field(default_factory=lambda: LeadField(
-        DisplayName='Discount',
-        Documentation="""Скидка""",
-        Key='discount',
-        CustomField='Размер скидки'
-    ))
-    Duration30Days: LeadField = field(default_factory=lambda: LeadField(
+    )
+    # Discount: LeadField = LeadField(
+    #     DisplayName='Discount',
+    #     Documentation="""Скидка""",
+    #     Key='discount',
+    #     CustomField='Размер скидки'
+    # )
+    Duration30Days: LeadField = LeadField(
         DisplayName='Продолжительность сделки 30 дней',
         Documentation='...',
         Key='duration_30_days'
-    ))
-    EDSS: LeadField = field(default_factory=lambda: LeadField(
+    )
+    EDSS: LeadField = LeadField(
         DisplayName='EDSS',
         Documentation="""Инвалидность""",
         Key='edss',
         CustomField='EDSS'
-    ))
-    HAIncluded: LeadField = field(default_factory=lambda: LeadField(
+    )
+    HAIncluded: LeadField = LeadField(
         DisplayName='HA included',
         Documentation="""...""",
         Key='ha_included',
         CustomField='Включен HA'
-    ))
-    GoogleID: LeadField = field(default_factory=lambda: LeadField(
+    )
+    GoogleID: LeadField = LeadField(
         DisplayName='Google ID',
         Documentation="""Идентификатор клиента в рекламной системе Google - берем из доп. полей""",
         Key='google_id',
         CustomField='Google Client ID'
-    ))
-    Language: LeadField = field(default_factory=lambda: LeadField(
+    )
+    Language: LeadField = LeadField(
         DisplayName='Language',
         Documentation="""Язык лида - берем из доп. полей""",
         Key='language',
         CustomField='Spoken language'
-    ))
+    )
 
     # показатели для Италии
-    QuestionnaireRecieved14Days: LeadField = field(default_factory=lambda: LeadField(
+    QuestionnaireRecieved14Days: LeadField = LeadField(
         DisplayName='Questionnaire recieved 14 days',
         Documentation="""Получен опросник 14 дней""",
         Key='7_days_questionnaire_recieved'
-    ))
-    OfferSent21Days: LeadField = field(default_factory=lambda: LeadField(
+    )
+    OfferSent21Days: LeadField = LeadField(
         DisplayName='Offer sent 21 days',
         Documentation="""Отправлен оффер 21 дней""",
         Key='21_days_offer_sent'
-    ))
-    PriorConsent35Days: LeadField = field(default_factory=lambda: LeadField(
+    )
+    PriorConsent35Days: LeadField = LeadField(
         DisplayName='35 days prior consent',
         Documentation="""
             1 - если пациент дал предварительное согласие на лечение в течение 35 дней с момента создания сделки
         """,
         Key='35_days_prior_consent'
-    ))
+    )
 
-    OfferSent14Days: LeadField = field(default_factory=lambda: LeadField(
+    OfferSent14Days: LeadField = LeadField(
         DisplayName='Offer sent 14 days',
         Documentation="""Отправлен оффер 14 дней""",
         Key='14_days_offer_sent'
-    ))
-    QuestionnaireRecieved7Days: LeadField = field(default_factory=lambda: LeadField(
+    )
+    QuestionnaireRecieved7Days: LeadField = LeadField(
         DisplayName='Questionnaire recieved 7 days',
         Documentation="""Получен опросник 7 дней""",
         Key='7_days_questionnaire_recieved'
-    ))
-    PriorConsent28Days: LeadField = field(default_factory=lambda: LeadField(
+    )
+    PriorConsent28Days: LeadField = LeadField(
         DisplayName='28 days prior consent',
         Documentation="""
             1 - если пациент дал предварительное согласие на лечение в течение 28 дней с момента создания сделки
         """,
         Key='28_days_prior_consent'
-    ))
-    PatientFolder: LeadField = field(default_factory=lambda: LeadField(
+    )
+    PatientFolder: LeadField = LeadField(
         DisplayName='Patient folder',
         Documentation="""Папка Пациента - берем из доп. полей""",
         Key='patient_folder',
         CustomField='Папка Пациента'
-    ))
-    PaymentMethod: LeadField = field(default_factory=lambda: LeadField(
+    )
+    PaymentMethod: LeadField = LeadField(
         DisplayName='Payment method',
         Documentation="""Способ оплаты - берем из доп. полей""",
         Key='payment_method',
         CustomField='Способ оплаты'
-    ))
-    PrePay: LeadField = field(default_factory=lambda: LeadField(
+    )
+    PrePay: LeadField = LeadField(
         DisplayName='Prepay ammount',
         Documentation="""Сумма предоплаты - берем из доп. полей""",
         Key='pre_pay',
         CustomField='Сумма предоплаты, Евро'
-    ))
-    Treatment: LeadField = field(default_factory=lambda: LeadField(
+    )
+    Treatment: LeadField = LeadField(
         DisplayName='Treatment',
         Documentation="""Болезнь, диагноз, направление - берем из доп. полей""",
         Key='treatment',
         CustomField='Disease'
-    ))
-    TreatmentIfOther: LeadField = field(default_factory=lambda: LeadField(
+    )
+    TreatmentIfOther: LeadField = LeadField(
         DisplayName='Treatment (Other)',
         Documentation="""Болезнь, диагноз, направление - берем из доп. полей""",
         Key='treatment_if_other',
         CustomField='Disease if other'
-    ))
-
-    def __post_init__(self):
-        super().__init__()
-
-
-@dataclass()
-class LeadHA(LeadSM):
-    """ Данные лида """
-    CloseReason = CloseReasonSm
-    Stage = StageHA
-    AutodocsSheet = 'HA'
-
-    # def __post_init__(self):
-    #     super().__init__()
-
-
-@dataclass()
-class LeadDiabetes(LeadSM):
-    """ Данные лида """
-    CloseReason = CloseReasonSm
-    Stage = StageDiabetes
-    AutodocsSheet = 'T2D'
-
-    # def __post_init__(self):
-    #     super().__init__()
+    )

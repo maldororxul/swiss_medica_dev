@@ -182,12 +182,25 @@ class DataProcessor:
             # todo
             # подмешиваем маркетинговые данные
             # todo
-            # убираем телефоны
-            # todo
+            # убираем лишние поля
+            for key in ('phone', 'budget', 'discount'):
+                if key not in lead:
+                    continue
+                lead.pop('key')
             yield lead
 
     def users(self) -> List[Dict]:
         return self.__get_data(table_name='User', date_field=None)
+
+    @staticmethod
+    def _sort_dict(_dict: Dict, id_first: bool = True) -> Dict:
+        """ Сортировка ключей словаря (id останется на первом месте) """
+        if not id_first:
+            return dict(sorted(_dict.items()))
+        keys = list(_dict.keys())
+        keys.remove('id')
+        keys = ['id'] + sorted(keys)
+        return dict([(f, _dict.get(f)) for f in keys])
 
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
         raise NotImplementedError
@@ -867,9 +880,9 @@ class SMDataProcessor(DataProcessor):
             line[self.lead.PurchaseExtended.Key] = line[stage_instance.Treatment.Key]
             line[self.lead.PurchaseExtendedPrice.Key] = line[stage_instance.Treatment.Price]
         # телефоны
-        line[self.lead.Phone.Key] = self.get_lead_phones(lead)
+        # line[self.lead.Phone.Key] = self.get_lead_phones(lead)
         # сортировка по ключам
-        return line
+        return self._sort_dict(line)
 
     def _freeze_stages(self, line: Dict):
         if not self._is_lead(line[self.lead.LossReason.Key]):
