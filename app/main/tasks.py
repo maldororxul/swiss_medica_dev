@@ -343,6 +343,7 @@ class SchedulerTask:
                         # пакетная синхронизация
                         has_new = controller.sync_records(records=batch_data, table_name='Data')
                         batch_data.clear()
+                        del line
                 # убеждаемся, что "хвост" данных тоже будет синхронизирован
                 if batch_data:
                     has_new = controller.sync_records(records=batch_data, table_name='Data')
@@ -365,4 +366,6 @@ class SchedulerTask:
                 date_from = date_from - timedelta(minutes=interval)
                 date_to = date_to - timedelta(minutes=interval)
                 time.sleep(random.uniform(0.01, 1.5))
+                gc.collect()
+        del batch_data
         self.__update_pivot_data(app=app, branch=branch, key=key)
