@@ -186,7 +186,7 @@ class DataProcessor:
             for key in ('phone', 'budget', 'discount'):
                 if key not in lead:
                     continue
-                lead.pop('key')
+                lead.pop(key)
             yield lead
 
     def users(self) -> List[Dict]:
