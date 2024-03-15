@@ -71,7 +71,7 @@ class SchedulerTask:
 
     def __get_data_from_amo(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
         interval = 60
-        empty_steps_limit = 10
+        empty_steps_limit = 60
         empty_steps = 0
         if branch == 'sm':
             models_with_columns = [
