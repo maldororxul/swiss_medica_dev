@@ -343,112 +343,6 @@ def cellulestaminali_lead():
     return Response(status=200)
 
 
-@bp.route('/add_lead_from_cf', methods=['POST', 'GET'], strict_slashes=False)
-def add_lead_from_cf():
-    # http://167.172.109.78/calltracking3/?lang=FR
-    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=FR
-    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=IT
-    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=DE
-    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=CZ
-    # https://swiss-medica-2e0e7bc937df.herokuapp.com/add_lead_from_cf/?lang=EN
-    return Response(status=200)
-
-    # try:
-    #
-    #     post = request.form.to_dict()
-    #     lang = request.args.get('lang', default='EN')  # Получаем язык из GET-параметров, по умолчанию 'EN'
-    #     form_data = post
-    #
-    #     try:
-    #         print('args', request.args.to_dict())
-    #         print('headers', request.headers)
-    #         print('cookies', request.cookies)
-    #     except:
-    #         pass
-    #
-    #     pipeline_ids = {'EN': 772717, 'DE': 2048428, 'FR': 2047060, 'IT': 5707270}
-    #     status_ids = {'EN': 19045762, 'DE': 29839168, 'FR': 29830081, 'IT': 50171236}
-    #     temptags = {'EN': 689047, 'DE': 689049, 'FR': 689053, 'IT': 689051, 'CZ': 689055}
-    #
-    #     form_data['pipeline_id'] = pipeline_ids.get(lang, 772717)
-    #     form_data['status_id'] = status_ids.get(lang, 19045762)
-    #     form_data['tags'] = [{"id": temptags.get(lang, 689057)}]
-    #
-    #     form_data['message'] = post.get('message', post.get('diagnosis', 'No message'))
-    #
-    #     if not form_data.get('name'):
-    #         return "NO NAME", 400
-    #
-    #     parsed_url = urlparse(post.get('utm_referer', ''))
-    #     getmass = parse_qs(parsed_url.query)
-    #
-    #     for key, value in getmass.items():
-    #         form_data[key] = value[0][:250]
-    #
-    #     if 'utm_referer' in form_data:
-    #         form_data['utm_referer'] = form_data['utm_referer'][:250]
-    #
-    #     form_data.setdefault('email', 'no email')
-    #     form_data.setdefault('detected_country', 'not_detected_country')
-    #     form_data.setdefault('detected_city', 'not_detected_city')
-    #
-    #     print(form_data)
-    #     # вот это вообще от балды...
-    #     utm_dict = {
-    #         'utm_source': form_data.get('utm_source'),
-    #         'utm_campaign': form_data.get('utm_campaign'),
-    #         'utm_medium': form_data.get('utm_medium')
-    #     }
-    #     amo_client = SwissmedicaAPIClient()
-    #     spoken_language = {'EN': 'English', 'DE': 'German', 'FR': 'French', 'IT': 'Italian'}
-    #     custom_fields_values = [{"field_id": 1099051, "values": [{"value": spoken_language.get(lang) or 'Another'}]}]
-    #     if form_data.get('diagnosis'):
-    #         custom_fields_values.append({"field_id": 957691, "values": [{"value": form_data.get('diagnosis')}]})
-    #     lead_added = amo_client.add_lead_simple(
-    #         name=form_data['name'],
-    #         pipeline_id=int(form_data['pipeline_id']),
-    #         status_id=int(form_data['status_id']),
-    #         contacts=[
-    #             {'value': form_data.get('phone'), 'field_id': 771220, 'enum_code': 'WORK'},
-    #             {'value': form_data.get('email'), 'field_id': 771222, 'enum_code': 'WORK'},
-    #         ],
-    #         tags=form_data['tags'],
-    #         referer=form_data.get('utm_referer'),
-    #         utm=utm_dict,
-    #         custom_fields_values=custom_fields_values
-    #     )
-    #     added_lead_data = lead_added.json()
-    #     try:
-    #         lead_id = int(added_lead_data[0]['id'])
-    #         note_text = ''
-    #         for k, v in form_data.items():
-    #             if k in ('tags', ):
-    #                 continue
-    #             note_text = f"{note_text}\n{k.upper()} :: {v}"
-    #         amo_client.add_note_simple(entity_id=lead_id, text=note_text.strip())
-    #     except:
-    #         pass
-    #     # {
-    #     #     'name': 'test me',
-    #     #     'phone': '963258741',
-    #     #     'diagnosis': 'sdfsdg',
-    #     #     'email': 'Kirill.Mizonov@swissmedica21.com',
-    #     #     'agree': 'on',
-    #     #     'clientid': '864083159.1695878461',
-    #     #     'pipeline_id': 2047060,
-    #     #     'status_id': 29830081,
-    #     #     'tags': [{'id': 689053}],
-    #     #     'message': 'sdfsdg',
-    #     #     'detected_country': 'not_detected_country',
-    #     #     'detected_city': 'not_detected_city'
-    #     # }
-    #
-    # except Exception as exc:
-    #     print('error', exc)
-    #
-    # return Response(status=200)
-
-
 @bp.route('/get_token', methods=['POST'])
 def send_auth_code():
     auth_code = request.form.get('auth_code')
@@ -468,29 +362,10 @@ def send_auth_code():
     return redirect(url_for('main.get_token'))
 
 
-# class DateTimeDecoder(json.JSONDecoder):
-#     def __init__(self, *args, **kwargs):
-#         json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
-#
-#     def object_hook(self, dct):
-#         for k, v in dct.items():
-#             if isinstance(v, str):
-#                 try:
-#                     dct[k] = datetime.fromisoformat(v)
-#                 except ValueError:
-#                     try:
-#                         dct[k] = date.fromisoformat(v)
-#                     except ValueError:
-#                         pass
-#         return dct
-
-
 def data_to_excel(branch: str):
-
     model = DATA_MODEL.get(branch)
     portion_size = 1000
     offset = 0
-    # print(f'sending {branch} pivot data started')
     socketio.emit('pivot_data', {
         'start': True,
         'data': [],
@@ -506,15 +381,11 @@ def data_to_excel(branch: str):
             break
         if not headers:
             headers = [x for x in collection[0].to_dict().get('data').keys()]
-            # print(f'headers: {headers} ')
         data = [
             x.to_dict().get('data')
             for x in collection
         ]
         num += 1
-        # print(f'sending {branch} pivot data [{num} :: {len(data)}]')
-        if len(data) > 0:
-            print('sending', data[0]['pipeline_name'])
         socketio.emit('pivot_data', {
             'start': False,
             'data': data,
@@ -523,7 +394,6 @@ def data_to_excel(branch: str):
             'file_name': None
         })
         offset += portion_size
-    # print(f'sending {branch} pivot data stopped')
     socketio.emit('pivot_data', {
         'start': False,
         'data': [],
@@ -541,12 +411,6 @@ def data_to_excel_sm():
 
 @bp.route('/data_excel_cdv')
 def data_to_excel_cdv():
-    # collection = CDVData.query.all()
-    # data = [(x.to_dict() or {}).get('data') for x in collection]
-    # ExcelClient(file_path=os.path.join('app', 'data'), file_name='data_cdv').write(data=[
-    #     ExcelClient.Data(data=data)
-    # ])
-    # return send_file(os.path.join('data', 'data_cdv.xlsx'), as_attachment=True)
     return data_to_excel(branch='cdv')
 
 
@@ -682,8 +546,8 @@ def create_all():
     return 'tables created'
 
 
-@bp.route('/drop_all')
-def drop_all():
-    with current_app.app_context():
-        db.drop_all()
-    return 'tables dropped'
+# @bp.route('/drop_all')
+# def drop_all():
+#     with current_app.app_context():
+#         db.drop_all()
+#     return 'tables dropped'
