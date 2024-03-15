@@ -23,7 +23,7 @@ class SwissmedicaAmoProcessor(AmoProcessor):
     data_client: Callable = SwissmedicaClient
     leads_file_name: str = 'Leads_SM'
     lead = LeadSM
-    lead_models = [LeadSM, LeadHA, LeadDiabetes]
+    lead_models = [LeadSM]
     utm_rules_book_id = GoogleSheets.UtmRulesSM.value
 
     @dataclass()

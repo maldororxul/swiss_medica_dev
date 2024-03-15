@@ -844,7 +844,7 @@ class DataProcessor:
 class SMDataProcessor(DataProcessor):
     schema = 'sm'
     sub_domain: str = 'swissmedica'
-    lead_models = [LeadSM, LeadHA, LeadDiabetes]
+    lead_models = [LeadSM]
     time_shift: int = 3
     utm_rules_book_id = GoogleSheets.UtmRulesSM.value
 
