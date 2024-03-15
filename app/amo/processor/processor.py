@@ -7,7 +7,7 @@ from sqlalchemy import Table, MetaData, select, and_
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
 from app.amo.data.cdv.data_schema import LeadCDV, LeadMT
-from app.amo.data.sm.data_schema import LeadSM, LeadHA, LeadDiabetes
+from app.amo.data.sm.data_schema import LeadSM
 from app.amo.processor.communication import CommunicationBase
 from app.amo.processor.countries import CONTRY_REPLACEMENTS
 from app.amo.processor.country_codes import get_country_codes, get_country_by_code

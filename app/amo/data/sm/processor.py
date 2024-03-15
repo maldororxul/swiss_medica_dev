@@ -6,7 +6,7 @@ from typing import Dict, Optional, Tuple, Callable, List
 from app.amo.data.base.data_schema import LeadField
 from app.amo.data.base.processor import AmoProcessor
 from app.amo.data.sm.client import SwissmedicaClient
-from app.amo.data.sm.data_schema import LeadSM, LeadHA, LeadDiabetes
+from app.amo.data.sm.data_schema import LeadSM
 from app.amo.data.sm.pivot_schema import PivotWeeklyAll, PivotWeeklyIT, PivotClusterTags, PivotWeeklyAllExceptAutism, PivotWeeklyAutism
 from constants.constants import GoogleSheets
 from google_api.client import GoogleAPIClient
