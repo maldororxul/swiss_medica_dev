@@ -35,7 +35,7 @@ def create_view_excluding_columns(session, model, excluded_columns):
     view_name = f"{schema_name}_view_{table_name}"
     # SQL запрос для создания представления с использованием конструкции "CREATE OR REPLACE VIEW"
     sql = f"""
-    CREATE OR REPLACE VIEW {schema_name}.{view_name} AS
+    CREATE OR REPLACE VIEW {schema_name}."{view_name}" AS
     SELECT {columns_str}
     FROM {schema_name}.{table_name};
     """
