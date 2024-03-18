@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 from functools import reduce
 from typing import Dict, List, Optional, Any, Type, Tuple, Union
-from sqlalchemy import Table, MetaData, select, and_
+from sqlalchemy import Table, MetaData, select, and_, func
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
 from app.amo.data.cdv.data_schema import LeadCDV, LeadMT
@@ -711,14 +711,11 @@ class DataProcessor:
     def __get_data_borders(self, table_name: str, field: str = 'updated_at') -> Tuple[Optional[int], Optional[int]]:
         table = Table(table_name, MetaData(), autoload_with=self.engine, schema=self.schema)
         with self.engine.begin() as connection:
-            stmt = select(table).order_by(table.c[field].asc()).limit(1)
-            first_record = [x._asdict() for x in connection.execute(stmt).fetchall() or []]
-            stmt = select(table).order_by(table.c[field].desc()).limit(1)
-            last_record = [x._asdict() for x in connection.execute(stmt).fetchall() or []]
-            return (
-                (first_record[0] if first_record else {}).get(field),
-                (last_record[0] if last_record else {}).get(field)
-            )
+            min_stmt = select(func.min(table.c[field])).scalar()
+            max_stmt = select(func.max(table.c[field])).scalar()
+            min_value = connection.execute(min_stmt).scalar()
+            max_value = connection.execute(max_stmt).scalar()
+            return min_value, max_value
 
     def __get_by(self, table_name: str, by_list: List[By]) -> List[Dict]:
         table = Table(table_name, MetaData(), autoload_with=self.engine, schema=self.schema)
