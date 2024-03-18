@@ -711,10 +711,10 @@ class DataProcessor:
     def __get_data_borders(self, table_name: str, field: str = 'updated_at') -> Tuple[Optional[int], Optional[int]]:
         table = Table(table_name, MetaData(), autoload_with=self.engine, schema=self.schema)
         with self.engine.begin() as connection:
-            min_stmt = select([func.min(table.c[field])])
-            max_stmt = select([func.max(table.c[field])])
-            min_value = connection.execute(min_stmt).scalar()
-            max_value = connection.execute(max_stmt).scalar()
+            min_stmt = select(func.min(table.c[field]))
+            max_stmt = select(func.max(table.c[field]))
+            min_value = connection.execute(min_stmt).scalar_one_or_none()
+            max_value = connection.execute(max_stmt).scalar_one_or_none()
             return min_value, max_value
 
     def __get_by(self, table_name: str, by_list: List[By]) -> List[Dict]:
