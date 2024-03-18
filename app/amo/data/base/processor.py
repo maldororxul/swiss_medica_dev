@@ -889,6 +889,11 @@ class AmoProcessor:
         line['notes'] = lead.get('notes')
         line['events'] = lead.get('events')
         line['tasks'] = lead.get('tasks')
+        # время от создания лида до закрытия
+        created_at = lead.get('created_at')
+        closed_at = lead.get('closed_at')
+        line['closed_in'] = round((closed_at - created_at) / 3600 / 24, 0) \
+            if created_at and closed_at and closed_at > created_at else ''
         return line
 
     def _cast_dates(self, line: Dict, pre_data: Dict):

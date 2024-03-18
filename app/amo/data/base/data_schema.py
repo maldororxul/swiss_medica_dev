@@ -611,6 +611,13 @@ class Lead:
         """,
         Key='deleted_leads'
     ))
+    ClosedIn: LeadField = field(default_factory=lambda: LeadField(
+        DisplayName='Closed in',
+        Documentation="""
+            Время в днях, прошедшее с момента создания лида до его закрытия
+        """,
+        Key='closed_in'
+    ))
     DeletedBy: LeadField = field(default_factory=lambda: LeadField(
         DisplayName='Deleted by',
         Documentation="""

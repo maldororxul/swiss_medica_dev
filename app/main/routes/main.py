@@ -64,24 +64,8 @@ DATA_MODEL = {
 @bp.route('/')
 @requires_roles('admin', 'superadmin')
 def index():
-    # границы данных и текущая дата SM
-    print('getting sm data borders')
-    processor = DATA_PROCESSOR.get('sm')()
-    sm_date_from, sm_date_to, sm_date_curr = processor.get_data_borders_and_current_date()
-    print(f'getting sm data borders... {sm_date_from} {sm_date_to}')
-    # границы данных и текущая дата CDV
-    print('getting cdv data borders')
-    processor = DATA_PROCESSOR.get('cdv')()
-    cdv_date_from, cdv_date_to, cdv_date_curr = processor.get_data_borders_and_current_date()
-    print(f'getting cdv data borders... {cdv_date_from} {cdv_date_to}')
     return render_template(
-        'index.html',
-        sm_df=sm_date_from,
-        sm_dt=sm_date_to,
-        sm_curr=sm_date_curr,
-        cdv_df=cdv_date_from,
-        cdv_dt=cdv_date_to,
-        cdv_curr=cdv_date_curr
+        'index.html'
     )
 
 

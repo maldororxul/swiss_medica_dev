@@ -141,6 +141,45 @@ class StageSM(StageBase):
         PurchaseRate=.51,
         Priority=11
     ))
+    DiscountRequest: StageItem = field(default_factory=lambda: StageItem(
+        DisplayName='Discount request',
+        Documentation="""Запрос скидки""",
+        IncludeStages=[
+            '4.1. ЗАПРОС СКИДКИ',
+        ],
+        IncludeFields=[
+            'Запрос скидки',
+        ],
+        Key='discount_request',
+        PurchaseRate=.51,
+        Priority=12
+    ))
+    PreReserved: StageItem = field(default_factory=lambda: StageItem(
+        DisplayName='PreReserved',
+        Documentation="""Предварительная бронь""",
+        IncludeStages=[
+            '4.2. ПРЕДВАРИТЕЛЬНАЯ БРОНЬ',
+        ],
+        IncludeFields=[
+            'Предварительная бронь',
+        ],
+        Key='pre_reserved',
+        PurchaseRate=.51,
+        Priority=13
+    ))
+    PrePaid: StageItem = field(default_factory=lambda: StageItem(
+        DisplayName='PrePaid',
+        Documentation="""Есть предоплата""",
+        IncludeStages=[
+            '4.3. ЕСТЬ ПРЕДОПЛАТА',
+        ],
+        IncludeFields=[
+            'Есть предоплата',
+        ],
+        Key='pre_paid',
+        PurchaseRate=.85,
+        Priority=14
+    ))
     WaitingForArrival: StageItem = field(default_factory=lambda: StageItem(
         DisplayName='Waiting for arrival',
         Documentation="""Ожидаем приезда""",
@@ -152,7 +191,7 @@ class StageSM(StageBase):
         ],
         Key='waiting_for_arrival',
         PurchaseRate=.85,
-        Priority=12
+        Priority=15
     ))
     Treatment: StageItem = field(default_factory=lambda: StageItem(
         DisplayName='Treatment',
@@ -165,7 +204,7 @@ class StageSM(StageBase):
         ],
         Key='treatment',
         PurchaseRate=1,
-        Priority=13
+        Priority=16
     ))
     Audit: StageItem = field(default_factory=lambda: StageItem(
         DisplayName='Audit',
@@ -179,7 +218,7 @@ class StageSM(StageBase):
         Key='audit',
         PurchaseRate=1,
         AtWork=False,
-        Priority=14
+        Priority=17
     ))
     Purchase: StageItem = field(default_factory=lambda: StageItem(
         DisplayName='Purchase',
@@ -193,7 +232,7 @@ class StageSM(StageBase):
         Key='purchase',
         PurchaseRate=1,
         AtWork=False,
-        Priority=15
+        Priority=18
     ))
 
     def __post_init__(self):
