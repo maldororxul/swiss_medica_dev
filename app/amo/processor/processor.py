@@ -241,16 +241,12 @@ class DataProcessor:
         #         self.By(Field='entity_type', Value='contact')
         #     ]
         # ) if contacts else []
-        print('lead_contacts', contacts)
-        print('contacts', self.__get_by(
-                table_name='Contact',
-                by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
-            ) if contacts else [])
+        contacts_data = self.__get_by(
+            table_name='Contact',
+            by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
+        ) if contacts else []
         lead.update({
-            'contacts': self.__get_by(
-                table_name='Contact',
-                by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
-            ) if contacts else [],
+            'contacts': contacts_data,
             # 'tasks': self.__get_by(
             #     table_name='Task',
             #     by_list=[self.By(Field='entity_id', Value=lead['id_on_source'])]
@@ -270,6 +266,7 @@ class DataProcessor:
         line = {field.Key: '' for field in self.lead.get_fields()}
         # добавляем выборочно сырые поля из лида, а также доп. поля (значение по умолчанию - '')
         line.update({field.Key: lead.get(field.Key) for field in self.lead.get_raw_fields()})
+        line['contacts'] = lead.get('contacts')
         # добавляем поля utm-меток
         line.update({value.Key: '' for value in self.lead.Utm.__dict__.values() if isinstance(value, LeadField)})
         self._build_stages_fields(line=line)
