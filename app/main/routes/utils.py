@@ -37,7 +37,7 @@ def create_view_excluding_columns(session, model, excluded_columns):
     sql = f"""
     CREATE OR REPLACE VIEW {schema_name}."{view_name}" AS
     SELECT {columns_str}
-    FROM {schema_name}.{table_name};
+    FROM {schema_name}."{table_name}";
     """
     # Выполнение SQL запроса через сессию
     session.execute(text(sql))
