@@ -29,9 +29,10 @@ DATA_PROCESSOR = {
 class DateTimeEncoder:
     @staticmethod
     def encode(obj):
-        for k, v in obj.items():
-            if isinstance(v, (date, datetime)):
-                obj[k] = v.isoformat()
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, (date, datetime)):
+                    obj[k] = v.isoformat()
         return obj
 
     @staticmethod
