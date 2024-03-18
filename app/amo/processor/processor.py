@@ -273,8 +273,8 @@ class DataProcessor:
         for field in lead.get('custom_fields_values') or []:
             name = field.get('field_name')
             lower_name = name.lower()
-            if lower_name in (Lead.Utm.YM_CID.Key, 'ym_uid'):
-                line[Lead.Utm.YM_CID.Key] = (field.get('values') or [{}])[0].get('value') or ''
+            if lower_name in ('ym_cid', 'ym_uid'):
+                line['YM_CID'] = (field.get('values') or [{}])[0].get('value') or ''
         # причина закрытия
         loss_reason = _embedded['loss_reason'][0]['name'] if _embedded['loss_reason'] else ''
         # попытка восстановить причину закрытия (удалены 13 октября, восстановлены по данным 5 сентября 2022)
