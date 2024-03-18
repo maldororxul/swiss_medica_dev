@@ -241,6 +241,11 @@ class DataProcessor:
         #         self.By(Field='entity_type', Value='contact')
         #     ]
         # ) if contacts else []
+        print('lead_contacts', contacts)
+        print('contacts', self.__get_by(
+                table_name='Contact',
+                by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
+            ) if contacts else [])
         lead.update({
             'contacts': self.__get_by(
                 table_name='Contact',
