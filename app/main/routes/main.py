@@ -15,7 +15,8 @@ from app.main.auth.form import RegistrationForm
 from app.main.auth.utils import requires_roles
 from app.main.leads_insurance.handler import LeadsInsurance
 from app.main.processors import DATA_PROCESSOR
-from app.main.routes.utils import get_data_from_post_request, get_args_from_url, add_if_not_exists
+from app.main.routes.utils import get_data_from_post_request, get_args_from_url, add_if_not_exists, \
+    create_view_excluding_columns
 from app.main.utils import DateTimeEncoder
 from app.models.app_user import SMAppUser
 from app.models.chat import SMChat, CDVChat
@@ -531,6 +532,9 @@ def create_all():
         for model in (SMRole, CDVRole):
             for name in ('user', 'admin', 'superadmin', 'guest'):
                 add_if_not_exists(session=session, model=model, filter_by={'name': name})
+        # создаем представления
+        create_view_excluding_columns(session, SMData, ['contacts', 'phone'])
+        create_view_excluding_columns(session, CDVData, ['contacts', 'phone'])
     return 'tables created'
 
 

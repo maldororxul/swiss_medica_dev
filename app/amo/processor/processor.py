@@ -180,8 +180,6 @@ class DataProcessor:
             self.__process_lead_country_by_phone_code(lead=lead)
             # подмешиваем данные Sipuni
             # todo
-            # подмешиваем маркетинговые данные
-            # todo
             # поля для упрощенной группировки по периодам
             created_at = lead['created_at']
             lead['year'] = created_at.year
@@ -189,7 +187,7 @@ class DataProcessor:
             lead['day'] = created_at.day
             lead['week'] = created_at.isocalendar()[1]
             # убираем лишние поля
-            for key in ('phone', 'budget', 'discount', 'events', 'notes', 'tasks'):
+            for key in ('budget', 'discount', 'events', 'notes', 'tasks'):
                 if key not in lead:
                     continue
                 lead.pop(key)
@@ -212,7 +210,7 @@ class DataProcessor:
         raise NotImplementedError
 
     def _build_lead_base_data(self, lead: Dict, pre_data: Dict) -> Dict:
-        """ todo достроить данные
+        """
         contacts :: [{'id': 58463561, 'name': 'Ceri steele', 'first_name': 'Ceri steele', 'last_name': '', 'responsible_user_id': 3821476, 'group_id': 435082, 'created_by': 0, 'updated_by': 0, 'created_at': 1685567304, 'updated_at': 1686660443, 'closest_task_at': None, 'is_deleted': False, 'is_unsorted': False, 'custom_fields_values': [{'field_id': 771222, 'field_name': 'Email', 'field_code': 'EMAIL', 'field_type': 'multitext', 'values': [{'value': 'dizziebiscuit@hotmail.com', 'enum_id': 1848420, 'enum_code': 'WORK'}]}, {'field_id': 956523, 'field_name': 'City by IP', 'field_code': None, 'field_type': 'text', 'values': [{'value': 'South Benfleet'}]}, {'field_id': 948915, 'field_name': 'Country by IP', 'field_code': None, 'field_type': 'text', 'values': [{'value': '2a02:c7c:a461:f600:ecc8:d791:978a:c3eb'}]}, {'field_id': 971807, 'field_name': 'Дата последнего звонка', 'field_code': None, 'field_type': 'text', 'values': [{'value': '2023-06-13 15:47:03'}]}, {'field_id': 971801, 'field_name': 'Статус звонка', 'field_code': None, 'field_type': 'text', 'values': [{'value': 'Answer, voicemail'}]}, {'field_id': 976727, 'field_name': 'Страна по номеру телефона', 'field_code': None, 'field_type': 'text', 'values': [{'value': 'United Kingdom'}]}, {'field_id': 972177, 'field_name': 'Дата первого звонка', 'field_code': None, 'field_type': 'text', 'values': [{'value': '2023-06-01 15:31:21'}]}, {'field_id': 771220, 'field_name': 'Телефон', 'field_code': 'PHONE', 'field_type': 'multitext', 'values': [{'value': '+447852803307', 'enum_id': 1848408, 'enum_code': 'WORK'}]}], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/contacts/58463561?filter%5Bid%5D%5B0%5D=58424539&filter%5Bid%5D%5B1%5D=58447029&filter%5Bid%5D%5B2%5D=58332366&filter%5Bid%5D%5B3%5D=58339294&filter%5Bid%5D%5B4%5D=58339340&filter%5Bid%5D%5B5%5D=58466523&filter%5Bid%5D%5B6%5D=58482341&filter%5Bid%5D%5B7%5D=58277557&filter%5Bid%5D%5B8%5D=58369916&filter%5Bid%5D%5B9%5D=58125201&filter%5Bid%5D%5B10%5D=58125551&filter%5Bid%5D%5B11%5D=58165083&filter%5Bid%5D%5B12%5D=58471985&filter%5Bid%5D%5B13%5D=58472185&filter%5Bid%5D%5B14%5D=58022549&filter%5Bid%5D%5B15%5D=58395047&filter%5Bid%5D%5B16%5D=58473662&filter%5Bid%5D%5B17%5D=58360699&filter%5Bid%5D%5B18%5D=58414003&filter%5Bid%5D%5B19%5D=58474743&filter%5Bid%5D%5B20%5D=58471911&filter%5Bid%5D%5B21%5D=58462905&filter%5Bid%5D%5B22%5D=58389433&filter%5Bid%5D%5B23%5D=57476221&filter%5Bid%5D%5B24%5D=58404573&filter%5Bid%5D%5B25%5D=58390455&filter%5Bid%5D%5B26%5D=58470847&filter%5Bid%5D%5B27%5D=58423065&filter%5Bid%5D%5B28%5D=58474907&filter%5Bid%5D%5B29%5D=58482449&filter%5Bid%5D%5B30%5D=58479767&filter%5Bid%5D%5B31%5D=58466695&filter%5Bid%5D%5B32%5D=58332424&filter%5Bid%5D%5B33%5D=58332442&filter%5Bid%5D%5B34%5D=58314785&filter%5Bid%5D%5B35%5D=58463561&filter%5Bid%5D%5B36%5D=58261179&filter%5Bid%5D%5B37%5D=58464291&filter%5Bid%5D%5B38%5D=58482367&filter%5Bid%5D%5B39%5D=58458815&filter%5Bid%5D%5B40%5D=58458823&filter%5Bid%5D%5B41%5D=58477283&filter%5Bid%5D%5B42%5D=58261109&filter%5Bid%5D%5B43%5D=58466063&filter%5Bid%5D%5B44%5D=58405277&filter%5Bid%5D%5B45%5D=58409347&filter%5Bid%5D%5B46%5D=58467617&filter%5Bid%5D%5B47%5D=58428545&filter%5Bid%5D%5B48%5D=58467639&filter%5Bid%5D%5B49%5D=58437909&with=customers&limit=50&order=created_at&page=1'}}, '_embedded': {'tags': [], 'customers': [], 'companies': []}}]
         tasks :: [{'id': 47073643, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685602289, 'updated_at': 1685634479, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 1800, 'is_completed': True, 'task_type_id': 284845, 'text': '', 'result': {'text': 'vm'}, 'complete_till': 1685637000, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47073643?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=7'}}}, {'id': 47079325, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685634486, 'updated_at': 1685962958, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 0, 'is_completed': True, 'task_type_id': 1, 'text': '', 'result': [], 'complete_till': 1685998740, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47079325?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=8'}}}, {'id': 47095147, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685962961, 'updated_at': 1686155349, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 0, 'is_completed': True, 'task_type_id': 1, 'text': '', 'result': {'text': 'недоступен'}, 'complete_till': 1686171540, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47095147?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=8'}}}, {'id': 47112877, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1686156441, 'updated_at': 1686660859, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 0, 'is_completed': True, 'task_type_id': 1, 'text': '', 'result': {'text': 'vm'}, 'complete_till': 1686689940, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47112877?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=11'}}}]
         sub_domain :: swissmedica
@@ -229,39 +227,39 @@ class DataProcessor:
             table_name='User',
             by_list=[self.By(Field='id_on_source', Value=lead['responsible_user_id'])]
         )
-        lead_events = self.__get_by(
-            table_name='Event',
-            by_list=[
-                self.By(Field='entity_id', Value=lead['id_on_source']),
-                self.By(Field='entity_type', Value='lead')
-            ]
-        ) or []
-        contact_events = self.__get_by(
-            table_name='Event',
-            by_list=[
-                self.By(Field='entity_id', Value=contacts[0]['id']),
-                self.By(Field='entity_type', Value='contact')
-            ]
-        ) if contacts else []
+        # lead_events = self.__get_by(
+        #     table_name='Event',
+        #     by_list=[
+        #         self.By(Field='entity_id', Value=lead['id_on_source']),
+        #         self.By(Field='entity_type', Value='lead')
+        #     ]
+        # ) or []
+        # contact_events = self.__get_by(
+        #     table_name='Event',
+        #     by_list=[
+        #         self.By(Field='entity_id', Value=contacts[0]['id']),
+        #         self.By(Field='entity_type', Value='contact')
+        #     ]
+        # ) if contacts else []
         lead.update({
             'contacts': self.__get_by(
                 table_name='Contact',
                 by_list=[self.By(Field='id_on_source', Value=contacts[0]['id'])]
             ) if contacts else [],
-            'tasks': self.__get_by(
-                table_name='Task',
-                by_list=[self.By(Field='entity_id', Value=lead['id_on_source'])]
-            ) or [],
+            # 'tasks': self.__get_by(
+            #     table_name='Task',
+            #     by_list=[self.By(Field='entity_id', Value=lead['id_on_source'])]
+            # ) or [],
             'sub_domain': self.sub_domain,
             # 'pipeline': [],
             # 'pipeline_status': [],
             # 'loss_reason': _embedded.get('loss_reason'),
             'user': users[0] if users else '',
-            'notes': self.__get_by(
-                table_name='Note',
-                by_list=[self.By(Field='entity_id', Value=lead['id_on_source'])]
-            ) or [],
-            'events': lead_events + contact_events,
+            # 'notes': self.__get_by(
+            #     table_name='Note',
+            #     by_list=[self.By(Field='entity_id', Value=lead['id_on_source'])]
+            # ) or [],
+            # 'events': lead_events + contact_events,
         })
         # готовим пустой словарь с обязательным списком полей
         line = {field.Key: '' for field in self.lead.get_fields()}
@@ -272,6 +270,11 @@ class DataProcessor:
         self._build_stages_fields(line=line)
         # добавляем постобработанные utm
         line.update(build_final_utm(lead=lead, rules=pre_data['utm_rules']))
+        for field in lead.get('custom_fields_values') or []:
+            name = field.get('field_name')
+            lower_name = name.lower()
+            if lower_name in (Lead.Utm.YM_CID.Key, 'ym_uid'):
+                line[Lead.Utm.YM_CID.Key] = (field.get('values') or [{}])[0].get('value') or ''
         # причина закрытия
         loss_reason = _embedded['loss_reason'][0]['name'] if _embedded['loss_reason'] else ''
         # попытка восстановить причину закрытия (удалены 13 октября, восстановлены по данным 5 сентября 2022)
@@ -311,19 +314,20 @@ class DataProcessor:
             self.lead.PipelineName.Key: pipeline_name,
             self.lead.StatusName.Key: pipeline_status,
             self.lead.Responsible.Key: (self.users_dict.get(lead['responsible_user_id']) or {}).get('name') or '',
+            self.lead.ResponsibleGroup.Key: (lead['user'].get('_embedded').get('groups') or [{}])[0].get('name'),
             self.lead.CreatedAtHour.Key: self._convert_date_time_from_unix_timestamp(lead['created_at']).hour,
             # удаленные сделки
             self.lead.Deleted.Key: 1 if lead.get('deleted') else '',
             self.lead.DeletedBy.Key: lead['deleted']['user']['name'] if lead.get('deleted') else ''
         })
         self._check_alive_stages(line=line)
-        # временные поля длля подсчета скорости реакции
+        # временные поля для подсчета скорости реакции
         #   в том числе, дублируем время создания лида (здесь время не будет очищено)
         line['created_at_ts'] = lead['created_at']
         line['updated_at_ts'] = lead['updated_at']
-        line['notes'] = lead.get('notes')
-        line['events'] = lead.get('events')
-        line['tasks'] = lead.get('tasks')
+        # line['notes'] = lead.get('notes')
+        # line['events'] = lead.get('events')
+        # line['tasks'] = lead.get('tasks')
         return line
 
     def _build_lead_history(
@@ -883,7 +887,7 @@ class SMDataProcessor(DataProcessor):
             line[self.lead.PurchaseExtended.Key] = line[stage_instance.Treatment.Key]
             line[self.lead.PurchaseExtendedPrice.Key] = line[stage_instance.Treatment.Price]
         # телефоны
-        # line[self.lead.Phone.Key] = self.get_lead_phones(lead)
+        line[self.lead.Phone.Key] = self.get_lead_phones(lead)
         # сортировка по ключам
         return self._sort_dict(line)
 

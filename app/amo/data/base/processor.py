@@ -838,7 +838,6 @@ class AmoProcessor:
         line.update({value.Key: '' for value in self.lead.Utm.__dict__.values() if isinstance(value, LeadField)})
         self._build_stages_fields(line=line)
         # добавляем постобработанные utm
-        # print(lead['id'])  # 23203305
         line.update(build_final_utm(lead=lead, rules=pre_data['utm_rules']))
         # причина закрытия
         loss_reason = lead['loss_reason'][0]['name'] if lead['loss_reason'] else ''

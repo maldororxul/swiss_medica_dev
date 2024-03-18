@@ -127,12 +127,14 @@ class SchedulerTask:
 
     @staticmethod
     def __build_pivot_data_item(line: Dict) -> Dict:
-        item = {key.split('_(')[0]: value for key, value in line.items()}
+        item = {key.split('_(')[0]: value for key, value in line.items() if key not in ('contacts', 'phone')}
         return {
             'id': line['id'],
             'created_at': line['created_at_ts'],
             'updated_at': line['updated_at_ts'],
-            'data': DateTimeEncoder.encode(item)
+            'data': DateTimeEncoder.encode(item),
+            'contacts': DateTimeEncoder.encode(line.pop('contacts')),
+            'phone': DateTimeEncoder.encode(line.pop('phone'))
         }
     #
     # def _init_sipuni_processor(self):

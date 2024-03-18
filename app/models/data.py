@@ -26,13 +26,14 @@ class DataBase(db.Model):
     created_at = db.Column(db.Integer, nullable=False)
     updated_at = db.Column(db.Integer, nullable=False)
     data = db.Column(JSON)
+    contacts = db.Column(JSON)
+    phone = db.Column(JSON)
 
     def __repr__(self):
         return f'<Line "{self.id_on_source}">'
 
     def to_dict(self):
         line = {c.name: getattr(self, c.name) for c in self.__table__.columns}
-        # line['data'] = decode(line['data'])
         return line
 
 

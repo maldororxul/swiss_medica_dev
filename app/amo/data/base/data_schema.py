@@ -602,6 +602,15 @@ class Lead:
         """,
         Key='responsible_user_name'
     ))
+    ResponsibleGroup: LeadField = field(default_factory=lambda: LeadField(
+        DisplayName='Responsible Group',
+        Documentation="""
+            Группа ответственного пользователя (менеджера)
+
+            Заполняется из справочника пользователей на основе идентификатора пользователя, известного из сделки
+        """,
+        Key='responsible_group'
+    ))
     Deleted: LeadField = field(default_factory=lambda: LeadField(
         DisplayName='Deleted leads',
         Documentation="""
@@ -787,6 +796,11 @@ class Lead:
             DisplayName='utm_content',
             Documentation="""""",
             Key='utm_content'
+        ))
+        YM_CID: LeadField = field(default_factory=lambda: LeadField(
+            DisplayName='ym_cid',
+            Documentation="""""",
+            Key='ym_cid'
         ))
 
     # @dataclass()
