@@ -1,6 +1,8 @@
 from typing import Optional, Dict
 from flask import request
 from urllib.parse import urlparse, parse_qs
+
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
@@ -38,7 +40,7 @@ def create_view_excluding_columns(session, model, excluded_columns):
     FROM {schema_name}.{table_name};
     """
     # Выполнение SQL запроса через сессию
-    session.execute(sql)
+    session.execute(text(sql))
     session.commit()
 
 
