@@ -131,7 +131,9 @@ class DataProcessor:
                 if contact_field['field_code'] != 'PHONE':
                     continue
                 for phone in contact_field['values']:
-                    result.append(clear_phone(phone['value']))
+                    value = clear_phone(phone['value'])
+                    if value:
+                        result.append(value)
         return result
 
     def leads(self) -> List[Dict]:

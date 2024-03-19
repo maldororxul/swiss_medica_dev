@@ -79,27 +79,42 @@ class SyncController:
 
     def sync_records(self, records: List[Dict], table_name: str, connection, engine) -> bool:
         target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
-        exclude_fileds = ('_links', 'email', 'roles')
+        exclude_fields = ('_links', 'email', 'roles')
         # Подготовка данных для вставки
         insert_records = [{
-            key: value for key, value in record.items() if key not in exclude_fileds
+            key: value for key, value in record.items() if key not in exclude_fields
         } for record in records]
         for record in insert_records:
             record['id_on_source'] = record.pop('id')
-        if insert_records:
-            try:
-                stmt = pg_insert(target_table).values(insert_records)
-                on_conflict_stmt = stmt.on_conflict_do_update(
-                    index_elements=['id_on_source'],  # Уникальный идентификатор для обновления
-                    set_={name: stmt.excluded[name] for name in insert_records[0].keys() if name not in exclude_fileds}
-                )
-                result = connection.execute(on_conflict_stmt)
-                # Проверяем, были ли затронуты строки
-                return result.rowcount > 0
-            except Exception as exc:
-                print(f'Error during UPSERT operation: {exc}')
-                return False
-        return False
+        if not insert_records:
+            return False
+        # Предварительная проверка существующих данных
+        existing_records_query = select([target_table]).where(
+            target_table.c.id_on_source.in_([record['id_on_source'] for record in insert_records]))
+        existing_records = connection.execute(existing_records_query).fetchall()
+        existing_records_dict = {record['id_on_source']: dict(record) for record in existing_records}
+        need_update = False
+        for record in insert_records:
+            if record['id_on_source'] not in existing_records_dict:
+                need_update = True
+                break
+            existing_record = existing_records_dict[record['id_on_source']]
+            if any(record[key] != existing_record.get(key) for key in record.keys() if key not in exclude_fields):
+                need_update = True
+                break
+        if not need_update:
+            return False
+        try:
+            stmt = pg_insert(target_table).values(insert_records)
+            on_conflict_stmt = stmt.on_conflict_do_update(
+                index_elements=['id_on_source'],  # Уникальный идентификатор для обновления
+                set_={name: stmt.excluded[name] for name in insert_records[0].keys() if name not in exclude_fields}
+            )
+            result = connection.execute(on_conflict_stmt)
+            return result.rowcount > 0
+        except Exception as exc:
+            print(f'Error during UPSERT operation: {exc}')
+            return False
 
 
 class SMSyncController(SyncController):

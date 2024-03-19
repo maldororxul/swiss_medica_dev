@@ -15,6 +15,7 @@ from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
 from app.main.utils import DateTimeEncoder
 from app.models.contact import SMContact, CDVContact
+from app.models.data import SMData, CDVData
 from app.models.event import SMEvent, CDVEvent
 from app.models.lead import SMLead, CDVLead
 from app.models.note import SMNote, CDVNote
@@ -318,20 +319,34 @@ class SchedulerTask:
     #                 long_calls.append(_call)
     #                 sipuni_processor.get_record(id_=_call['ID записи'])
 
-    def __update_pivot_data(self, app: Flask, branch: str, key: str):
+    def __update_pivot_data(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
         interval = 60
         empty_steps_limit = 48
         empty_steps = 0
         batch_size = 20
-        starting_date = datetime.now()
-        date_from = starting_date - timedelta(minutes=interval)
-        date_to = starting_date
+        # starting_date = datetime.now()
+        # date_from = starting_date - timedelta(minutes=interval)
+        # date_to = starting_date
         data_processor = DATA_PROCESSOR.get(branch)()
+        if branch == 'sm':
+            models_with_columns = [(SMData, 'updated_at')]
+        elif branch == 'cdv':
+            models_with_columns = [(CDVData, 'updated_at')]
+        else:
+            is_running.get(key)[branch] = False
+            return
         with app.app_context():
+            session = db.session
             data_processor.log.add(
                 text='updating pivot data :: iteration started',
                 log_type=1
             )
+            starting_date = starting_date or self.__get_earliest_date(
+                session=session,
+                models_with_columns=models_with_columns
+            )
+            date_from = starting_date - timedelta(minutes=interval)
+            date_to = starting_date
             controller = SYNC_CONTROLLER.get(branch)()
             while True:
                 batch_data = []
@@ -370,4 +385,4 @@ class SchedulerTask:
                 time.sleep(random.uniform(0.01, 1.5))
                 gc.collect()
         del batch_data
-        self.__update_pivot_data(app=app, branch=branch, key=key)
+        self.__update_pivot_data(app=app, branch=branch, key=key, starting_date=datetime.now())
