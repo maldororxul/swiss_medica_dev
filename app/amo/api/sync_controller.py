@@ -89,8 +89,9 @@ class SyncController:
         if not insert_records:
             return False
         # Предварительная проверка существующих данных
-        existing_records_query = select([target_table]).where(
-            target_table.c.id_on_source.in_([record['id_on_source'] for record in insert_records]))
+        existing_records_query = select(target_table.c).where(
+            target_table.c.id_on_source.in_([record['id_on_source'] for record in insert_records])
+        )
         existing_records = connection.execute(existing_records_query).fetchall()
         existing_records_dict = {record['id_on_source']: dict(record) for record in existing_records}
         need_update = False
