@@ -94,7 +94,7 @@ class SyncController:
         )
         existing_records = connection.execute(existing_records_query).fetchall()
         existing_records_dict = {
-            record['id_on_source']: {key: value for key, value in record.items()}
+            record.id_on_source: dict(record)
             for record in existing_records
         }
         need_update = False
