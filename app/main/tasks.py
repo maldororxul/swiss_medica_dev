@@ -108,7 +108,10 @@ class SchedulerTask:
             )
             controller = SYNC_CONTROLLER.get(branch)()
             while True:
-                has_new = controller.run(date_from=date_from, date_to=date_to)
+                has_new = False
+                if controller.run(date_from=date_from, date_to=date_to):
+                    has_new = True
+                    empty_steps = 0  # Обнуляем счетчик, если были изменения
                 if not has_new:
                     empty_steps += 1
                 df = date_from.strftime("%Y-%m-%d %H:%M:%S")
@@ -324,9 +327,6 @@ class SchedulerTask:
         empty_steps_limit = 48
         empty_steps = 0
         batch_size = 20
-        # starting_date = datetime.now()
-        # date_from = starting_date - timedelta(minutes=interval)
-        # date_to = starting_date
         data_processor = DATA_PROCESSOR.get(branch)()
         if branch == 'sm':
             models_with_columns = [(SMData, 'updated_at')]
@@ -351,19 +351,21 @@ class SchedulerTask:
             while True:
                 batch_data = []
                 has_new = False
-                # получаем данные Sipuni за период
-                # self.__get_sipuni_data()
                 # используем генератор для получения обновленных данных
                 for line in data_processor.update(date_from=date_from, date_to=date_to):
                     batch_data.append(self.__build_pivot_data_item(line=line))
                     if len(batch_data) >= batch_size:
                         # пакетная синхронизация
-                        has_new = controller.sync_records(records=batch_data, table_name='Data')
+                        if controller.sync_records(records=batch_data, table_name='Data'):
+                            has_new = True
+                            empty_steps = 0  # Обнуляем счетчик, если были изменения
                         batch_data.clear()
                         del line
                 # убеждаемся, что "хвост" данных тоже будет синхронизирован
                 if batch_data:
-                    has_new = controller.sync_records(records=batch_data, table_name='Data')
+                    if controller.sync_records(records=batch_data, table_name='Data'):
+                        has_new = True
+                        empty_steps = 0  # Обнуляем счетчик, если были изменения
                     batch_data.clear()
                 # проверяем условие выхода из цикла
                 if not has_new:
