@@ -80,6 +80,8 @@ class SyncController:
     def sync_records(self, records: List[Dict], table_name: str, connection, engine) -> bool:
         target_table = Table(table_name, MetaData(), autoload_with=engine, schema=self.schema)
         exclude_fields = ('_links', 'email', 'roles')
+        from sqlalchemy import select
+
         # Подготовка данных для вставки
         insert_records = [{
             key: value for key, value in record.items() if key not in exclude_fields
@@ -89,12 +91,13 @@ class SyncController:
         if not insert_records:
             return False
         # Предварительная проверка существующих данных
-        existing_records_query = select(target_table.c).where(
+        existing_records_query = select(target_table).where(
             target_table.c.id_on_source.in_([record['id_on_source'] for record in insert_records])
         )
         existing_records = connection.execute(existing_records_query).fetchall()
+        # Преобразование результатов запроса в словарь, используя _mapping для доступа к данным как к словарю
         existing_records_dict = {
-            record['id_on_source']: {column.name: record[column.name] for column in record.keys()}
+            record._mapping['id_on_source']: dict(record._mapping)
             for record in existing_records
         }
         need_update = False
