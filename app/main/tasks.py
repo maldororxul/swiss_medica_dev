@@ -40,6 +40,7 @@ class SchedulerTask:
         key = 'update_pivot_data'
         if self.__is_running(key=key, branch=branch):
             return
+        print('__update_pivot_data')
         self.__update_pivot_data(app=app, branch=branch, key=key)
         gc.collect()
 
