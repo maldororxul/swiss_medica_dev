@@ -323,10 +323,10 @@ class SchedulerTask:
     #                 sipuni_processor.get_record(id_=_call['ID записи'])
 
     def __update_pivot_data(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
-        interval = 10
-        empty_steps_limit = 400
+        interval = 60
+        empty_steps_limit = 48
         empty_steps = 0
-        batch_size = 10
+        batch_size = 5
         data_processor = DATA_PROCESSOR.get(branch)()
         if branch == 'sm':
             models_with_columns = [(SMData, 'updated_at')]
@@ -348,11 +348,12 @@ class SchedulerTask:
             date_from = starting_date - timedelta(minutes=interval)
             date_to = starting_date
             controller = SYNC_CONTROLLER.get(branch)()
+            pre_data = data_processor._pre_build()
             while True:
                 batch_data = []
                 has_new = False
                 # используем генератор для получения обновленных данных
-                for line in data_processor.update(date_from=date_from, date_to=date_to):
+                for line in data_processor.update(date_from=date_from, date_to=date_to, pre_data=pre_data):
                     batch_data.append(self.__build_pivot_data_item(line=line))
                     if len(batch_data) >= batch_size:
                         # пакетная синхронизация

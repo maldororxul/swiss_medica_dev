@@ -64,13 +64,13 @@ def create_app() -> Flask:
             seconds=60,
             max_instances=1
         )
-        # app.scheduler.add_job(
-        #     id=f'update_pivot_data_{branch}',
-        #     func=socketio.start_background_task,
-        #     args=[run_pivot_data_builder, app, branch],
-        #     trigger='interval',
-        #     seconds=60,
-        #     max_instances=1
-        # )
+        app.scheduler.add_job(
+            id=f'update_pivot_data_{branch}',
+            func=socketio.start_background_task,
+            args=[run_pivot_data_builder, app, branch],
+            trigger='interval',
+            seconds=60,
+            max_instances=1
+        )
     app.scheduler.start()
     return app
