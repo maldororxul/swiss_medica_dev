@@ -3,6 +3,8 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 from functools import reduce
 from typing import Dict, List, Optional, Any, Type, Tuple, Union
+
+from memory_profiler import memory_usage
 from sqlalchemy import Table, MetaData, select, and_, func
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
@@ -860,6 +862,10 @@ class SMDataProcessor(DataProcessor):
         self.log = DBLogger(log_model=SMLog, branch='sm')
 
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
+
+        # !! профилирование !!
+        mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
+
         # строим словарь с дефолтными значениями полей лида
         line = self._build_lead_base_data(lead=lead, pre_data=pre_data)
         # заполняем доп. поля лида
@@ -889,7 +895,13 @@ class SMDataProcessor(DataProcessor):
         # телефоны
         line[self.lead.Phone.Key] = self.get_lead_phones(lead)
         # сортировка по ключам
-        return self._sort_dict(line)
+        sorted_line = self._sort_dict(line)
+
+        # !! профилирование !!
+        mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
+        print(f"Memory used by _build_lead_data: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb")
+
+        return sorted_line
 
     def _freeze_stages(self, line: Dict):
         if not self._is_lead(line[self.lead.LossReason.Key]):

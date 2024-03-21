@@ -27,6 +27,7 @@ class Config:
         self.SIPUNI_COOKIES = self.sipuni_cookies
         self.AMO_CHAT = self.amo_chat
         self.SECRET_KEY = self.secret_key
+        self.WORKER = self.worker
 
     @property
     def sqlalchemy_database_uri(self):
@@ -561,3 +562,7 @@ class Config:
             'form480544796': {"n": "Innovative Therapy: EN", "r": "EN", "l": 0},
         }
         # return json.loads(os.environ.get('STARTSTEMCELLS_FORMS') or '')
+
+    @property
+    def worker(self):
+        return json.loads(os.environ.get('WORKER') or '')

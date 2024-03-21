@@ -5,11 +5,11 @@ import random
 import time
 from datetime import datetime, timedelta
 from typing import Optional, List, Tuple, Dict
-
+from pympler import asizeof
+from memory_profiler import memory_usage
 from flask import Flask
 from flask_sqlalchemy.session import Session
 from sqlalchemy import func
-
 from app import db
 from app.main.controllers import SYNC_CONTROLLER
 from app.main.processors import DATA_PROCESSOR
@@ -20,6 +20,7 @@ from app.models.event import SMEvent, CDVEvent
 from app.models.lead import SMLead, CDVLead
 from app.models.note import SMNote, CDVNote
 from app.models.task import SMTask, CDVTask
+from config import Config
 
 is_running = {
     'get_data_from_amo': {'sm': False, 'cdv': False},
@@ -72,8 +73,6 @@ class SchedulerTask:
             return datetime.now()
 
     def __get_data_from_amo(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
-        interval = 60
-        empty_steps_limit = 60
         empty_steps = 0
         if branch == 'sm':
             models_with_columns = [
@@ -101,6 +100,8 @@ class SchedulerTask:
                 session=session,
                 models_with_columns=models_with_columns
             )
+            config = Config().worker.get('get_data_from_amo')
+            interval = config['interval']
             date_from = starting_date - timedelta(minutes=interval)
             date_to = starting_date
             processor.log.add(
@@ -109,6 +110,9 @@ class SchedulerTask:
             )
             controller = SYNC_CONTROLLER.get(branch)()
             while True:
+                config = Config().worker.get('get_data_from_amo')
+                interval = config['interval']
+                empty_steps_limit = config['empty_steps_limit']
                 has_new = False
                 if controller.run(date_from=date_from, date_to=date_to):
                     has_new = True
@@ -324,10 +328,7 @@ class SchedulerTask:
     #                 sipuni_processor.get_record(id_=_call['ID записи'])
 
     def __update_pivot_data(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
-        interval = 60
-        empty_steps_limit = 48
         empty_steps = 0
-        batch_size = 5
         data_processor = DATA_PROCESSOR.get(branch)()
         if branch == 'sm':
             models_with_columns = [(SMData, 'updated_at')]
@@ -346,11 +347,21 @@ class SchedulerTask:
                 session=session,
                 models_with_columns=models_with_columns
             )
+            config = Config().worker.get('update_pivot_data')
+            interval = config['interval']
             date_from = starting_date - timedelta(minutes=interval)
             date_to = starting_date
             controller = SYNC_CONTROLLER.get(branch)()
             pre_data = data_processor._pre_build()
             while True:
+
+                # !! профилирование !!
+                mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
+
+                config = Config().worker.get('update_pivot_data')
+                interval = config['interval']
+                empty_steps_limit = config['empty_steps_limit']
+                batch_size = config['batch_size']
                 batch_data = []
                 has_new = False
                 # используем генератор для получения обновленных данных
@@ -360,14 +371,13 @@ class SchedulerTask:
                         # пакетная синхронизация
                         if controller.sync_records(records=batch_data, table_name='Data'):
                             has_new = True
-                            empty_steps = 0  # Обнуляем счетчик, если были изменения
+                            empty_steps = 0
                         batch_data.clear()
-                        del line
                 # убеждаемся, что "хвост" данных тоже будет синхронизирован
                 if batch_data:
                     if controller.sync_records(records=batch_data, table_name='Data'):
                         has_new = True
-                        empty_steps = 0  # Обнуляем счетчик, если были изменения
+                        empty_steps = 0
                     batch_data.clear()
                 # проверяем условие выхода из цикла
                 if not has_new:
@@ -388,5 +398,15 @@ class SchedulerTask:
                 date_to = date_to - timedelta(minutes=interval)
                 time.sleep(random.uniform(0.01, 1.5))
                 gc.collect()
+
+                # !! профилирование !!
+                mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
+                data_processor.log.add(
+                    text=f'updating pivot data\n'
+                         f'batch_data: {round(asizeof.asizeof(batch_data) / 1024 / 1024, 2)} Mb\n'
+                         f'total: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb',
+                    log_type=1
+                )
+
         del batch_data
         self.__update_pivot_data(app=app, branch=branch, key=key, starting_date=datetime.now())
