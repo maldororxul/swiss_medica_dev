@@ -41,7 +41,6 @@ class SchedulerTask:
         key = 'update_pivot_data'
         if self.__is_running(key=key, branch=branch):
             return
-        print('__update_pivot_data')
         self.__update_pivot_data(app=app, branch=branch, key=key)
         gc.collect()
 
@@ -93,6 +92,9 @@ class SchedulerTask:
         else:
             is_running.get(key)[branch] = False
             return
+        # задаем предельную длительность итерации в секундах и фиксируем время начала процесса
+        iteration_duration = 3600
+        time_started = time.time()
         processor = DATA_PROCESSOR.get(branch)()
         with app.app_context():
             session = db.session
@@ -110,6 +112,9 @@ class SchedulerTask:
             )
             controller = SYNC_CONTROLLER.get(branch)()
             while True:
+                # если достигнуто предельное время выполнения операции, завершаем процесс
+                if time.time() - time_started >= iteration_duration:
+                    return
                 config = Config().worker.get('get_data_from_amo')
                 interval = config['interval']
                 empty_steps_limit = config['empty_steps_limit']
@@ -328,8 +333,6 @@ class SchedulerTask:
     #                 sipuni_processor.get_record(id_=_call['ID записи'])
 
     def __update_pivot_data(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
-        empty_steps = 0
-        data_processor = DATA_PROCESSOR.get(branch)()
         if branch == 'sm':
             models_with_columns = [(SMData, 'updated_at')]
         elif branch == 'cdv':
@@ -337,6 +340,11 @@ class SchedulerTask:
         else:
             is_running.get(key)[branch] = False
             return
+        data_processor = DATA_PROCESSOR.get(branch)()
+        empty_steps = 0
+        # задаем предельную длительность итерации в секундах и фиксируем время начала процесса
+        iteration_duration = 3600
+        time_started = time.time()
         with app.app_context():
             session = db.session
             data_processor.log.add(
@@ -358,6 +366,9 @@ class SchedulerTask:
                 # !! профилирование !!
                 mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
 
+                # если достигнуто предельное время выполнения операции, завершаем процесс
+                if time.time() - time_started >= iteration_duration:
+                    return
                 config = Config().worker.get('update_pivot_data')
                 interval = config['interval']
                 empty_steps_limit = config['empty_steps_limit']
