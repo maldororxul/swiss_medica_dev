@@ -34,14 +34,20 @@ class SchedulerTask:
         key = 'get_data_from_amo'
         if self.__is_running(key=key, branch=branch):
             return
-        self.__get_data_from_amo(app=app, branch=branch, starting_date=starting_date, key=key)
+        self.__get_data_from_amo(
+            app=app,
+            branch=branch,
+            starting_date=starting_date,
+            key=key,
+            time_started=time.time()
+        )
         gc.collect()
 
     def update_pivot_data(self, app: Flask, branch: str):
         key = 'update_pivot_data'
         if self.__is_running(key=key, branch=branch):
             return
-        self.__update_pivot_data(app=app, branch=branch, key=key)
+        self.__update_pivot_data(app=app, branch=branch, key=key, time_started=time.time())
         gc.collect()
 
     @staticmethod
@@ -71,7 +77,14 @@ class SchedulerTask:
         else:
             return datetime.now()
 
-    def __get_data_from_amo(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
+    def __get_data_from_amo(
+        self,
+        app: Flask,
+        branch: str,
+        key: str,
+        time_started: float,
+        starting_date: Optional[datetime] = None
+    ):
         empty_steps = 0
         if branch == 'sm':
             models_with_columns = [
@@ -93,8 +106,7 @@ class SchedulerTask:
             is_running.get(key)[branch] = False
             return
         # задаем предельную длительность итерации в секундах и фиксируем время начала процесса
-        iteration_duration = 1800
-        time_started = time.time()
+        iteration_duration = 3600
         processor = DATA_PROCESSOR.get(branch)()
         with app.app_context():
             session = db.session
@@ -137,7 +149,13 @@ class SchedulerTask:
                 date_from = date_from - timedelta(minutes=interval)
                 date_to = date_to - timedelta(minutes=interval)
                 time.sleep(random.uniform(0.01, 1.5))
-        self.__get_data_from_amo(app=app, branch=branch, starting_date=datetime.now(), key=key)
+        self.__get_data_from_amo(
+            app=app,
+            branch=branch,
+            starting_date=datetime.now(),
+            key=key,
+            time_started=time_started
+        )
 
     @staticmethod
     def __build_pivot_data_item(line: Dict) -> Dict:
@@ -332,7 +350,14 @@ class SchedulerTask:
     #                 long_calls.append(_call)
     #                 sipuni_processor.get_record(id_=_call['ID записи'])
 
-    def __update_pivot_data(self, app: Flask, branch: str, key: str, starting_date: Optional[datetime] = None):
+    def __update_pivot_data(
+        self,
+        app: Flask,
+        branch: str,
+        key: str,
+        time_started: float,
+        starting_date: Optional[datetime] = None
+    ):
         if branch == 'sm':
             models_with_columns = [(SMData, 'updated_at')]
         elif branch == 'cdv':
@@ -343,8 +368,7 @@ class SchedulerTask:
         data_processor = DATA_PROCESSOR.get(branch)()
         empty_steps = 0
         # задаем предельную длительность итерации в секундах и фиксируем время начала процесса
-        iteration_duration = 1800
-        time_started = time.time()
+        iteration_duration = 3600
         with app.app_context():
             session = db.session
             data_processor.log.add(
@@ -420,4 +444,10 @@ class SchedulerTask:
                 # )
 
         del batch_data
-        self.__update_pivot_data(app=app, branch=branch, key=key, starting_date=datetime.now())
+        self.__update_pivot_data(
+            app=app,
+            branch=branch,
+            key=key,
+            starting_date=datetime.now(),
+            time_started=time_started
+        )
