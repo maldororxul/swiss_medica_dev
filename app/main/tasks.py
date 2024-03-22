@@ -126,6 +126,7 @@ class SchedulerTask:
             while True:
                 # если достигнуто предельное время выполнения операции, завершаем процесс
                 if time.time() - time_started >= iteration_duration:
+                    is_running.get(key)[branch] = False
                     return
                 config = Config().worker.get('get_data_from_amo')
                 interval = config['interval']
@@ -392,6 +393,7 @@ class SchedulerTask:
 
                 # если достигнуто предельное время выполнения операции, завершаем процесс
                 if time.time() - time_started >= iteration_duration:
+                    is_running.get(key)[branch] = False
                     return
                 config = Config().worker.get('update_pivot_data')
                 interval = config['interval']
