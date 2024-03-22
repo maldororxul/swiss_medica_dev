@@ -364,7 +364,7 @@ class SchedulerTask:
             while True:
 
                 # !! профилирование !!
-                mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
+                # mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
 
                 # если достигнуто предельное время выполнения операции, завершаем процесс
                 if time.time() - time_started >= iteration_duration:
@@ -411,13 +411,13 @@ class SchedulerTask:
                 gc.collect()
 
                 # !! профилирование !!
-                mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
-                data_processor.log.add(
-                    text=f'updating pivot data\n'
-                         f'batch_data: {round(asizeof.asizeof(batch_data) / 1024 / 1024, 2)} Mb\n'
-                         f'total: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb',
-                    log_type=1
-                )
+                # mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
+                # data_processor.log.add(
+                #     text=f'updating pivot data\n'
+                #          f'batch_data: {round(asizeof.asizeof(batch_data) / 1024 / 1024, 2)} Mb\n'
+                #          f'total: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb',
+                #     log_type=1
+                # )
 
         del batch_data
         self.__update_pivot_data(app=app, branch=branch, key=key, starting_date=datetime.now())
