@@ -93,7 +93,7 @@ class SchedulerTask:
             is_running.get(key)[branch] = False
             return
         # задаем предельную длительность итерации в секундах и фиксируем время начала процесса
-        iteration_duration = 3600
+        iteration_duration = 1800
         time_started = time.time()
         processor = DATA_PROCESSOR.get(branch)()
         with app.app_context():
@@ -343,7 +343,7 @@ class SchedulerTask:
         data_processor = DATA_PROCESSOR.get(branch)()
         empty_steps = 0
         # задаем предельную длительность итерации в секундах и фиксируем время начала процесса
-        iteration_duration = 3600
+        iteration_duration = 1800
         time_started = time.time()
         with app.app_context():
             session = db.session
