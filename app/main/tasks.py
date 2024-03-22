@@ -34,10 +34,11 @@ class SchedulerTask:
         key = 'get_data_from_amo'
         if self.__is_running(key=key, branch=branch):
             return
+        starting_date = Config().worker.get(key).get('starting_date')
         self.__get_data_from_amo(
             app=app,
             branch=branch,
-            starting_date=starting_date,
+            starting_date=datetime.strptime(starting_date, '%Y-%m-%d %H:%M:%S') if starting_date else None,
             key=key,
             time_started=time.time()
         )
