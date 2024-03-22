@@ -34,11 +34,13 @@ class SchedulerTask:
         key = 'get_data_from_amo'
         if self.__is_running(key=key, branch=branch):
             return
-        starting_date = Config().worker.get(key).get('starting_date')
+        if not starting_date:
+            date_str = Config().worker.get(key).get('starting_date')
+            starting_date = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S') if date_str else None
         self.__get_data_from_amo(
             app=app,
             branch=branch,
-            starting_date=datetime.strptime(starting_date, '%Y-%m-%d %H:%M:%S') if starting_date else None,
+            starting_date=starting_date,
             key=key,
             time_started=time.time()
         )
@@ -69,12 +71,12 @@ class SchedulerTask:
             if query_result:
                 earliest_dates.append(query_result)
 
-        # Возвращаем самый ранний timestamp из всех найденных
-        earliest_timestamp: int = min(earliest_dates) if earliest_dates else None
+        # Возвращаем самый поздний timestamp из всех самых ранних (!)
+        earliest_timestamp: int = max(earliest_dates) if earliest_dates else None
 
         # Если нужно, конвертируем timestamp в datetime объект для удобства
         if earliest_timestamp is not None:
-            return datetime.fromtimestamp(earliest_timestamp)
+            return datetime.fromtimestamp(earliest_timestamp) + timedelta(minutes=1)
         else:
             return datetime.now()
 
