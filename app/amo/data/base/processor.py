@@ -835,7 +835,7 @@ class AmoProcessor:
         # добавляем выборочно сырые поля из лида, а также доп. поля (значение по умолчанию - '')
         line.update({field.Key: lead.get(field.Key) for field in self.lead.get_raw_fields()})
         # добавляем поля utm-меток
-        line.update({value.Key: '' for value in self.lead.Utm.__dict__.values() if isinstance(value, LeadField)})
+        line.update({key: '' for key in self.lead.Utm.get_keys()})
         self._build_stages_fields(line=line)
         # добавляем постобработанные utm
         line.update(build_final_utm(lead=lead, rules=pre_data['utm_rules']))

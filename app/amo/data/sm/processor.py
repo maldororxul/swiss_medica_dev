@@ -352,11 +352,9 @@ class SwissmedicaAmoProcessor(AmoProcessor):
             name = field['field_name'].lower()
             # if name == 'google client id' and field['values'][0]['value']:
             #     print(field['values'][0]['value'])
-            for val in self.lead.Utm.__dict__.values():
-                if not isinstance(val, LeadField):
-                    continue
-                if val.Key == name:
-                    line[val.Key] = field['values'][0]['value']
+            for key in self.lead.Utm.get_keys():
+                if key == name:
+                    line[key] = field['values'][0]['value']
                     break
         # только для лидов (не сырых!)
         for lead_model in self.lead_models:

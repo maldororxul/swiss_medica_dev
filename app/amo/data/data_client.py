@@ -2,14 +2,12 @@
 __author__ = 'ke.mizonov'
 from typing import Callable
 from app.amo.data.cdv.client import DrvorobjevClient
-from app.amo.data.kazan.client import KazanClient
 from app.amo.data.sm.client import SwissmedicaClient
 from constants.constants import Branch
 
 DATA_CLIENT = {
     Branch.CDV.value: DrvorobjevClient,
-    Branch.SM.value: SwissmedicaClient,
-    Branch.Kazan.value: KazanClient,
+    Branch.SM.value: SwissmedicaClient
 }
 
 

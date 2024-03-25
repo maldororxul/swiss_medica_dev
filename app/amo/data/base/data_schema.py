@@ -803,6 +803,17 @@ class Lead:
             Key='ym_cid'
         ))
 
+        @classmethod
+        def get_keys(cls):
+            keys = []
+            for field_name, field_definition in cls.__dataclass_fields__.items():
+                default_factory = field_definition.default_factory
+                if callable(default_factory):
+                    field_instance = default_factory()
+                    if isinstance(field_instance, LeadField):
+                        keys.append(field_instance.Key)
+            return keys
+
     # @dataclass()
     # class Stage(StageBase):
     #     """ Стадия воронки """
