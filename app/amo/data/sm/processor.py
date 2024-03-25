@@ -348,14 +348,14 @@ class SwissmedicaAmoProcessor(AmoProcessor):
         # очистка названий стран
         self._clear_country(line=line)
         # utm из доп. полей
+        keys = self.lead.Utm.get_keys()
+        print('id', line['id'])
+        print('self.lead.Utm.get_keys:', keys)
         for field in custom_fields:
             name = field['field_name'].lower()
-            # if name == 'google client id' and field['values'][0]['value']:
-            #     print(field['values'][0]['value'])
-            for key in self.lead.Utm.get_keys():
-                if key == name:
-                    line[key] = field['values'][0]['value']
-                    break
+            print(f"field_name: --{name}--")
+            if name in keys:
+                line[name] = field['values'][0]['value']
         # только для лидов (не сырых!)
         for lead_model in self.lead_models:
             # приоритеты стадий воронки
