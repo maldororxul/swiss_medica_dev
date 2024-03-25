@@ -992,11 +992,8 @@ class SMDataProcessor(DataProcessor):
         self._clear_country(line=line)
         # utm из доп. полей
         keys = self.lead.Utm.get_keys()
-        print('id', line['id'])
-        print('self.lead.Utm.get_keys:', keys)
         for field in custom_fields:
             name = field['field_name'].lower()
-            print(f"field_name: --{name}--")
             if name in keys:
                 line[name] = field['values'][0]['value']
         # только для лидов (не сырых!)
