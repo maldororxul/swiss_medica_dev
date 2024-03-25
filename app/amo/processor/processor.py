@@ -864,7 +864,7 @@ class SMDataProcessor(DataProcessor):
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
 
         # !! профилирование !!
-        mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
+        # mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
 
         # строим словарь с дефолтными значениями полей лида
         line = self._build_lead_base_data(lead=lead, pre_data=pre_data)
@@ -898,8 +898,8 @@ class SMDataProcessor(DataProcessor):
         sorted_line = self._sort_dict(line)
 
         # !! профилирование !!
-        mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
-        print(f"Memory used by _build_lead_data: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb")
+        # mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
+        # print(f"Memory used by _build_lead_data: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb")
 
         return sorted_line
 
@@ -991,14 +991,14 @@ class SMDataProcessor(DataProcessor):
         # очистка названий стран
         self._clear_country(line=line)
         # utm из доп. полей
+        keys = self.lead.Utm.get_keys()
+        print('id', line['id'])
+        print('self.lead.Utm.get_keys:', keys)
         for field in custom_fields:
             name = field['field_name'].lower()
-            for val in self.lead.Utm.__dict__.values():
-                if not isinstance(val, LeadField):
-                    continue
-                if val.Key == name:
-                    line[val.Key] = field['values'][0]['value']
-                    break
+            print(f"field_name: --{name}--")
+            if name in keys:
+                line[name] = field['values'][0]['value']
         # только для лидов (не сырых!)
         for lead_model in self.lead_models:
             # приоритеты стадий воронки
