@@ -270,7 +270,7 @@ class DataProcessor:
         # Выполнение запроса в контекстном менеджере
         with self.engine.begin() as connection:
             result = connection.execute(text(query), params)
-            results = [dict(row) for row in result]
+            results = [dict(row) for row in result.mappings()]
         return results
 
     @staticmethod
