@@ -3,9 +3,7 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 from functools import reduce
 from typing import Dict, List, Optional, Any, Type, Tuple, Union
-
-from memory_profiler import memory_usage
-from sqlalchemy import Table, MetaData, select, and_, func
+from sqlalchemy import Table, MetaData, select, and_, func, text
 from app.amo.api.constants import AmoEvent
 from app.amo.data.base.data_schema import Lead, LeadField
 from app.amo.data.cdv.data_schema import LeadCDV, LeadMT
@@ -74,8 +72,6 @@ class DataProcessor:
     def __init__(self, date_from: Optional[datetime] = None, date_to: Optional[datetime] = None):
         self.__date_from = date_from
         self.__date_to = date_to
-        # self.__date_from_ts = int(date_from.timestamp()) if date_from else 0
-        # self.__date_to_ts = int(date_to.timestamp()) if date_to else 0
         self.lead: Lead = self.lead_models[0]()
         self.engine = get_engine()
         # загрузка справочников
@@ -171,7 +167,11 @@ class DataProcessor:
             self.__date_from = date_from
         if date_to:
             self.__date_to = date_to
-        for lead in self.leads() or []:
+        leads = self.leads() or []
+        lead_ids_created_at_dict = {lead['id_on_source']: lead['created_at'] for lead in leads}
+        events_dict = self.get_events(lead_ids_created_at_dict=lead_ids_created_at_dict)
+        for lead in leads:
+            lead['source'] = self.get_source(lead=lead, events=events_dict.get(lead['id_on_source']) or [])
             # важно! подменяем идентификатор лида на идентификатор с источника
             lead['id'] = lead['id_on_source']
             lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
@@ -194,6 +194,109 @@ class DataProcessor:
                 lead.pop(key)
             yield lead
 
+    def get_events(self, lead_ids_created_at_dict: Dict) -> Dict:
+        """
+
+        Args:
+            lead_ids_created_at_dict: {lead_id: created_at, ...}
+
+        Returns:
+
+        """
+        if not lead_ids_created_at_dict:
+            return {}
+        # важно! при обновлении мы шагаем по updated_at, а нас интересуют события, близкие к created_at
+        events_generator = self.get_creation_events_data(
+            lead_ids_created_at_dict=lead_ids_created_at_dict
+        )
+        events_dict = {}
+        for event in events_generator:
+            _id = event['entity_id']
+            # время события +-10 сек. от времени создания лида
+            _event_created_at = event.get('created_at')
+            _lead_created_at = lead_ids_created_at_dict.get(_id)
+            if not _lead_created_at:
+                continue
+            if _event_created_at > _lead_created_at + 10 or _event_created_at < _lead_created_at - 10:
+                continue
+            if _id not in events_dict:
+                events_dict[_id] = []
+            events_dict[_id].append({
+                'created_at': event.get('created_at'),
+                'created_by': event.get('created_by'),
+                'type': event.get('type'),
+                'value_after': event.get('value_after')
+            })
+        return events_dict
+
+    def get_creation_events_data(self, lead_ids_created_at_dict: Dict) -> List:
+        """ Считывает данные для связанных с лидами событий
+
+        Args:
+            lead_ids_created_at_dict:
+                словарь, где ключи - это идентификаторы лидов, а значения - соответствующие timestamp создания
+
+        Returns:
+            Связанные с лидами события (близкие к дате создания лида)
+        """
+        types = [
+            'entity_tag_added',
+            'incoming_chat_message',
+            'incoming_call'
+        ]
+        # Подготовка частей условия WHERE для каждого lead_id и создания интервала
+        time_conditions = []
+        params = {'types': types}  # Начальная инициализация параметров запроса
+        i = 0
+        for lead_id, lead_created_at in lead_ids_created_at_dict.items():
+            key_id = f"lead_id_{i}"
+            key_from = f"ts_from_{i}"
+            key_to = f"ts_to_{i}"
+            time_conditions.append(f"""
+                ("entity_id" = :{key_id} AND "created_at" BETWEEN :{key_from} AND :{key_to})
+            """)
+            params[key_id] = lead_id
+            params[key_from] = lead_created_at - 10
+            params[key_to] = lead_created_at + 10
+            i += 1
+        # Формирование финального запроса с динамически созданными условиями
+        query = f"""
+            SELECT created_at, type, value_after FROM {self.schema}."Event"
+            WHERE
+                "entity_type" = 'lead'
+                AND "type" = ANY(:types)
+                AND ({" OR ".join(time_conditions)})
+        """
+        # Выполнение запроса в контекстном менеджере
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query), **params)
+            results = [dict(row) for row in result]
+        return results
+
+    @staticmethod
+    def get_source(lead: Dict, events: List):
+        source = None
+        for event in events:
+            _created_at = event.get('created_at')
+            _type = event.get('type')
+            if _type == 'incoming_chat_message':
+                origin = ((event.get('value_after') or [{}])[0].get('message') or {}).get('origin')
+                if origin == 'amo.ext.whatsapp':
+                    origin = 'whatsapp'
+                return origin
+            elif _type == 'incoming_call':
+                return 'call'
+            elif _type == 'entity_tag_added':
+                tag = (((event.get('value_after') or [{}])[0].get('tag') or {}).get('name') or '').lower()
+                if tag == 'sipuni':
+                    return 'call'
+                for _tag in ('tawk', 'jivo', 'tilda', 'website'):
+                    if _tag in tag:
+                        return _tag
+        if not source and lead.get('created_by') > 0:
+            return 'manual'
+        return 'other'
+
     def users(self) -> List[Dict]:
         return self.__get_data(table_name='User', date_field=None)
 
@@ -210,50 +313,6 @@ class DataProcessor:
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
         raise NotImplementedError
 
-    # lead_events = self.__get_by(
-    #     table_name='Event',
-    #     by_list=[
-    #         self.By(Field='entity_id', Value=lead['id_on_source']),
-    #         self.By(Field='entity_type', Value='lead')
-    #     ]
-    # ) or []
-    # contact_events = self.__get_by(
-    #     table_name='Event',
-    #     by_list=[
-    #         self.By(Field='entity_id', Value=contacts[0]['id']),
-    #         self.By(Field='entity_type', Value='contact')
-    #     ]
-    # ) if contacts else []
-    # 'tasks': self.__get_by(
-    #     table_name='Task',
-    #     by_list=[self.By(Field='entity_id', Value=lead['id_on_source'])]
-    # ) or [],
-    # 'pipeline': [],
-    # 'pipeline_status': [],
-    # 'loss_reason': _embedded.get('loss_reason'),
-    # 'notes': self.__get_by(
-    #     table_name='Note',
-    #     by_list=[self.By(Field='entity_id', Value=lead['id_on_source'])]
-    # ) or [],
-    # 'events': lead_events + contact_events,
-    # попытка восстановить причину закрытия (удалены 13 октября, восстановлены по данным 5 сентября 2022)
-    # if not loss_reason and lead['pipeline_status'] in CLOSE_REASON_FAILED:
-    #     restored_loss_reasons = pre_data.get('restore_loss_reasons') or {}
-    #     loss_reason = restored_loss_reasons.get(lead['id']) or ''
-    # line['notes'] = lead.get('notes')
-    # line['events'] = lead.get('events')
-    # line['tasks'] = lead.get('tasks')
-    """
-    contacts :: [{'id': 58463561, 'name': 'Ceri steele', 'first_name': 'Ceri steele', 'last_name': '', 'responsible_user_id': 3821476, 'group_id': 435082, 'created_by': 0, 'updated_by': 0, 'created_at': 1685567304, 'updated_at': 1686660443, 'closest_task_at': None, 'is_deleted': False, 'is_unsorted': False, 'custom_fields_values': [{'field_id': 771222, 'field_name': 'Email', 'field_code': 'EMAIL', 'field_type': 'multitext', 'values': [{'value': 'dizziebiscuit@hotmail.com', 'enum_id': 1848420, 'enum_code': 'WORK'}]}, {'field_id': 956523, 'field_name': 'City by IP', 'field_code': None, 'field_type': 'text', 'values': [{'value': 'South Benfleet'}]}, {'field_id': 948915, 'field_name': 'Country by IP', 'field_code': None, 'field_type': 'text', 'values': [{'value': '2a02:c7c:a461:f600:ecc8:d791:978a:c3eb'}]}, {'field_id': 971807, 'field_name': 'Дата последнего звонка', 'field_code': None, 'field_type': 'text', 'values': [{'value': '2023-06-13 15:47:03'}]}, {'field_id': 971801, 'field_name': 'Статус звонка', 'field_code': None, 'field_type': 'text', 'values': [{'value': 'Answer, voicemail'}]}, {'field_id': 976727, 'field_name': 'Страна по номеру телефона', 'field_code': None, 'field_type': 'text', 'values': [{'value': 'United Kingdom'}]}, {'field_id': 972177, 'field_name': 'Дата первого звонка', 'field_code': None, 'field_type': 'text', 'values': [{'value': '2023-06-01 15:31:21'}]}, {'field_id': 771220, 'field_name': 'Телефон', 'field_code': 'PHONE', 'field_type': 'multitext', 'values': [{'value': '+447852803307', 'enum_id': 1848408, 'enum_code': 'WORK'}]}], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/contacts/58463561?filter%5Bid%5D%5B0%5D=58424539&filter%5Bid%5D%5B1%5D=58447029&filter%5Bid%5D%5B2%5D=58332366&filter%5Bid%5D%5B3%5D=58339294&filter%5Bid%5D%5B4%5D=58339340&filter%5Bid%5D%5B5%5D=58466523&filter%5Bid%5D%5B6%5D=58482341&filter%5Bid%5D%5B7%5D=58277557&filter%5Bid%5D%5B8%5D=58369916&filter%5Bid%5D%5B9%5D=58125201&filter%5Bid%5D%5B10%5D=58125551&filter%5Bid%5D%5B11%5D=58165083&filter%5Bid%5D%5B12%5D=58471985&filter%5Bid%5D%5B13%5D=58472185&filter%5Bid%5D%5B14%5D=58022549&filter%5Bid%5D%5B15%5D=58395047&filter%5Bid%5D%5B16%5D=58473662&filter%5Bid%5D%5B17%5D=58360699&filter%5Bid%5D%5B18%5D=58414003&filter%5Bid%5D%5B19%5D=58474743&filter%5Bid%5D%5B20%5D=58471911&filter%5Bid%5D%5B21%5D=58462905&filter%5Bid%5D%5B22%5D=58389433&filter%5Bid%5D%5B23%5D=57476221&filter%5Bid%5D%5B24%5D=58404573&filter%5Bid%5D%5B25%5D=58390455&filter%5Bid%5D%5B26%5D=58470847&filter%5Bid%5D%5B27%5D=58423065&filter%5Bid%5D%5B28%5D=58474907&filter%5Bid%5D%5B29%5D=58482449&filter%5Bid%5D%5B30%5D=58479767&filter%5Bid%5D%5B31%5D=58466695&filter%5Bid%5D%5B32%5D=58332424&filter%5Bid%5D%5B33%5D=58332442&filter%5Bid%5D%5B34%5D=58314785&filter%5Bid%5D%5B35%5D=58463561&filter%5Bid%5D%5B36%5D=58261179&filter%5Bid%5D%5B37%5D=58464291&filter%5Bid%5D%5B38%5D=58482367&filter%5Bid%5D%5B39%5D=58458815&filter%5Bid%5D%5B40%5D=58458823&filter%5Bid%5D%5B41%5D=58477283&filter%5Bid%5D%5B42%5D=58261109&filter%5Bid%5D%5B43%5D=58466063&filter%5Bid%5D%5B44%5D=58405277&filter%5Bid%5D%5B45%5D=58409347&filter%5Bid%5D%5B46%5D=58467617&filter%5Bid%5D%5B47%5D=58428545&filter%5Bid%5D%5B48%5D=58467639&filter%5Bid%5D%5B49%5D=58437909&with=customers&limit=50&order=created_at&page=1'}}, '_embedded': {'tags': [], 'customers': [], 'companies': []}}]
-    tasks :: [{'id': 47073643, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685602289, 'updated_at': 1685634479, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 1800, 'is_completed': True, 'task_type_id': 284845, 'text': '', 'result': {'text': 'vm'}, 'complete_till': 1685637000, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47073643?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=7'}}}, {'id': 47079325, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685634486, 'updated_at': 1685962958, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 0, 'is_completed': True, 'task_type_id': 1, 'text': '', 'result': [], 'complete_till': 1685998740, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47079325?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=8'}}}, {'id': 47095147, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685962961, 'updated_at': 1686155349, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 0, 'is_completed': True, 'task_type_id': 1, 'text': '', 'result': {'text': 'недоступен'}, 'complete_till': 1686171540, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47095147?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=8'}}}, {'id': 47112877, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1686156441, 'updated_at': 1686660859, 'responsible_user_id': 3821476, 'group_id': 435082, 'entity_id': 34115403, 'entity_type': 'leads', 'duration': 0, 'is_completed': True, 'task_type_id': 1, 'text': '', 'result': {'text': 'vm'}, 'complete_till': 1686689940, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/tasks/47112877?filter%5Bentity_id%5D%5B0%5D=33986484&filter%5Bentity_id%5D%5B1%5D=34118869&filter%5Bentity_id%5D%5B2%5D=34135875&filter%5Bentity_id%5D%5B3%5D=33925919&filter%5Bentity_id%5D%5B4%5D=34016105&filter%5Bentity_id%5D%5B5%5D=33778851&filter%5Bentity_id%5D%5B6%5D=34124873&filter%5Bentity_id%5D%5B7%5D=34125129&filter%5Bentity_id%5D%5B8%5D=34015973&filter%5Bentity_id%5D%5B9%5D=34126806&filter%5Bentity_id%5D%5B10%5D=34007395&filter%5Bentity_id%5D%5B11%5D=34061447&filter%5Bentity_id%5D%5B12%5D=34127931&filter%5Bentity_id%5D%5B13%5D=34124805&filter%5Bentity_id%5D%5B14%5D=34114685&filter%5Bentity_id%5D%5B15%5D=34035965&filter%5Bentity_id%5D%5B16%5D=33395451&filter%5Bentity_id%5D%5B17%5D=34052243&filter%5Bentity_id%5D%5B18%5D=34037289&filter%5Bentity_id%5D%5B19%5D=33785251&filter%5Bentity_id%5D%5B20%5D=34070721&filter%5Bentity_id%5D%5B21%5D=34128121&filter%5Bentity_id%5D%5B22%5D=34135977&filter%5Bentity_id%5D%5B23%5D=34133343&filter%5Bentity_id%5D%5B24%5D=34119057&filter%5Bentity_id%5D%5B25%5D=33980072&filter%5Bentity_id%5D%5B26%5D=34044399&filter%5Bentity_id%5D%5B27%5D=34115403&filter%5Bentity_id%5D%5B28%5D=33909053&filter%5Bentity_id%5D%5B29%5D=34116435&filter%5Bentity_id%5D%5B30%5D=34135917&filter%5Bentity_id%5D%5B31%5D=34110237&filter%5Bentity_id%5D%5B32%5D=34130697&filter%5Bentity_id%5D%5B33%5D=33908979&filter%5Bentity_id%5D%5B34%5D=34052885&filter%5Bentity_id%5D%5B35%5D=34056543&filter%5Bentity_id%5D%5B36%5D=34120027&filter%5Bentity_id%5D%5B37%5D=34076695&filter%5Bentity_id%5D%5B38%5D=34120049&filter%5Bentity_id%5D%5B39%5D=34087549&filter%5Bentity_id%5D%5B40%5D=34134197&filter%5Bentity_id%5D%5B41%5D=34103141&filter%5Bentity_id%5D%5B42%5D=34125537&filter%5Bentity_id%5D%5B43%5D=34130723&filter%5Bentity_id%5D%5B44%5D=34089167&filter%5Bentity_id%5D%5B45%5D=34106547&filter%5Bentity_id%5D%5B46%5D=34055823&filter%5Bentity_id%5D%5B47%5D=34107779&filter%5Bentity_id%5D%5B48%5D=34130501&filter%5Bentity_id%5D%5B49%5D=34113931&limit=50&order=created_at&page=11'}}}]
-    sub_domain :: swissmedica
-    pipeline :: Новые Клиенты
-    pipeline_status :: ЗАКРЫТО И НЕ РЕАЛИЗОВАНО
-    loss_reason :: [{'id': 12437536, 'name': 'Не смогли выйти на контакт', 'sort': 14, 'created_at': 1665654966, 'updated_at': 1684136402, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/loss_reasons/12437536?filter%5Bupdated_at%5D%5Bfrom%5D=1686653168.179&filter%5Bupdated_at%5D%5Bto%5D=1686741909.405&with=contacts%2Closs_reason&limit=250&order=created_at&page=1'}}}]
-    user :: {'id': 3821476, 'name': 'Tanya Blanchet', 'email': 'advisor18@swissmedica21.com', 'lang': 'ru', 'rights': {'leads': {'view': 'A', 'edit': 'A', 'add': 'A', 'delete': 'A', 'export': 'D'}, 'contacts': {'view': 'A', 'edit': 'A', 'add': 'A', 'delete': 'A', 'export': 'D'}, 'companies': {'view': 'A', 'edit': 'A', 'add': 'A', 'delete': 'A', 'export': 'D'}, 'tasks': {'edit': 'A', 'delete': 'A'}, 'mail_access': True, 'catalog_access': False, 'files_access': False, 'status_rights': [{'entity_type': 'leads', 'pipeline_id': 47721, 'status_id': 25961197, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 772717, 'status_id': 25961194, 'rights': {'edit': 'A', 'view': 'A', 'delete': 'A'}}, {'entity_type': 'leads', 'pipeline_id': 1315147, 'status_id': 25961200, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 1336357, 'status_id': 25961203, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 1474024, 'status_id': 25961206, 'rights': {'edit': 'A', 'view': 'A', 'delete': 'A'}}, {'entity_type': 'leads', 'pipeline_id': 1625206, 'status_id': 25961209, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 1741060, 'status_id': 26221963, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 2016865, 'status_id': 29628103, 'rights': {'edit': 'A', 'view': 'A', 'delete': 'A'}}, {'entity_type': 'leads', 'pipeline_id': 2047060, 'status_id': 29830042, 'rights': {'edit': 'A', 'view': 'A', 'delete': 'A'}}, {'entity_type': 'leads', 'pipeline_id': 2048428, 'status_id': 29839165, 'rights': {'edit': 'A', 'view': 'A', 'delete': 'A'}}, {'entity_type': 'leads', 'pipeline_id': 2108524, 'status_id': 30256390, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 2134300, 'status_id': 30438982, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 3556132, 'status_id': 34982938, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 4148266, 'status_id': 39100183, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 4148284, 'status_id': 39100372, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 4148323, 'status_id': 39100642, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 4472023, 'status_id': 41386096, 'rights': {'edit': 'A', 'view': 'A', 'delete': 'A'}}, {'entity_type': 'leads', 'pipeline_id': 5495602, 'status_id': 48633652, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 5623273, 'status_id': 49559746, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 5624101, 'status_id': 49566184, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}, {'entity_type': 'leads', 'pipeline_id': 5707270, 'status_id': 50170954, 'rights': {'edit': 'A', 'view': 'A', 'delete': 'A'}}, {'entity_type': 'leads', 'pipeline_id': 5728552, 'status_id': 50323399, 'rights': {'edit': 'D', 'view': 'D', 'delete': 'D'}}], 'catalog_rights': [{'catalog_id': 1929, 'rights': {'add': 'A', 'edit': 'A', 'view': 'A', 'delete': 'A', 'export': 'D'}}, {'catalog_id': 1931, 'rights': {'add': 'A', 'edit': 'A', 'view': 'A', 'delete': 'A', 'export': 'D'}}], 'custom_fields_rights': None, 'oper_day_reports_view_access': False, 'oper_day_user_tracking': False, 'is_admin': False, 'is_free': False, 'is_active': True, 'group_id': 435082, 'role_id': 485683}, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/users/3821476/?with=role%2Cgroup&limit=50&page=1'}}, '_embedded': {'roles': [{'id': 485683, 'name': 'Manager4', '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/roles/485683?with=role%2Cgroup&limit=50&page=1'}}}], 'groups': [{'id': 435082, 'name': 'Алексей'}]}}
-    notes :: [{'id': 414264349, 'entity_id': 34115403, 'created_by': 0, 'updated_by': 3821476, 'created_at': 1685567306, 'updated_at': 1685602284, 'responsible_user_id': 3821476, 'group_id': 435082, 'note_type': 'service_message', 'params': {'text': 'Сообщение отправлено.', 'service': 'Уведомления в Telegram'}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414264349?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=11'}}}, {'id': 414269859, 'entity_id': 34115403, 'created_by': 0, 'updated_by': 0, 'created_at': 1685602286, 'updated_at': 1685602286, 'responsible_user_id': 658302, 'group_id': 0, 'note_type': 'service_message', 'params': {'text': 'Сообщение отправлено.', 'service': 'Уведомления в Telegram'}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414269859?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=11'}}}, {'id': 414283887, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685622681, 'updated_at': 1685622700, 'responsible_user_id': 658302, 'group_id': 435082, 'note_type': 'call_out', 'params': {'uniq': '1685622681.204020', 'duration': 15, 'source': '+442922711111', 'link': 'https://pbx8.nsrv.ru/callsrecordingszxcvb/2023/06/01/out-447852803307-133-20230601-153121-1685622681.204020.wav', 'phone': '447852803307', 'call_result': 'Answer, voicemail', 'call_status': 4}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414283887?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=12'}}}, {'id': 414283947, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685622841, 'updated_at': 1685622843, 'responsible_user_id': 3821476, 'group_id': 435082, 'note_type': 'common', 'params': {'text': '1st mail sent'}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414283947?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=12'}}}, {'id': 414295629, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685634457, 'updated_at': 1685634474, 'responsible_user_id': 658302, 'group_id': 435082, 'note_type': 'call_out', 'params': {'uniq': '1685634457.204687', 'duration': 9, 'source': '+442922711111', 'link': 'https://pbx8.nsrv.ru/callsrecordingszxcvb/2023/06/01/out-+447852803307-133-20230601-184737-1685634457.204687.wav', 'phone': '+447852803307', 'call_result': 'Answer, voicemail', 'call_status': 4}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414295629?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=14'}}}, {'id': 414346255, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1685962744, 'updated_at': 1685962760, 'responsible_user_id': 658302, 'group_id': 435082, 'note_type': 'call_out', 'params': {'uniq': '1685962744.207479', 'duration': 12, 'source': '+442922711111', 'link': 'https://pbx8.nsrv.ru/callsrecordingszxcvb/2023/06/05/out-+447852803307-133-20230605-135904-1685962744.207479.wav', 'phone': '+447852803307', 'call_result': 'Answer, voicemail', 'call_status': 4}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414346255?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=47'}}}, {'id': 414346259, 'entity_id': 34115403, 'created_by': 658302, 'updated_by': 658302, 'created_at': 1685962764, 'updated_at': 1685962773, 'responsible_user_id': 658302, 'group_id': 54531, 'note_type': 'call_in', 'params': {'uniq': '1685962764.207481', 'duration': 4, 'source': '+442475428888', 'link': None, 'phone': '+447852803307', 'call_result': 'No Answer - Missed', 'call_status': 6}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414346259?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=47'}}}, {'id': 414410227, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1686155281, 'updated_at': 1686155344, 'responsible_user_id': 658302, 'group_id': 435082, 'note_type': 'call_out', 'params': {'uniq': '1686155281.211578', 'duration': 57, 'source': '+442922711111', 'link': None, 'phone': '+447852803307', 'call_result': 'Temporarily Unavailable', 'call_status': 6}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414410227?filter%5Bupdated_at%5D%5Bfrom%5D=1686121459.916&filter%5Bupdated_at%5D%5Bto%5D=1686471615.978&limit=250&order=created_at&page=4'}}}, {'id': 414410305, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1686155816, 'updated_at': 1686155818, 'responsible_user_id': 3821476, 'group_id': 435082, 'note_type': 'common', 'params': {'text': 'rem'}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414410305?filter%5Bupdated_at%5D%5Bfrom%5D=1686121459.916&filter%5Bupdated_at%5D%5Bto%5D=1686471615.978&limit=250&order=created_at&page=4'}}}, {'id': 414501605, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1686660423, 'updated_at': 1686660443, 'responsible_user_id': 658302, 'group_id': 435082, 'note_type': 'call_out', 'params': {'uniq': '1686660423.219339', 'duration': 10, 'source': '+442922711111', 'link': 'https://pbx8.nsrv.ru/callsrecordingszxcvb/2023/06/13/out-+447852803307-133-20230613-154703-1686660423.219339.wav', 'phone': '+447852803307', 'call_result': 'Answer, voicemail', 'call_status': 4}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414501605?filter%5Bupdated_at%5D%5Bfrom%5D=1686653168.179&filter%5Bupdated_at%5D%5Bto%5D=1686741909.405&limit=250&order=created_at&page=1'}}}, {'id': 414501809, 'entity_id': 34115403, 'created_by': 3821476, 'updated_by': 3821476, 'created_at': 1686660907, 'updated_at': 1686660907, 'responsible_user_id': 3821476, 'group_id': 435082, 'note_type': 'common', 'params': {'text': 'last rem'}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403/notes/414501809?filter%5Bupdated_at%5D%5Bfrom%5D=1686653168.179&filter%5Bupdated_at%5D%5Bto%5D=1686741909.405&limit=250&order=created_at&page=1'}}}, {'id': 414283895, 'entity_id': 58463561, 'created_by': 0, 'updated_by': 0, 'created_at': 1685622706, 'updated_at': 1685622707, 'responsible_user_id': 9884604, 'group_id': 0, 'note_type': 'common', 'params': {'text': "Номер '447852803307' автоматически исправлен на '+447852803307'"}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/contacts/58463561/notes/414283895?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=8'}}}, {'id': 414284135, 'entity_id': 58463561, 'created_by': 658302, 'updated_by': 658302, 'created_at': 1685622829, 'updated_at': 1685623110, 'responsible_user_id': 658302, 'group_id': 54531, 'note_type': 'amomail_message', 'params': {'thread_id': '286010695', 'message_id': '514796099', 'private': False, 'income': False, 'from': {'email': 'advisor18@swissmedica21.com', 'name': 'Tanya Blanchet, SwissMedica XXI'}, 'to': {'email': 'dizziebiscuit@hotmail.com', 'name': ''}, 'version': 2, 'subject': 'Swiss Medica. General information / Questionnaire', 'access_granted': 0, 'content_summary': 'Dear Ceri Steele,', 'attach_cnt': 1, 'delivery': {'status': 'none', 'time': 1685622829}}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/contacts/58463561/notes/414284135?filter%5Bupdated_at%5D%5Bfrom%5D=1685423122.033&filter%5Bupdated_at%5D%5Bto%5D=1686037941.089&limit=250&order=created_at&page=8'}}}, {'id': 414410387, 'entity_id': 58463561, 'created_by': 658302, 'updated_by': 658302, 'created_at': 1686156126, 'updated_at': 1686156383, 'responsible_user_id': 658302, 'group_id': 54531, 'note_type': 'amomail_message', 'params': {'thread_id': '286241405', 'message_id': '515178983', 'private': False, 'income': False, 'from': {'email': 'advisor18@swissmedica21.com', 'name': 'Tanya Blanchet, SwissMedica XXI'}, 'to': {'email': 'dizziebiscuit@hotmail.com', 'name': ''}, 'version': 2, 'subject': 'Swiss Medica', 'access_granted': 0, 'content_summary': 'Hello,', 'attach_cnt': 0, 'delivery': {'status': 'none', 'time': 1686156126}}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/contacts/58463561/notes/414410387?filter%5Bupdated_at%5D%5Bfrom%5D=1686121459.916&filter%5Bupdated_at%5D%5Bto%5D=1686471615.978&limit=250&order=created_at&page=3'}}}, {'id': 414501939, 'entity_id': 58463561, 'created_by': 658302, 'updated_by': 658302, 'created_at': 1686660896, 'updated_at': 1686661128, 'responsible_user_id': 658302, 'group_id': 54531, 'note_type': 'amomail_message', 'params': {'thread_id': '286395659', 'message_id': '515467183', 'private': False, 'income': False, 'from': {'email': 'advisor18@swissmedica21.com', 'name': 'Tanya Blanchet, SwissMedica XXI'}, 'to': {'email': 'dizziebiscuit@hotmail.com', 'name': ''}, 'version': 2, 'subject': 'Swiss Medica', 'access_granted': 0, 'content_summary': 'Hello,\xa0', 'attach_cnt': 0, 'delivery': {'status': 'none', 'time': 1686660896}}, 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/contacts/58463561/notes/414501939?filter%5Bupdated_at%5D%5Bfrom%5D=1686653168.179&filter%5Bupdated_at%5D%5Bto%5D=1686741909.405&limit=250&order=created_at&page=1'}}}]
-    events :: [{'id': '01h1st7varbddwsq262ebfz625', 'type': 'lead_added', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 0, 'created_at': 1685567303, 'value_after': [{'note': {'id': 414264345}}], 'value_before': [], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h1st7varbddwsq262ebfz625'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h1tvkcr9hap8jc7t7s0x04zs', 'type': 'lead_status_changed', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1685602284, 'value_after': [{'lead_status': {'id': 21544411, 'pipeline_id': 772717}}], 'value_before': [{'lead_status': {'id': 19045762, 'pipeline_id': 772717}}], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h1tvkcr9hap8jc7t7s0x04zs'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h1tvkcq93xa6zh89vfnzste7', 'type': 'entity_responsible_changed', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1685602284, 'value_after': [{'responsible_user': {'id': 3821476}}], 'value_before': [{'responsible_user': {'id': 1737526}}], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h1tvkcq93xa6zh89vfnzste7'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h1vf1vd8yj86wjgvtrb27jna', 'type': 'outgoing_call', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1685622681, 'value_after': [{'note': {'id': 414283887}}], 'value_before': [], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h1vf1vd8yj86wjgvtrb27jna'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h1vt97d8chrwczr8zfm2ak2w', 'type': 'outgoing_call', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1685634457, 'value_after': [{'note': {'id': 414295629}}], 'value_before': [], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h1vt97d8chrwczr8zfm2ak2w'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h25kbr609tmdkgyzvfn79jx7', 'type': 'outgoing_call', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1685962744, 'value_after': [{'note': {'id': 414346255}}], 'value_before': [], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h25kbr609tmdkgyzvfn79jx7'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h25kcbq07scd4adv9kr1e1jh', 'type': 'incoming_call', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 658302, 'created_at': 1685962764, 'value_after': [{'note': {'id': 414346259}}], 'value_before': [], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h25kcbq07scd4adv9kr1e1jh'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h2bazgk8y8rakmrf2t4d91tm', 'type': 'outgoing_call', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1686155281, 'value_after': [{'note': {'id': 414410227}}], 'value_before': [], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h2bazgk8y8rakmrf2t4d91tm'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h2tcq7arx5ax05qh5h3e6d1r', 'type': 'outgoing_call', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1686660423, 'value_after': [{'note': {'id': 414501605}}], 'value_before': [], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h2tcq7arx5ax05qh5h3e6d1r'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}, {'id': '01h2td670xn3r0cx1npd16zbr5', 'type': 'lead_status_changed', 'entity_id': 34115403, 'entity_type': 'lead', 'created_by': 3821476, 'created_at': 1686660914, 'value_after': [{'lead_status': {'id': 143, 'pipeline_id': 772717}}], 'value_before': [{'lead_status': {'id': 21544411, 'pipeline_id': 772717}}], 'account_id': 9884604, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/events/01h2td670xn3r0cx1npd16zbr5'}}, '_embedded': {'entity': {'id': 34115403, '_links': {'self': {'href': 'https://swissmedica.amocrm.ru/api/v4/leads/34115403'}}}}}]
-    """
     def _build_lead_base_data(self, lead: Dict, pre_data: Dict) -> Dict:
         _embedded = lead.get('_embedded') or {}
         # причина закрытия
@@ -426,25 +485,22 @@ class DataProcessor:
         result = []
         pre_data = self._pre_build()
         for lead in self.leads():
-            # todo добавить фильтрацию! например, фильтрацию лидов по email
-            # if not self._filter(lead=lead, emails=emails):
-            #     continue
             # важно! подменяем идентификатор лида на идентификатор с источника
             lead['id'] = lead['id_on_source']
             result.append(self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule))
         # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
-        self.__fix_created_at(leads=result)
+        # self.__fix_created_at(leads=result)
         # подмешиваем время реакции и эффективность коммуникации в целом
-        self.Communication(
-            sub_domain=self.sub_domain,
-            leads=result,
-            time_shift_function=self._convert_date_time_from_unix_timestamp,
-            trying_to_get_in_touch=('1. TRYING TO GET IN TOUCH',),      # todo хардкод
-            closed=CLOSE_REASON_FAILED,
-            schedule=schedule,
-            pipelines_dict=self.pipelines_dict,
-            users_dict=self.users_dict,
-        ).process()
+        # self.Communication(
+        #     sub_domain=self.sub_domain,
+        #     leads=result,
+        #     time_shift_function=self._convert_date_time_from_unix_timestamp,
+        #     trying_to_get_in_touch=('1. TRYING TO GET IN TOUCH',),      # todo хардкод
+        #     closed=CLOSE_REASON_FAILED,
+        #     schedule=schedule,
+        #     pipelines_dict=self.pipelines_dict,
+        #     users_dict=self.users_dict,
+        # ).process()
         # todo подмешиваем страны, определенные по номерам телефонов
         self.__process_countries_by_phone_codes(collection=result)
         # fixme не нужно? смещение по неделям
@@ -483,17 +539,6 @@ class DataProcessor:
             # подмешиваем страны, определенные по номерам телефонов
             self.__process_lead_country_by_phone_code(lead=lead)
             yield lead
-
-    # def _weekly_offset(self, weekly: bool, collection: List[Dict]):
-    #     # искуственно смещаем отдельные самые ранние даты для построения адекватной картины по неделям
-    #     if weekly:
-    #         for key in (
-    #             # self.lead.CreatedAt.Key,
-    #             self.lead.DateOfPriorConsent.Key,
-    #             self.lead.DateOfSale.Key,
-    #             self.lead.DateOfAdmission.Key
-    #         ):
-    #             self._smallest_date_offset(collection=collection, key=key)
 
     def _build_stages_fields(self, line: Dict):
         for lead_model in self.lead_models:

@@ -76,10 +76,10 @@ class StageItem:
         self.Price = f'{self.Key}_price'
         self.Alive = f'{self.Key}_alive'
         # планируемый доход, исходя из конверсии с текущего этапа в продажи
-        self.PlannedIncome = f'{self.Key}_planned_income_(rate {self.PurchaseRate})'
-        self.PlannedIncomeFull = f'{self.Key}_planned_income_full_(rate {self.PurchaseRate})'
+        self.PlannedIncome = f'{self.Key}_planned_income'
+        self.PlannedIncomeFull = f'{self.Key}_planned_income_full'
         # планируемое кол-во клиентов
-        self.PlannedCustomers = f'{self.Key}_planned_customers_(rate {self.PurchaseRate})'
+        self.PlannedCustomers = f'{self.Key}_planned_customers'
         self.__build_documentation()
 
     def is_reached(self, value: Optional[str]) -> bool:
