@@ -124,7 +124,7 @@ class SchedulerTask:
             df = date_from.strftime("%Y-%m-%d %H:%M:%S")
             dt = date_to.strftime("%H:%M:%S")
             processor.log.add(
-                text=f'reading Amo data :: iteration started :: {df} - {dt}',
+                text=f'reading Amo data :: {df} - {dt} :: iteration started',
                 log_type=1
             )
             controller = SYNC_CONTROLLER.get(branch)()
@@ -137,6 +137,7 @@ class SchedulerTask:
                 interval = config['interval']
                 empty_steps_limit = config['empty_steps_limit']
                 has_new = False
+                print('get_data_from_amo', date_from, date_to)
                 if controller.run(date_from=date_from, date_to=date_to):
                     has_new = True
                     empty_steps = 0  # Обнуляем счетчик, если были изменения
@@ -196,10 +197,6 @@ class SchedulerTask:
         iteration_duration = 3600
         with app.app_context():
             session = db.session
-            data_processor.log.add(
-                text='updating pivot data :: iteration started',
-                log_type=1
-            )
             starting_date = starting_date or self.__get_earliest_date(
                 session=session,
                 models_with_columns=models_with_columns
@@ -208,6 +205,12 @@ class SchedulerTask:
             interval = config['interval']
             date_from = starting_date - timedelta(minutes=interval)
             date_to = starting_date
+            df = date_from.strftime("%Y-%m-%d %H:%M:%S")
+            dt = date_to.strftime("%H:%M:%S")
+            data_processor.log.add(
+                text=f'updating pivot data :: {df} - {dt} :: iteration started',
+                log_type=1
+            )
             controller = SYNC_CONTROLLER.get(branch)()
             pre_data = data_processor._pre_build()
             while True:

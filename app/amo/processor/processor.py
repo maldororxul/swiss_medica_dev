@@ -183,14 +183,14 @@ class DataProcessor:
             pass
             # поля для упрощенной группировки по периодам
             created_at = lead['created_at']
+            lead['created_by'] = created_by
             lead['source'] = self.get_source(lead=lead, events=events_dict.get(lead['id']) or [])
             lead['year'] = created_at.year
             lead['month'] = created_at.month
             lead['day'] = created_at.day
             lead['week'] = created_at.isocalendar()[1]
-            lead['created_by'] = created_by
             # убираем лишние поля
-            for key in ('budget', 'discount', 'events', 'notes', 'tasks'):
+            for key in ('budget', 'discount', 'events', 'notes', 'tasks', 'created_by'):
                 if key not in lead:
                     continue
                 lead.pop(key)
