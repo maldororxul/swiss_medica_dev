@@ -257,13 +257,12 @@ class APIClient:
         """
         self.get_users()
         self.get_pipelines()
-        return any([
-            self.get_contacts(date_from=date_from, date_to=date_to),
-            self.get_events(date_from=date_from, date_to=date_to),
-            self.get_leads(date_from=date_from, date_to=date_to),
-            self.get_notes(date_from=date_from, date_to=date_to),
-            self.get_tasks(date_from=date_from, date_to=date_to),
-        ])
+        contacts = self.get_contacts(date_from=date_from, date_to=date_to)
+        events = self.get_events(date_from=date_from, date_to=date_to)
+        leads = self.get_leads(date_from=date_from, date_to=date_to)
+        notes = self.get_notes(date_from=date_from, date_to=date_to)
+        tasks = self.get_tasks(date_from=date_from, date_to=date_to)
+        return any([contacts, events, leads, notes, tasks])
 
     def get_events(self, date_from: datetime, date_to: datetime) -> bool:
         """ Получить список событий
@@ -275,8 +274,20 @@ class APIClient:
         Returns:
             True - если получены новые данные
         """
+        event_type = '&filter[type][]='.join((
+            'lead_added',
+            'lead_deleted',
+            'incoming_call',
+            'incoming_chat_message',
+            'entity_merged',
+            'outgoing_call',
+            'outgoing_chat_message',
+            'entity_responsible_changed',
+            'lead_status_changed'
+        ))
         params = f'filter[created_at][from]={date_from.timestamp()}' \
                  f'&filter[created_at][to]={date_to.timestamp()}' \
+                 f'&filter[type][]={event_type}' \
                  f'&limit={100}' \
                  f'&order=created_at'
         return self.get_and_sync_data(endpoint='events', params=params, limit=100, db_table='Event')

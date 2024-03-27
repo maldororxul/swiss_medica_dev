@@ -285,6 +285,8 @@ class DataProcessor:
                 origin = ((event.get('value_after') or [{}])[0].get('message') or {}).get('origin')
                 if origin == 'amo.ext.whatsapp':
                     origin = 'whatsapp'
+                elif origin == 'instagram_business':
+                    origin = 'instagram'
                 return origin
             elif _type == 'incoming_call':
                 return 'call'
