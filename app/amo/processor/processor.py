@@ -173,6 +173,7 @@ class DataProcessor:
         for lead in leads:
             # важно! подменяем идентификатор лида на идентификатор с источника
             lead['id'] = lead['id_on_source']
+            created_by = lead['created_by']
             lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
             # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
             # self.__fix_created_at_lead(lead=lead)
@@ -187,6 +188,7 @@ class DataProcessor:
             lead['month'] = created_at.month
             lead['day'] = created_at.day
             lead['week'] = created_at.isocalendar()[1]
+            lead['created_by'] = created_by
             # убираем лишние поля
             for key in ('budget', 'discount', 'events', 'notes', 'tasks'):
                 if key not in lead:

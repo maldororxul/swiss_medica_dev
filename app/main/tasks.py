@@ -121,8 +121,10 @@ class SchedulerTask:
             interval = config['interval']
             date_from = starting_date - timedelta(minutes=interval)
             date_to = starting_date
+            df = date_from.strftime("%Y-%m-%d %H:%M:%S")
+            dt = date_to.strftime("%H:%M:%S")
             processor.log.add(
-                text='reading Amo data :: iteration started',
+                text=f'reading Amo data :: iteration started :: {df} - {dt}',
                 log_type=1
             )
             controller = SYNC_CONTROLLER.get(branch)()
