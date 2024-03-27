@@ -171,7 +171,6 @@ class DataProcessor:
         lead_ids_created_at_dict = {lead['id_on_source']: lead['created_at'] for lead in leads}
         events_dict = self.get_events(lead_ids_created_at_dict=lead_ids_created_at_dict)
         for lead in leads:
-            lead['source'] = self.get_source(lead=lead, events=events_dict.get(lead['id_on_source']) or [])
             # важно! подменяем идентификатор лида на идентификатор с источника
             lead['id'] = lead['id_on_source']
             lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
@@ -183,6 +182,7 @@ class DataProcessor:
             pass
             # поля для упрощенной группировки по периодам
             created_at = lead['created_at']
+            lead['source'] = self.get_source(lead=lead, events=events_dict.get(lead['id']) or [])
             lead['year'] = created_at.year
             lead['month'] = created_at.month
             lead['day'] = created_at.day
