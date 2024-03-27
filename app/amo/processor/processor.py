@@ -261,7 +261,7 @@ class DataProcessor:
             i += 1
         # Формирование финального запроса с динамически созданными условиями
         query = f"""
-            SELECT created_at, type, value_after FROM {self.schema}."Event"
+            SELECT created_at, type, value_after, entity_id, created_by FROM {self.schema}."Event"
             WHERE
                 "entity_type" = 'lead'
                 AND "type" = ANY(:types)
