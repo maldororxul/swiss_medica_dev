@@ -170,10 +170,13 @@ class DataProcessor:
         leads = self.leads() or []
         lead_ids_created_at_dict = {lead['id_on_source']: lead['created_at'] for lead in leads}
         events_dict = self.get_events(lead_ids_created_at_dict=lead_ids_created_at_dict)
+        deleted_ids = self.get_delete_events_data()
         for lead in leads:
             # важно! подменяем идентификатор лида на идентификатор с источника
             lead['id'] = lead['id_on_source']
             created_by = lead['created_by']
+            if lead['id'] in deleted_ids:
+                lead['deleted'] = 1
             lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
             # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
             # self.__fix_created_at_lead(lead=lead)
@@ -230,6 +233,26 @@ class DataProcessor:
                 'value_after': event.get('value_after')
             })
         return events_dict
+
+    def get_delete_events_data(self) -> List:
+        """ Считывает данные для связанных с лидами событий удаления
+
+        Returns:
+            Связанные с лидами события (близкие к дате создания лида)
+        """
+        # Формирование финального запроса с динамически созданными условиями
+        query = """
+            SELECT entity_id FROM {self.schema}."Event"
+            WHERE
+                "entity_type" = 'lead'
+                AND "type" = 'lead_deleted'
+                AND "created_at" "created_at" BETWEEN {key_from} AND {key_to}
+        """
+        # Выполнение запроса в контекстном менеджере
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query), {'key_from': self.__date_from_ts, 'key_to': self.__date_to_ts})
+            results = [row[0] for row in result.mappings()]
+        return results
 
     def get_creation_events_data(self, lead_ids_created_at_dict: Dict) -> List:
         """ Считывает данные для связанных с лидами событий
@@ -385,7 +408,7 @@ class DataProcessor:
             self.lead.CreatedAtHour.Key: self._convert_date_time_from_unix_timestamp(lead['created_at']).hour,
             # удаленные сделки
             self.lead.Deleted.Key: 1 if lead.get('deleted') else '',
-            self.lead.DeletedBy.Key: lead['deleted']['user']['name'] if lead.get('deleted') else '',
+            # self.lead.DeletedBy.Key: lead['deleted']['user']['name'] if lead.get('deleted') else '',
             'contacts': contacts_data,
             'created_at_ts': lead['created_at'],
             'updated_at_ts': lead['updated_at'],

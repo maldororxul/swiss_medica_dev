@@ -279,6 +279,7 @@ class APIClient:
             'lead_deleted',
             'incoming_call',
             'incoming_chat_message',
+            'entity_tag_added',
             'entity_merged',
             'outgoing_call',
             'outgoing_chat_message',
