@@ -184,7 +184,7 @@ class DataProcessor:
             # поля для упрощенной группировки по периодам
             created_at = lead['created_at']
             lead['created_by'] = created_by
-            lead['source'] = self.get_source(lead=lead, events=events_dict.get(lead['id']) or [])
+            lead['creation_source'] = self.get_source(lead=lead, events=events_dict.get(lead['id']) or [])
             lead['year'] = created_at.year
             lead['month'] = created_at.month
             lead['day'] = created_at.day
@@ -911,10 +911,6 @@ class SMDataProcessor(DataProcessor):
         self.log = DBLogger(log_model=SMLog, branch='sm')
 
     def _build_lead_data(self, lead: Dict, pre_data: Dict, schedule: Optional[Dict] = None):
-
-        # !! профилирование !!
-        # mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
-
         # строим словарь с дефолтными значениями полей лида
         line = self._build_lead_base_data(lead=lead, pre_data=pre_data)
         # заполняем доп. поля лида
@@ -945,11 +941,6 @@ class SMDataProcessor(DataProcessor):
         line[self.lead.Phone.Key] = self.get_lead_phones(lead)
         # сортировка по ключам
         sorted_line = self._sort_dict(line)
-
-        # !! профилирование !!
-        # mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
-        # print(f"Memory used by _build_lead_data: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb")
-
         return sorted_line
 
     def _freeze_stages(self, line: Dict):

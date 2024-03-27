@@ -137,7 +137,6 @@ class SchedulerTask:
                 interval = config['interval']
                 empty_steps_limit = config['empty_steps_limit']
                 has_new = False
-                print('get_data_from_amo', date_from, date_to)
                 if controller.run(date_from=date_from, date_to=date_to):
                     has_new = True
                     empty_steps = 0  # Обнуляем счетчик, если были изменения
@@ -214,10 +213,6 @@ class SchedulerTask:
             controller = SYNC_CONTROLLER.get(branch)()
             pre_data = data_processor._pre_build()
             while True:
-
-                # !! профилирование !!
-                # mem_usage_before = memory_usage(-1, interval=0.1, timeout=1)
-
                 # если достигнуто предельное время выполнения операции, завершаем процесс
                 if time.time() - time_started >= iteration_duration:
                     is_running.get(key)[branch] = False
@@ -262,15 +257,6 @@ class SchedulerTask:
                 date_to = date_to - timedelta(minutes=interval)
                 time.sleep(random.uniform(0.01, 1.5))
                 gc.collect()
-
-                # !! профилирование !!
-                # mem_usage_after = memory_usage(-1, interval=0.1, timeout=1)
-                # data_processor.log.add(
-                #     text=f'updating pivot data\n'
-                #          f'batch_data: {round(asizeof.asizeof(batch_data) / 1024 / 1024, 2)} Mb\n'
-                #          f'total: {round(mem_usage_after[-1] - mem_usage_before[-1], 2)} Mb',
-                #     log_type=1
-                # )
 
         del batch_data
         self.__update_pivot_data(
