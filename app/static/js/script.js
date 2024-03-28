@@ -68,7 +68,40 @@ function makeGetRequest(endpoint, params, msg) {
 
 socket.on('duplicate_lead', function(data) {
     // Добавление элементов в список результатов
-    $('#results').append('<div class="form-check"><input class="form-check-input" type="checkbox" value="" id="defaultCheck' + data.id + '"><label class="form-check-label" for="defaultCheck' + data.id + '">' + data.msg + '</label></div>');
+    $('#results').append('<div class="form-check">' +
+    '<input class="form-check-input" type="checkbox" value="" id="defaultCheck' + data.id + '">' +
+    '<label class="form-check-label" for="defaultCheck' + data.id + '">' + data.msg + ' (ID: ' + data.id + ')</label>' +
+    '<button class="btn btn-primary merge-btn" data-id="' + data.id + '" style="display:none;">Merge into this lead</button>' +
+    '</div>');
+});
+
+$(document).on('change', '.form-check-input', function() {
+    if (this.checked) {
+        $(this).siblings('.merge-btn').show();
+    } else {
+        $(this).siblings('.merge-btn').hide();
+    }
+});
+
+$(document).on('click', '.merge-btn', function() {
+    let selectedIds = $('.form-check-input:checked').map(function() {
+        return $(this).siblings('button').data('id');
+    }).get();
+    let triggerId = $(this).data('id');
+    console.log('Selected IDs:', selectedIds, 'Trigger ID:', triggerId);
+    // Теперь отправляем данные на сервер
+    $.ajax({
+        url: '{{ url_for("main.process_lead_duplicates") }}',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({ selectedIds: selectedIds, triggerId: triggerId }),
+        success: function(response) {
+            console.log('Server response:', response);
+        },
+        error: function(error) {
+            console.error('Error:', error);
+        }
+    });
 });
 
 $(document).ready(function() {

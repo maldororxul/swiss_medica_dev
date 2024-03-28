@@ -523,6 +523,17 @@ def find_duplicates():
     return render_template('find_duplicates.html')
 
 
+@bp.route('/process_lead_duplicates', methods=['POST'])
+@login_required
+def process_lead_duplicates():
+    data = request.json
+    selected_ids = data.get('selectedIds')
+    trigger_id = data.get('triggerId')
+    # Здесь ваша логика обработки
+    print('Selected IDs:', selected_ids, 'Trigger ID:', trigger_id)
+    return jsonify({'status': 'success', 'message': 'Processing complete'})
+
+
 @socketio.on('find_lead_duplicates')
 def handle_find_lead_duplicates(json):
     lead_id = json['lead_id']
