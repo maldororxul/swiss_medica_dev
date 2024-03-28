@@ -316,7 +316,7 @@ class DataProcessor:
     def update_users_leads(self, app):
         with app.app_context():
             users = self.__get_users_leads()
-        users['date'] = datetime.now().date()
+        users['date'] = str(datetime.now().date())
         users['wd'] = 'Leads'
         # обновление количества лидов в онлайн-таблице
         GoogleAPIClient(
