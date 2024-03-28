@@ -504,7 +504,7 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             flash('You have been logged in!', 'success')
-            return redirect(url_for('main.offer'))
+            return redirect(url_for('main.menu'))
         else:
             flash('Login Unsuccessful. Please check username and password', 'danger')
     return render_template('login.html')

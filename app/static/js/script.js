@@ -66,86 +66,6 @@ function makeGetRequest(endpoint, params, msg) {
     });
 }
 
-<!--Start of Tawk.to Script-->
-// CDV
-var Tawk_Slug = '64d0945994cf5d49dc68dd99/1h77c6vne';
-// SM
-//var Tawk_Slug = '6540c6b2f2439e1631ea401c/1he2ggacp';
-var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
-(function() {
-    var s1 = document.createElement("script"),
-        s0 = document.getElementsByTagName("script")[0];
-    s1.async = true;
-    s1.src = 'https://embed.tawk.to/' + Tawk_Slug;
-    s1.charset = 'UTF-8';
-    s1.setAttribute('crossorigin', '*');
-    s0.parentNode.insertBefore(s1, s0);
-})();
-
-window.Tawk_API.onLoad = function(){
-    var custom_attrs = {
-        'ref': document.referrer
-    }
-    window.Tawk_API.setAttributes(custom_attrs, function(error){
-        if (error) {
-            console.error("Error setting Tawk attributes:", error);
-        }
-    });
-};
-
-function sendTawkData(dataToSend) {
-    fetch('https://swiss-medica-2e0e7bc937df.herokuapp.com/tawk', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend)
-    })
-    .then(response => response.status)
-    .then(data => {
-        console.log('Success:', data);
-    })
-    .catch(error => {
-        console.error('Fetch Error:', error);
-    });
-}
-
-Tawk_API.onChatStarted = function() {
-    if (typeof(gtag) !== 'undefined') {
-        gtag('event', 'Chat Started', {
-            'event_category': 'Tawk',
-            'event_label': 'Chat Interaction Started',
-        });
-    }
-};
-Tawk_API.onPrechatSubmit = function() {
-    if (typeof(gtag) !== 'undefined') {
-        gtag('event', 'Prechat Submit', {
-            'event_category': 'Tawk',
-            'event_label': 'Prechat Form Submitted',
-        });
-    }
-};
-Tawk_API.onChatEnded = function() {
-    if (typeof(gtag) !== 'undefined') {
-        gtag('event', 'Chat Ended', {
-            'event_category': 'Tawk',
-            'event_label': 'Chat Interaction Stopped',
-        });
-    }
-};
-window.Tawk_API.onOfflineSubmit = function(data){
-    if (typeof(gtag) !== 'undefined') {
-        gtag('event', 'Offline Form', {
-            'event_category': 'Tawk',
-            'event_label': 'Offline Form Submitted',
-        });
-    }
-    data['referrer'] = document.referrer
-    sendTawkData(data)
-};
-<!--End of Tawk.to Script-->
-
 $(document).ready(function() {
     const getAmoDataSm = () => makeGetRequest('/get_amo_data_sm', { time: $('#time-sm').val() }, 'get_amo_data_sm');
     const getAmoDataCdv = () => makeGetRequest('/get_amo_data_cdv', { time: $('#time-cdv').val() }, 'get_amo_data_cdv');
@@ -173,14 +93,15 @@ $(document).ready(function() {
 //    $('#start_autocalls').on('click', startAutocalls);
 //    $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
 
-    $('#update-alive-leads').click(function(e) {
-        e.preventDefault();  // Предотвращение стандартного поведения ссылки
-        alert('Update Alive Leads: processing...'); // Вывод всплывающего сообщения
-        // Отправка AJAX запроса на сервер
-        $.get('{{ url_for('main.update_users_leads') }}', function(data) {
-            // Ответ сервера
-            alert('Update Alive Leads: done!'); // Вывод сообщения о завершении обновления
-        });
+$('#update-alive-leads').click(function(e) {
+    e.preventDefault();
+    $('#status-message').text('Update Alive Leads: processing...');
+
+    $.get(updateUsersLeadsUrl, function(data) {
+        $('#status-message').text('Update Alive Leads: done!');
+    }).fail(function() {
+        $('#status-message').text('Update Alive Leads: failed!');
     });
+});
 
 });
