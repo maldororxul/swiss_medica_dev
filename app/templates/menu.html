@@ -22,7 +22,9 @@
                     <a href="#" id="update-alive-leads" class="btn btn-custom mr-3">Update Alive Leads</a>
                 </div>
             </div>
-            <div class="row" id="status-message"></div>
+            <div class="row">
+                <div class="col-12 col-md-12 offset-md-1 mt-3" id="status-message"></div>
+            </div>
         </div>
         <script type="text/javascript">
             var updateUsersLeadsUrl = "{{ url_for('main.update_users_leads') }}";
