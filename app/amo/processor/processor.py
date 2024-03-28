@@ -251,7 +251,7 @@ class DataProcessor:
         # Выполнение запроса в контекстном менеджере
         with self.engine.begin() as connection:
             result = connection.execute(text(query), {'key_from': self.__date_from_ts, 'key_to': self.__date_to_ts})
-            results = [row[0] for row in result.mappings()]
+            results = [row['entity_id'] for row in result.mappings()]
         return results
 
     def get_creation_events_data(self, lead_ids_created_at_dict: Dict) -> List:
@@ -300,7 +300,7 @@ class DataProcessor:
 
     def __get_users_leads(self):
         query = f"""
-            SELECT u.name, COUNT(l.id)
+            SELECT u.name, COUNT(l.id) AS count
             FROM {self.schema}."Lead" l
             LEFT JOIN {self.schema}."User" u ON l.responsible_user_id = u.id_on_source
             LEFT JOIN {self.schema}."Event" e ON l.id_on_source = e.entity_id AND e."type" = 'lead_deleted'
@@ -310,7 +310,7 @@ class DataProcessor:
         # Выполнение запроса в контекстном менеджере
         with self.engine.begin() as connection:
             result = connection.execute(text(query))
-            results = {row[0]: row[1] for row in result.mappings()}
+            results = {row['name']: row['count'] for row in result.mappings()}
         return results
 
     def update_users_leads(self, app):
