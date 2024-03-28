@@ -170,13 +170,13 @@ class DataProcessor:
         leads = self.leads() or []
         lead_ids_created_at_dict = {lead['id_on_source']: lead['created_at'] for lead in leads}
         events_dict = self.get_events(lead_ids_created_at_dict=lead_ids_created_at_dict)
-        deleted_ids = self.get_delete_events_data()
+        # deleted_ids = self.get_delete_events_data()
         for lead in leads:
             # важно! подменяем идентификатор лида на идентификатор с источника
             lead['id'] = lead['id_on_source']
             created_by = lead['created_by']
-            if lead['id'] in deleted_ids:
-                lead['deleted'] = 1
+            # if lead['id'] in deleted_ids:
+            #     lead['deleted'] = 1
             lead = self._build_lead_data(lead=lead, pre_data=pre_data, schedule=schedule)
             # created_at_offset: сравнение времени самого раннего события, примечания или задачи с датой создания лида
             # self.__fix_created_at_lead(lead=lead)
@@ -298,6 +298,30 @@ class DataProcessor:
             results = [dict(row) for row in result.mappings()]
         return results
 
+    def __get_users_leads(self):
+        query = f"""
+            SELECT u.name, COUNT(l.id)
+            FROM {self.schema}."Lead" l
+            LEFT JOIN {self.schema}."User" u ON l.responsible_user_id = u.id_on_source
+            LEFT JOIN {self.schema}."Event" e ON l.id_on_source = e.entity_id AND e."type" = 'lead_deleted'
+            WHERE l.closed_at IS NULL AND e.entity_id IS NULL
+            GROUP BY u.name;
+        """
+        # Выполнение запроса в контекстном менеджере
+        with self.engine.begin() as connection:
+            result = connection.execute(text(query))
+            results = {row[0]: row[1] for row in result.mappings()}
+        return results
+
+    def update_users_leads(self, app):
+        with app.app_context():
+            users = self.__get_users_leads()
+        # обновление количества лидов в онлайн-таблице
+        GoogleAPIClient(
+            book_id=GoogleSheets.ScheduleSM.value,
+            sheet_title='Schedule'
+        ).update_leads_quantity(users=users)
+
     @staticmethod
     def get_source(lead: Dict, events: List):
         source = None
@@ -374,7 +398,7 @@ class DataProcessor:
             name = field.get('field_name')
             lower_name = name.lower()
             if lower_name in ('ym_cid', 'ym_uid'):
-                line['YM_CID'] = (field.get('values') or [{}])[0].get('value') or ''
+                line['ym_cid'] = (field.get('values') or [{}])[0].get('value') or ''
                 break
         pipeline = self.pipelines_dict.get(lead.get('pipeline_id')) or {}
         pipeline_name = pipeline.get('name') or ''
@@ -400,14 +424,14 @@ class DataProcessor:
             self.lead.LossReason.Key: loss_reason,
             self.lead.Link.Key: self._get_lead_url_by_id(lead_id=lead['id']),
             self.lead.Tags.Key: ', '.join([tag['name'] for tag in tags]),
-            self.lead.Jivo.Key: next((1 for tag in tags if 'jivo' in tag['name'].lower()), ''),
+            # self.lead.Jivo.Key: next((1 for tag in tags if 'jivo' in tag['name'].lower()), ''),
             self.lead.PipelineName.Key: pipeline_name,
             self.lead.StatusName.Key: pipeline_status,
             self.lead.Responsible.Key: (self.users_dict.get(lead['responsible_user_id']) or {}).get('name') or '',
             self.lead.ResponsibleGroup.Key: user_group,
             self.lead.CreatedAtHour.Key: self._convert_date_time_from_unix_timestamp(lead['created_at']).hour,
             # удаленные сделки
-            self.lead.Deleted.Key: 1 if lead.get('deleted') else '',
+            # self.lead.Deleted.Key: 1 if lead.get('deleted') else '',
             # self.lead.DeletedBy.Key: lead['deleted']['user']['name'] if lead.get('deleted') else '',
             'contacts': contacts_data,
             'created_at_ts': lead['created_at'],

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Swiss Medica</title>
+        <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+        <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-md-12 offset-md-1 mt-3">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-custom mr-3">Admin Panel</a>
+                </div>
+                <div class="col-12 col-md-12 offset-md-1 mt-3">
+                    <a href="{{ url_for('main.offer') }}" class="btn btn-custom mr-3">Offer Constructor</a>
+                </div>
+                <div class="col-12 col-md-12 offset-md-1 mt-3">
+                    <a href="#" id="update-alive-leads" class="btn btn-custom mr-3">Update Alive Leads</a>
+                </div>
+            </div>
+        </div>
+        <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    </body>
+</html>

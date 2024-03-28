@@ -2,12 +2,12 @@
 __author__ = 'ke.mizonov'
 from datetime import datetime
 from typing import Union, Type, Dict, Optional
-from flask import render_template, current_app, redirect, url_for, request, Response, flash
+from flask import render_template, current_app, redirect, url_for, request, Response, flash, jsonify
 from flask_login import login_required, logout_user, current_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, socketio
 from app.amo.api.client import SwissmedicaAPIClient, DrvorobjevAPIClient
-from app.amo.processor.processor import GoogleSheets
+from app.amo.processor.processor import GoogleSheets, SMDataProcessor
 from app.google_api.client import GoogleAPIClient
 from app.main import bp
 from app.main.arrival.handler import waiting_for_arrival
@@ -65,9 +65,13 @@ DATA_MODEL = {
 @bp.route('/')
 @requires_roles('admin', 'superadmin')
 def index():
-    return render_template(
-        'index.html'
-    )
+    return render_template('index.html')
+
+
+@bp.route('/menu')
+@login_required
+def menu():
+    return render_template('menu.html')
 
 
 @bp.route('/get_token', methods=['GET'])
@@ -482,10 +486,17 @@ def register():
     return render_template('register.html', form=form)
 
 
+@bp.route('/update_users_leads', methods=['GET'])
+@login_required
+def update_users_leads():
+    SMDataProcessor().update_users_leads(app=current_app._get_current_object())
+    return jsonify({'status': 'complete'})
+
+
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('main.offer'))
+        return redirect(url_for('main.menu'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')

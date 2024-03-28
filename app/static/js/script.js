@@ -172,4 +172,15 @@ $(document).ready(function() {
 //    $('#stop_build_pivot_data_cdv').on('click', stopBuildPivotDataCdv);
 //    $('#start_autocalls').on('click', startAutocalls);
 //    $('#set_telegram_webhooks').on('click', setTelegramWebhooks);
+
+    $('#update-alive-leads').click(function(e) {
+        e.preventDefault();  // Предотвращение стандартного поведения ссылки
+        alert('Update Alive Leads: processing...'); // Вывод всплывающего сообщения
+        // Отправка AJAX запроса на сервер
+        $.get('{{ url_for('main.update_users_leads') }}', function(data) {
+            // Ответ сервера
+            alert('Update Alive Leads: done!'); // Вывод сообщения о завершении обновления
+        });
+    });
+
 });
