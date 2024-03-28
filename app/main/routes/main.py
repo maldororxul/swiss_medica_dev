@@ -517,6 +517,22 @@ def logout():
     return redirect(url_for('main.login'))
 
 
+@bp.route('/find_duplicates')
+@login_required
+def find_duplicates_page():
+    return render_template('find_duplicates.html')
+
+
+@socketio.on('find_lead_duplicates')
+def handle_find_lead_duplicates(json):
+    lead_id = json['lead_id']
+    print('Received request to find duplicates for lead ID:', lead_id)
+    # Отправляем тестовые данные обратно на клиент
+    test_data = [{'id': 1, 'msg': 'Duplicate 1'}, {'id': 2, 'msg': 'Duplicate 2'}, {'id': 3, 'msg': 'Duplicate 3'}]
+    for item in test_data:
+        socketio.emit('duplicate_lead', item)
+
+
 @bp.route('/create_all')
 def create_all():
     # импорты нужны для создания структуры БД!

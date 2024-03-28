@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Find Lead Duplicates</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.png') }}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="row mt-3">
+            <div class="col-12">
+                <input type="number" id="lead-id-input" class="form-control" placeholder="lead id">
+            </div>
+            <div class="col-12 mt-2">
+                <button id="find-duplicates-btn" class="btn btn-primary">Find Lead Duplicates</button>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-12" id="results"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

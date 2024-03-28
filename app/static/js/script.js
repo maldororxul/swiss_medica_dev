@@ -66,6 +66,11 @@ function makeGetRequest(endpoint, params, msg) {
     });
 }
 
+socket.on('duplicate_lead', function(data) {
+    // Добавление элементов в список результатов
+    $('#results').append('<div class="form-check"><input class="form-check-input" type="checkbox" value="" id="defaultCheck' + data.id + '"><label class="form-check-label" for="defaultCheck' + data.id + '">' + data.msg + '</label></div>');
+});
+
 $(document).ready(function() {
     const getAmoDataSm = () => makeGetRequest('/get_amo_data_sm', { time: $('#time-sm').val() }, 'get_amo_data_sm');
     const getAmoDataCdv = () => makeGetRequest('/get_amo_data_cdv', { time: $('#time-cdv').val() }, 'get_amo_data_cdv');
@@ -102,6 +107,13 @@ $('#update-alive-leads').click(function(e) {
     }).fail(function() {
         $('#status-message').text('Update Alive Leads: failed!');
     });
+});
+
+$('#find-duplicates-btn').click(function() {
+    let leadId = $('#lead-id-input').val();
+    // Отправка значения из инпутбокса на сервер
+    socket.emit('find_lead_duplicates', { lead_id: leadId });
+    $('#results').empty(); // Очищаем контейнер с результатами перед новым запросом
 });
 
 });
