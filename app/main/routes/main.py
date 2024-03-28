@@ -519,7 +519,7 @@ def logout():
 
 @bp.route('/find_duplicates')
 @login_required
-def find_duplicates_page():
+def find_duplicates():
     return render_template('find_duplicates.html')
 
 
